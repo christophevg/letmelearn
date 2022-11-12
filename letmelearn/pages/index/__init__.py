@@ -14,7 +14,7 @@ from flask_restful import Resource
 
 from baseweb.rest import api
 
-from letmelearn.data import db
+from letmelearn import db
 
 class Hello(Resource):
   def get(self):
