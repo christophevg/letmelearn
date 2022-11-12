@@ -23,5 +23,13 @@ So, the setup/architecture of this application will be my (currently) prefered o
 - [ ] Setup a Hello World-like service on Render
   - [x] Setup a Hello World Flask app
     ![Hello World](media/hello-world.png)
-  - [ ] Split service in ui and api
+  - [x] Split service in ui and api
+    ![Hello World, the sequel](media/hello-world-2.png)
   - [ ] Connect api to MongoDB Cloud instance
+- [ ] Apply baseweb + sppwa + oauth
+  - [ ] Apply baseweb
+  - [ ] Setup SPA/PWA patterns
+  - [ ] Add OAuth/OpenIDC
+  - [ ] Add support for Google Accounts
+- [ ] Implement "learn set" modus
+- [ ] Implement "create set" modus
