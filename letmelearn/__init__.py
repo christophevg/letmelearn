@@ -1,4 +1,4 @@
-__version__ = "0.0.2"
+__version__ = "0.0.4"
 
 # load the environment variables for this setup
 from dotenv import load_dotenv, find_dotenv
@@ -11,18 +11,9 @@ PATH = pathlib.Path(__file__).parent.resolve()
 
 import os
 
-from flask import Flask
+from baseweb.web import server
 
-app = Flask(__name__,
-  template_folder = PATH / "pages",
-  static_folder   = PATH / "static"
-)
-app.config["TEMPLATES_AUTO_RELOAD"] = True
-app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
+server.config["TEMPLATES_AUTO_RELOAD"] = True
+server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 
-import flask_restful
-
-api = flask_restful.Api(app)
-
-import letmelearn.ui
-import letmelearn.api
+import letmelearn.pages.index

@@ -29,8 +29,11 @@ So, the setup/architecture of this application will be my (currently) prefered o
     ![Hello World, the sequel](media/hello-world-3.png)
 - [ ] Apply baseweb + sppwa + oauth
   - [ ] Apply baseweb
-  - [ ] Setup SPA/PWA patterns
-  - [ ] Add OAuth/OpenIDC
+  - [ ] Setup PWA patterns
+  - [ ] Add login + OAuth/OpenIDC
   - [ ] Add support for Google Accounts
-- [ ] Implement "learn set" modus
-- [ ] Implement "create set" modus
+- [ ] Implement application logic
+  - [ ] Implement "learn a set"
+  - [ ] Implement "create a set"
+  - [ ] Implement "invitations"
+  - [ ] Implement "import sets"

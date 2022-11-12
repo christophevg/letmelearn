@@ -1,4 +1,4 @@
 all: run
 
 run:
-	gunicorn letmelearn:app
+	gunicorn -k eventlet -w 1 letmelearn:server
