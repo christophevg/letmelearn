@@ -28,7 +28,8 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Connect api to MongoDB Cloud instance
     ![Hello World, the sequel](media/hello-world-3.png)
 - [ ] Apply baseweb + sppwa + oauth
-  - [ ] Apply baseweb
+  - [x] Apply baseweb
+    ![Hello baseweb](media/hello-baseweb.png)
   - [ ] Setup PWA patterns
   - [ ] Add login + OAuth/OpenIDC
   - [ ] Add support for Google Accounts
