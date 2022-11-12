@@ -7,5 +7,3 @@ load_dotenv(find_dotenv(usecwd=True))
 import letmelearn.setup
 
 from baseweb.web import server
-
-import letmelearn.pages.index
