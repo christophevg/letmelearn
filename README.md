@@ -20,4 +20,8 @@ So, the setup/architecture of this application will be my (currently) prefered o
 
 ## Implementation Steps
 
-- [ ] Setup a HelloWorld-like service on Render
+- [ ] Setup a Hello World-like service on Render
+  - [x] Setup a Hello World Flask app
+    ![Hello World](media/hello-world.png)
+  - [ ] Split page and service
+  - [ ] Connect service to MongoDB Cloud instance
