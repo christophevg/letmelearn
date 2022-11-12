@@ -5,15 +5,3 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
 
 import letmelearn.setup
-
-import pathlib
-PATH = pathlib.Path(__file__).parent.resolve()
-
-import os
-
-from baseweb.web import server
-
-server.config["TEMPLATES_AUTO_RELOAD"] = True
-server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
-
-import letmelearn.pages.index
