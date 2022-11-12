@@ -23,5 +23,5 @@ So, the setup/architecture of this application will be my (currently) prefered o
 - [ ] Setup a Hello World-like service on Render
   - [x] Setup a Hello World Flask app
     ![Hello World](media/hello-world.png)
-  - [ ] Split page and service
-  - [ ] Connect service to MongoDB Cloud instance
+  - [ ] Split service in ui and api
+  - [ ] Connect api to MongoDB Cloud instance
