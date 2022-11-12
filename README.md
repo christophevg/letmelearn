@@ -31,7 +31,9 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Apply baseweb
     ![Hello baseweb](media/hello-baseweb.png)
   - [x] Enable PWA usage
-    <div style="text-align:center">![Hello PWA](media/hello-pwa.png)</div>
+    <p align="center">
+      <img src="https://raw.githubusercontent.com/christophevg/letmelearn/master/media/hello-pwa.png">
+    </p>  
   - [ ] Add login + OAuth/OpenIDC
   - [ ] Add support for Google Accounts
 - [ ] Implement application logic
