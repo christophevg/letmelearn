@@ -20,12 +20,13 @@ So, the setup/architecture of this application will be my (currently) prefered o
 
 ## Implementation Steps
 
-- [ ] Setup a Hello World-like service on Render
+- [x] Setup a Hello World-like service on Render
   - [x] Setup a Hello World Flask app
     ![Hello World](media/hello-world.png)
   - [x] Split service in ui and api
     ![Hello World, the sequel](media/hello-world-2.png)
-  - [ ] Connect api to MongoDB Cloud instance
+  - [x] Connect api to MongoDB Cloud instance
+    ![Hello World, the sequel](media/hello-world-3.png)
 - [ ] Apply baseweb + sppwa + oauth
   - [ ] Apply baseweb
   - [ ] Setup SPA/PWA patterns
