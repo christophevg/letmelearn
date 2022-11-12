@@ -30,7 +30,8 @@ So, the setup/architecture of this application will be my (currently) prefered o
 - [ ] Apply baseweb + sppwa + oauth
   - [x] Apply baseweb
     ![Hello baseweb](media/hello-baseweb.png)
-  - [ ] Setup PWA patterns
+  - [x] Enable PWA usage
+    <div style="text-align:center">![Hello PWA](media/hello-pwa.png)</div>
   - [ ] Add login + OAuth/OpenIDC
   - [ ] Add support for Google Accounts
 - [ ] Implement application logic

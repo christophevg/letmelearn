@@ -1,4 +1,4 @@
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 # needed explicitly for recursion issue in eventlet+ssl on outgoing pymongo
 # and to be able to create single pymongo Database object
