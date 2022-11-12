@@ -21,7 +21,7 @@ class Hello(Resource):
     name = request.args["name"]
     logger.info(f"got hello request from {name}")
     try:
-      greeting = data.db["greetings"].find_one({"name" : name})["greeting"]
+      greeting = data.db()["greetings"].find_one({"name" : name})["greeting"]
     except TypeError:
       greeting = "Hello Stranger..."
     return { "message" : greeting.format(name=name) }
