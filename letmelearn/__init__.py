@@ -6,11 +6,6 @@ load_dotenv(find_dotenv(usecwd=True))
 
 import letmelearn.setup
 
-import pathlib
-PATH = pathlib.Path(__file__).parent.resolve()
-
-import os
-
 from baseweb.web import server
 
 server.config["TEMPLATES_AUTO_RELOAD"] = True
