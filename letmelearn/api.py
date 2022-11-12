@@ -4,12 +4,16 @@ logger = logging.getLogger(__name__)
 from flask         import request
 from flask_restful import Resource
 
-from letmelearn import api
+from letmelearn import api, data
 
 class Hello(Resource):
   def get(self):
     name = request.args["name"]
     logger.info(f"got hello request from {name}")
-    return { "message" : f"Hello, {name}" }
+    try:
+      greeting = data.db["greetings"].find_one({"name" : name})["greeting"]
+    except TypeError:
+      greeting = "Hello Stranger..."
+    return { "message" : greeting.format(name=name) }
 
 api.add_resource(Hello, "/api/hello")

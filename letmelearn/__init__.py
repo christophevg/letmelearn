@@ -1,5 +1,9 @@
 __version__ = "0.0.2"
 
+# load the environment variables for this setup
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv(usecwd=True))
+
 import letmelearn.setup
 
 import pathlib
