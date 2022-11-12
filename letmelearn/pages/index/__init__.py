@@ -14,14 +14,15 @@ from flask_restful import Resource
 
 from baseweb.rest import api
 
-from letmelearn.data import db
+# from letmelearn.data import db
 
 class Hello(Resource):
   def get(self):
     name = request.args["name"]
     logger.info(f"got hello request from {name}")
     try:
-      greeting = db["greetings"].find_one({"name" : name})["greeting"]
+      # greeting = db["greetings"].find_one({"name" : name})["greeting"]
+      greeting = "dummy {name}"
     except TypeError:
       greeting = "Hello Stranger..."
     return { "message" : greeting.format(name=name) }
