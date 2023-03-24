@@ -39,6 +39,18 @@ DB_NAME = DB_CONN.split("/")[-1].split("?")[0]
 
 db = MongoClient(DB_CONN)[DB_NAME]
 
+# register components
+
+from baseweb.interface import register_component
+
+HERE = os.path.dirname(__file__)
+COMPONENTS = os.path.join(HERE, "components")
+for component in [
+  "navigation"
+]:
+  register_component(f"{component}.js", COMPONENTS)
+
+
 # expose baseweb server and perform additional configuration
 from baseweb.web import server
 
