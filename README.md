@@ -34,8 +34,8 @@ So, the setup/architecture of this application will be my (currently) prefered o
     <p align="center">
       <img src="https://raw.githubusercontent.com/christophevg/letmelearn/master/media/hello-pwa.png">
     </p>  
-  - [ ] Add login + OAuth/OpenIDC
-  - [ ] Add support for Google Accounts
+  - [x] Add login + OAuth/OpenIDC
+  - [x] Add support for Google Accounts
 - [ ] Implement application logic
   - [ ] Implement "learn a set"
   - [ ] Implement "create a set"

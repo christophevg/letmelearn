@@ -1,0 +1,5 @@
+- db connection failure
+  - generic error catch-all
+    - all API calls
+    - start up
+  - generic error reporting
