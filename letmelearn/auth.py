@@ -66,10 +66,11 @@ def load_user(email):
 # setup OATK infrastructure
 
 from flask import Response, abort
-from flask_restful import Resource, Api
+from flask_restful import Resource
 
 from baseweb.interface import register_external_script
 from baseweb.config    import app
+from baseweb.rest      import api
 
 import oatk.js
 from oatk import OAuthToolkit
@@ -98,9 +99,6 @@ def authenticated(func):
       return func(*args, **kwargs)
     abort(401)
   return wrapper
-
-# API set up
-api = Api(server)
 
 # setup oatk
 auth = OAuthToolkit()
