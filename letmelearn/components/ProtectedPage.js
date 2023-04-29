@@ -10,7 +10,13 @@ Vue.component("ProtectedPage", {
       <v-spacer></v-spacer>
       <slot name="subheader" v-if="!show_extended"></slot>
       <v-spacer></v-spacer>
-      <v-btn @click="logout()" flat icon><v-icon>close</v-icon></v-btn>
+  
+      <v-tooltip left>
+        <template v-slot:activator="{ on }">
+          <v-btn @click="logout()" flat icon v-on="on"><v-icon>close</v-icon></v-btn>
+        </template>
+        <span>log out</span>
+      </v-tooltip>
 
       <template v-slot:extension v-if="show_extended">
         <slot name="subheader"></slot>
