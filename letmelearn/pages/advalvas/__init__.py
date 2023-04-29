@@ -7,4 +7,4 @@ import os
 
 from baseweb.interface import register_component
 
-register_component("home.js", os.path.dirname(__file__))
+register_component("advalvas.js", os.path.dirname(__file__))

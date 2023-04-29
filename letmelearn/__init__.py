@@ -67,4 +67,4 @@ register_external_script(f"/app/static/auth.js")
 
 logger.debug("loading pages...")
 
-import letmelearn.pages.home
+import letmelearn.pages.advalvas
