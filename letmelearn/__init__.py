@@ -42,15 +42,17 @@ db = MongoClient(DB_CONN)[DB_NAME]
 
 # register components
 
-from baseweb.interface import register_component
+from baseweb.interface import register_component, register_external_script, register_static_folder
 
 HERE = os.path.dirname(__file__)
+
+register_static_folder(os.path.join(HERE, "static"))
+
 COMPONENTS = os.path.join(HERE, "components")
 for component in [
   "navigation"
 ]:
   register_component(f"{component}.js", COMPONENTS)
-
 
 # expose baseweb server and perform additional configuration
 from baseweb.web import server
@@ -60,6 +62,8 @@ server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 
 import letmelearn.auth
 
+register_external_script(f"/app/static/auth.js")
+
 logger.debug("loading pages...")
 
-import letmelearn.pages.index
+import letmelearn.pages.home
