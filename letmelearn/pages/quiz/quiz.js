@@ -1,6 +1,10 @@
 var Quiz = {
   template : `
 <ProtectedPage>
+  <template v-slot:subheader>
+    <TopicSelector/>
+  </template>
+
   <h1>Quiz...</h1>
   
 </ProtectedPage>

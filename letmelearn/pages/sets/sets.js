@@ -1,8 +1,12 @@
 var Sets = {
   template : `
 <ProtectedPage>
-  <h1>Sets...</h1>
+  <template v-slot:subheader>
+    <TopicSelector/>
+  </template>
   
+  <h1>Sets...</h1>
+  {{ selected }}
 </ProtectedPage>
 `,
   navigation: {
@@ -11,6 +15,11 @@ var Sets = {
     text:    "Sets",
     path:    "/sets",
     index:   2
+  },
+  computed: {
+    selected: function() {
+      return store.state.sets.selected;
+    }
   }
 };
 

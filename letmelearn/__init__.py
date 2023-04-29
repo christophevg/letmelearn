@@ -51,7 +51,8 @@ register_static_folder(os.path.join(HERE, "static"))
 COMPONENTS = os.path.join(HERE, "components")
 for component in [
   "navigation",
-  "ProtectedPage"
+  "ProtectedPage",
+  "SetsStore"
 ]:
   register_component(f"{component}.js", COMPONENTS)
 
@@ -62,6 +63,7 @@ server.config["TEMPLATES_AUTO_RELOAD"] = True
 server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 
 import letmelearn.auth
+import letmelearn.api
 
 register_external_script(f"/app/static/auth.js")
 
