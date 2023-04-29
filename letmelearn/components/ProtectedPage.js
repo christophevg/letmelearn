@@ -4,7 +4,7 @@ Vue.component("ProtectedPage", {
   <div v-if="session">
     <v-toolbar flat>
       <v-avatar>
-        <img :src="session.picture" :alt="session.name">
+        <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
       </v-avatar>
       <v-toolbar-title>Hi {{ session.name }}! 👋</v-toolbar-title>
       <v-spacer></v-spacer>
