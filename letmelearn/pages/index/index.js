@@ -1,11 +1,16 @@
 var Index = {
   template : `
 <div>
-  <h1>Hello World</h1>
-  <div>
-    <vue-form-generator ref="vfg" :schema="schema" :model="model" :options="formOptions" @validated="handleValidation"></vue-form-generator>
-    <v-btn :loading="working" @click="get()" class="primary" :disabled="isInvalid">submit</v-btn>
-  </div>  
+  <div v-if="session">
+    {{ session }}
+  </div>
+
+  <v-btn @click="login()">log in using Google...</v-btn>
+  <v-btn @click="create_session()">create_session</v-btn>
+  <v-btn @click="get_session()">get_session</v-btn>
+  <v-btn @click="drop_session()">drop_session</v-btn>
+  <v-btn @click="logout()">forget token</v-btn>
+  
 </div>
 `,
   navigation: {
@@ -15,72 +20,76 @@ var Index = {
     path:    "/",
     index:   1
   },
+  mounted: function() {
+    // setup oatk
+    window.oatk.using_provider(store.state.config.oauth.provider);
+    window.oatk.using_client_id(store.state.config.oauth.client_id);
+    window.oatk.apply_flow("implicit");
+    // re-establish session or create it from a token
+    var self = this;
+    this.get_session(function(){
+      console.log("could not get a session");
+      // no session handler
+      // if we have a token ... try to re-establish session using the token
+      if(self.have_authenticated_user) {
+        console.log("using token to create session...");
+        self.create_session();
+      }
+    });
+  },
   computed: {
-    isInvalid: function() {
-      if( ! this.isValid ) { return true; }
-      return this.model["name"] == "";
+    have_authenticated_user: function() {
+      this.refresh;
+      return oatk.have_authenticated_user();
+    },
+    user: function() {
+      this.refresh;
+      return oatk.get_user_info();
     }
   },
   methods: {
-    handleValidation:function(isValid, errors){
-      this.isValid = isValid;
+    login: function() {
+      oatk.login();
     },
-    get: function() {
+    logout: function() {
+      var self = this;
+      oatk.logout(function(){
+        self.refresh++; // force recompute
+      });
+    },
+    create_session: function() {
+      var self = this;
+      oatk.http.postJSON("/api/session", {}, function(result) {
+        self.session = result;
+      });
+    },
+    get_session: function(on_error) {
       var self = this;
       $.ajax({
-        url: "/api/hello",
-        type: "get",
-        data: { 
-          name: this.model["name"], 
+        type: "GET",
+        url: "/api/session",
+        success: function(result) {
+          self.session = result;
         },
-        success: function(response) {
-          self.working = false;
-          app.$notify({
-            group: "notifications",
-            title: "Response...",
-            text:  response.message,
-            type:  "success",
-            duration: 10000
-          });
-        },
-        error: function(response) {
-          app.$notify({
-            group: "notifications",
-            title: "Could not save user...",
-            text:  response.responseText,
-            type:  "warn",
-            duration: 10000
-          });
-          self.working = false;
+        error: on_error,
+        dataType: "json"
+      });
+    },
+    drop_session: function() {
+      this.session = null;
+      $.ajax({
+        type: "DELETE",
+        url: "/api/session",
+        success: function(result) {
+          console.log("session dropped");
         }
       });
     }
   },
-  data: function() {
+  data() {
     return {
-      working: false,
-      isValid : true,
-      model: {
-        "name": ""
-      },
-      schema: {
-        fields: [
-          {
-            type: "input",
-            inputType: "text",
-            label: "Name",
-            model: "name",
-            readonly: false,
-            required: true,
-            placeholder: "Your name",
-            validator: VueFormGenerator.validators.string
-          }
-        ]
-      },
-      formOptions: {
-        validateAfterLoad: false,
-        validateAfterChanged: true
-      }
+      refresh: 0,
+      session: null
     }
   }
 };

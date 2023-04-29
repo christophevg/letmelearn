@@ -9,6 +9,7 @@ eventlet.monkey_patch()
 # load the environment variables for this setup from .env file
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(".env.local"))
 
 import logging
 logger = logging.getLogger(__name__)
@@ -56,6 +57,8 @@ from baseweb.web import server
 
 server.config["TEMPLATES_AUTO_RELOAD"] = True
 server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
+
+import letmelearn.auth
 
 logger.debug("loading pages...")
 
