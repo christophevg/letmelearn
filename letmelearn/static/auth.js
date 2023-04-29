@@ -2,16 +2,6 @@ store.registerModule("auth", {
   state: {
     session: null
   },
-  getters: {
-    have_authenticated_user: function(state) {
-      this.refresh;
-      return oatk.have_authenticated_user();
-    },
-    user: function() {
-      this.refresh;
-       return oatk.get_user_info(state);
-    }
-  },
   actions: {
     login: function(context) {
       oatk.login();
@@ -31,7 +21,7 @@ store.registerModule("auth", {
       context.dispatch("get_session", function() {
         // no session handler
         // if we have a token ... try to re-establish session using the token
-        if(context.getters.have_authenticated_user) {
+        if(oatk.have_authenticated_user()) {
           context.dispatch("create_session");
         }
       });
