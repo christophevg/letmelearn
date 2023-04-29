@@ -37,7 +37,7 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Add login + OAuth/OpenIDC
   - [x] Add support for Google Accounts
 - [ ] Implement application logic
-  - [ ] Implement "learn a set"
   - [ ] Implement "create a set"
+  - [ ] Implement "learn a set"
   - [ ] Implement "invitations"
   - [ ] Implement "import sets"
