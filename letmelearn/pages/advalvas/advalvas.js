@@ -11,11 +11,6 @@ var Home = {
     text:    "Ad valvas",
     path:    "/",
     index:   1
-  },
-  computed: {
-    session : function() {
-      return store.state.auth.session;
-    }
   }
 };
 
