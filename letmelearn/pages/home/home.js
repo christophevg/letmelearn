@@ -1,14 +1,9 @@
 var Home = {
   template : `
-<div>
-  <div v-if="session">
-    {{ session }} <v-btn @click="logout()">log out</v-btn>
-  </div>
-    
-  <div v-else>
-    <v-btn @click="login()">log in using Google...</v-btn>
-  </div>  
-</div>
+<ProtectedPage>
+  <h1>Ad Valvas...</h1>
+  
+</ProtectedPage>
 `,
   navigation: {
     section: "learn",
@@ -21,10 +16,6 @@ var Home = {
     session : function() {
       return store.state.auth.session;
     }
-  },
-  methods: {
-    login : function() { store.dispatch("login");  },
-    logout: function() { store.dispatch("logout"); }
   }
 };
 

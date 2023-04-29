@@ -50,7 +50,8 @@ register_static_folder(os.path.join(HERE, "static"))
 
 COMPONENTS = os.path.join(HERE, "components")
 for component in [
-  "navigation"
+  "navigation",
+  "ProtectedPage"
 ]:
   register_component(f"{component}.js", COMPONENTS)
 
