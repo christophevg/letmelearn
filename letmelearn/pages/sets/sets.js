@@ -3,6 +3,10 @@ var Sets = {
 <ProtectedPage>
   <template v-slot:subheader>
     <TopicSelector/>
+    <v-btn flat icon @click="create()">
+      <v-icon>add</v-icon>
+    </v-btn>
+  
   </template>
   
   <h1>Sets...</h1>
@@ -19,6 +23,11 @@ var Sets = {
   computed: {
     selected: function() {
       return store.state.sets.selected;
+    }
+  },
+  methods: {
+    create: function() {
+      console.log("TODO");
     }
   }
 };
