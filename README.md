@@ -27,7 +27,7 @@ So, the setup/architecture of this application will be my (currently) prefered o
     ![Hello World, the sequel](media/hello-world-2.png)
   - [x] Connect api to MongoDB Cloud instance
     ![Hello World, the sequel](media/hello-world-3.png)
-- [ ] Apply baseweb + sppwa + oauth
+- [x] Apply baseweb + sppwa + oauth
   - [x] Apply baseweb
     ![Hello baseweb](media/hello-baseweb.png)
   - [x] Enable PWA usage
@@ -37,7 +37,6 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Add login + OAuth/OpenIDC
   - [x] Add support for Google Accounts
 - [ ] Implement application logic
-  - [ ] Implement "create a set"
+  - [x] Implement "create a set"
+  - [x] Implement "import sets"
   - [ ] Implement "learn a set"
-  - [ ] Implement "invitations"
-  - [ ] Implement "import sets"
