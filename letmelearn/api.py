@@ -10,7 +10,7 @@ from letmelearn.auth import authenticated
 class Sets(Resource):
   @authenticated
   def get(self):    
-    return db.sets.find({"user" : current_user["email"] })
+    return list(db.sets.find({ "user": current_user.email }, { "user": False }))
 
 api.add_resource(Sets, "/api/sets", endpoint="sets")
 
@@ -19,7 +19,7 @@ class Set(Resource):
   def post(self, id):
     db.sets.insert_one({
       "_id"  : id,
-      "user" : current_user["email"],
+      "user" : current_user.email,
       "items": request.json
     })
     return True
@@ -28,14 +28,14 @@ class Set(Resource):
   def get(self, id):    
     return db.sets.find_one({
       "_id": id,
-      "user": current_user["email"]
+      "user": current_user.email
     })
 
   @authenticated
   def put(self, id):
     db.sets.update_one({
       "_id"  : id,
-      "user" : current_user["email"],
+      "user" : current_user.email,
       "items": request.json
     })
     return True

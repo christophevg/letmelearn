@@ -1,10 +1,6 @@
 store.registerModule("sets", {
   state: {
-    sets: {
-      "topic 1" : [],
-      "topic 2" : [],
-      "topic 3" : []
-    },
+    sets: [],
     selected: null
   },
   getters: {
@@ -16,19 +12,23 @@ store.registerModule("sets", {
       }
     },
     topics: function(state) {
-      return Object.keys(state.sets);
+      return state.sets.map(function(item) {
+        return item._id;
+      });
     }
   },
   actions: {
     load_sets: function(context) {
-      $.ajax({
-        type: "GET",
-        url: "/api/sets",
-        success: function(result) {
-          context.commit("sets", result);
-        },
-        dataType: "json"
-      });
+      if(context.getters.topics.length < 1) {
+        $.ajax({
+          type: "GET",
+          url: "/api/sets",
+          success: function(result) {
+            context.commit("sets", result);
+          },
+          dataType: "json"
+        });
+      }
     },
     clear: function(context) {
       context.commit("sets", []);
@@ -51,6 +51,9 @@ Vue.component("TopicSelector", {
               :persistent-hint="show"
               label="" v-model="selected"></v-select>
 `,
+  mounted: function() {
+    store.dispatch("load_sets");
+  },
   computed: {
     show: function() {
       return this.selected == null;
