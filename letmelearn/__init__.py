@@ -52,7 +52,7 @@ COMPONENTS = os.path.join(HERE, "components")
 for component in [
   "navigation",
   "ProtectedPage",
-  "SetsStore"
+  "TopicsStore"
 ]:
   register_component(f"{component}.js", COMPONENTS)
 
@@ -68,7 +68,7 @@ import letmelearn.api
 register_external_script(f"/app/static/auth.js")
 
 import letmelearn.pages.advalvas
-import letmelearn.pages.sets
+import letmelearn.pages.topics
 import letmelearn.pages.quiz
 import letmelearn.pages.about
 

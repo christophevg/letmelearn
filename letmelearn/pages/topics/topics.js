@@ -1,4 +1,4 @@
-var Sets = {
+var Topics = {
   template : `
 <ProtectedPage>
   <template v-slot:subheader>
@@ -9,20 +9,20 @@ var Sets = {
   
   </template>
   
-  <h1>Sets...</h1>
+  <h1>Topics...</h1>
   {{ selected }}
 </ProtectedPage>
 `,
   navigation: {
     section: "learn",
     icon:    "edit",
-    text:    "Sets",
-    path:    "/sets",
+    text:    "Topics",
+    path:    "/topics",
     index:   2
   },
   computed: {
     selected: function() {
-      return store.state.sets.selected;
+      return store.state.topics.selected;
     }
   },
   methods: {
@@ -32,4 +32,4 @@ var Sets = {
   }
 };
 
-Navigation.add(Sets);
+Navigation.add(Topics);

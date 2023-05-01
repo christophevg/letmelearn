@@ -7,4 +7,4 @@ import os
 
 from baseweb.interface import register_component
 
-register_component("sets.js", os.path.dirname(__file__))
+register_component("topics.js", os.path.dirname(__file__))

@@ -1,42 +1,42 @@
-store.registerModule("sets", {
+store.registerModule("topics", {
   state: {
-    sets: [],
+    topics: [],
     selected: null
   },
   getters: {
-    set : function(state) {
+    topic : function(state) {
       return function(name) {
-        return state.sets.find(function(set) {
-          return set.name == name;
+        return state.topics.find(function(topic) {
+          return topic.name == name;
         });
       }
     },
     topics: function(state) {
-      return state.sets.map(function(item) {
+      return state.topics.map(function(item) {
         return item._id;
       });
     }
   },
   actions: {
-    load_sets: function(context) {
+    load_topics: function(context) {
       if(context.getters.topics.length < 1) {
         $.ajax({
           type: "GET",
-          url: "/api/sets",
+          url: "/api/topics",
           success: function(result) {
-            context.commit("sets", result);
+            context.commit("topics", result);
           },
           dataType: "json"
         });
       }
     },
     clear: function(context) {
-      context.commit("sets", []);
+      context.commit("topics", []);
     }
   },
   mutations: {
-    sets: function(state, new_sets) {
-      Vue.set(state, "sets", new_sets);
+    topics: function(state, new_topics) {
+      Vue.set(state, "topics", new_topics);
     },
     selected_topic: function(state, selection) {
       Vue.set(state, "selected", selection);
@@ -52,7 +52,7 @@ Vue.component("TopicSelector", {
               label="" v-model="selected"></v-select>
 `,
   mounted: function() {
-    store.dispatch("load_sets");
+    store.dispatch("load_topics");
   },
   computed: {
     show: function() {
@@ -66,7 +66,7 @@ Vue.component("TopicSelector", {
     },
     selected: {
       get() {
-        return store.state.sets.selected;
+        return store.state.topics.selected;
       },
       set(selection) {
         return store.commit("selected_topic", selection);
