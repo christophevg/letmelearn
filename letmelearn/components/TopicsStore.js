@@ -1,7 +1,8 @@
 store.registerModule("topics", {
   state: {
     topics: [],
-    selected: null
+    selected: null,
+    quiz: []
   },
   getters: {
     topic : function(state) {
@@ -15,6 +16,26 @@ store.registerModule("topics", {
       return state.topics.map(function(topic) {
         return { "text" : topic.name, "value" : topic }
       });
+    },
+    shuffled : function(state) {
+      return function(topic) {
+        return topic.items.map(function(item){
+          return {
+            key: item.key,
+            value: item.value,
+            choices: store.getters.random_values(topic, 2, item.value)
+                                  .concat([item.value])
+                                  .sort(()=>Math.random()-0.5)
+          };
+        }).sort( () => Math.random() - 0.5);
+      }
+    },
+    random_values: function(state) {
+      return function(topic, amount, excluding) {
+        return topic.items.map(function(item){ return item.value; })
+        .filter(function(item) { return item.value != excluding })
+        .sort( () => Math.random() - 0.5).slice(0, amount);
+      }
     }
   },
   actions: {
@@ -85,6 +106,12 @@ store.registerModule("topics", {
           context.commit("added_item", adding);
         }
       });
+    },
+    create_quiz: function(context, topic) {
+      context.commit("quiz", context.getters.shuffled(topic));
+    },
+    clear_quiz: function(context, topic) {
+      context.commit("quiz", []);
     }
   },
   mutations: {
@@ -124,6 +151,15 @@ store.registerModule("topics", {
       state.topics.find(function(topic) {
         return topic._id == added.topic._id;
       }).items.push(added.item);
+    },
+    quiz: function(state, new_quiz) {
+      Vue.set(state, "quiz", new_quiz);
+    },
+    mark_correct: function(state) {
+      state.quiz.shift();
+    },
+    mark_incorrect: function(state) {
+      state.quiz.push(state.quiz.shift())
     }
   }
 });
