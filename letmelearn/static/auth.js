@@ -39,7 +39,11 @@ store.registerModule("auth", {
     },
     create_session: function(context) {
       oatk.http.postJSON("/api/session", {}, function(result) {
+        console.log("success", result);
         context.commit("session", result);
+      }, function(result) {
+        console.log("error", result);
+        oatk.logout();
       });
     },
     drop_session: function(context) {
