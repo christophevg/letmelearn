@@ -21,6 +21,13 @@ var Quiz = {
 
   <h1>Quiz...</h1>
   
+    <v-progress-linear
+        size="items_count"
+        v-model="pct_correct"
+        :buffer-value="pct_asked"
+        buffer
+        v-if="playing"></v-progress-linear>
+  
   <v-layout v-if="question && !result">
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
@@ -60,15 +67,6 @@ var Quiz = {
     </v-flex>
   </v-layout>
     
-  <v-footer class="pa-3" absolute v-if="playing">
-    <v-progress-linear
-        size="items_count"
-        v-model="pct_correct"
-        :buffer-value="pct_asked"
-        buffer
-      ></v-progress-linear>
-  </v-footer>
-  
 </ProtectedPage>
 `,
   navigation: {
