@@ -1,5 +1,5 @@
 Vue.component("ProtectedPage", {
-  template : `
+  template: `
 <div>
   <div v-if="session">
     <v-toolbar flat :prominent="show_extended" :extended="show_extended">
@@ -26,7 +26,48 @@ Vue.component("ProtectedPage", {
   </div>
     
   <div v-else>
-    <h1>✋ To access Let me Learn, please <v-btn @click="login()">log in using Google...</v-btn></h1>
+    
+    <v-layout>
+      <v-flex xs12 sm6 offset-sm3>
+        <v-card>
+          <v-img
+            src="/app/static/images/students.png"
+            aspect-ratio="2.75"
+          ></v-img>
+
+          <v-card-title primary-title>
+            <div>
+              <h3 class="headline mb-0">✋ To access Let me Learn,...</h3>
+              <p>
+
+                Hi there. Welcome to <i>Let me Learn</i>. If you have been
+                given access before, you can proceed below and log in using
+                your Google account.
+
+              </p>
+  
+              <p>
+  
+                If you haven't been granted access yet, you'll have to contact
+                me 😉 Currently <i>Let me Learn</i> is a closed community. The
+                <a href="/about">about page</a> contains a little more
+                information about what's behind the curve.
+  
+              </p>
+  
+            </div>
+          </v-card-title>
+
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn @click="login()">log in using Google...</v-btn>
+            <v-spacer></v-spacer>
+            <br><br>
+          </v-card-actions>
+        </v-card>
+      </v-flex>
+    </v-layout>
+
     <slot name="public"></slot>
   </div>  
 </div>
