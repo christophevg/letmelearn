@@ -41,6 +41,10 @@ Vue.component("ProtectedPage", {
   },
   methods: {
     login : function() { store.dispatch("login");  },
-    logout: function() { store.dispatch("logout"); }
+    logout: function() {
+      if(confirm("Logging out... Are you sure?")) {
+        store.dispatch("logout");
+      }
+    }
   }
 });
