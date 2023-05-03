@@ -80,5 +80,27 @@ class Items(Resource):
       {
         "$push" : { "items" : request.json }
       })
+  @authenticated
+  def patch(self, id):
+    if "original" in request.json:
+      # update
+      return db.topics.find_one_and_update(
+        {
+          "_id"       : id,
+          "user"      : current_user.email,
+          "items.key" : request.json["original"]["key"]
+        },
+        {
+          "$set" : {
+            "items.$.key"   : request.json["key"],
+            "items.$.value" : request.json["value"],
+          }
+        })
+    else:
+      # delete
+      return db.topics.find_one_and_update(
+        { "_id" : id, "user" : current_user.email },
+        { "$pull" : { "items" : request.json }}
+      )
 
 api.add_resource(Items, "/api/topics/<id>/items", endpoint="items")
