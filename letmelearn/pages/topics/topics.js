@@ -36,8 +36,8 @@ var Topics = {
           >
             <template v-slot:items="props">
               <td>{{ props.item.key }}</td>
-              <td>{{ props.item.value }}</td>
-              <td width="95px" class="justify-right">
+              <td style="padding: 0px">{{ props.item.value }}</td>
+              <td width="48px" class="justify-right" style="padding: 0px;">
                 <v-icon small class="mr-2" @click="edit_item(props.item)">edit</v-icon>
                 <v-icon small @click="delete_item(props.item)" color="red">delete</v-icon>
               </td>
