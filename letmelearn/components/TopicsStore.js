@@ -1,8 +1,8 @@
 store.registerModule("topics", {
   state: {
-    topics: [],
+    topics  : [],
     selected: null,
-    quiz: []
+    quiz    : []
   },
   getters: {
     topic : function(state) {
@@ -18,23 +18,28 @@ store.registerModule("topics", {
       });
     },
     shuffled : function(state) {
-      return function(topic) {
+      return function(topic, value2key) {
         return topic.items.map(function(item){
+          var key   = value2key ? item.value : item.key,
+              value = value2key ? item.key   : item.value,
+              take  = value2key ? "keys"     : "values";
           return {
-            key: item.key,
-            value: item.value,
-            choices: store.getters.random_values(topic, 2, item.value)
-                                  .concat([item.value])
+            key    : key,
+            value  : value,
+            choices: store.getters.random(topic, take, 2, value)
+                                  .concat([value])
                                   .sort(()=>Math.random()-0.5)
           };
-        }).sort( () => Math.random() - 0.5);
+        }).sort(() => Math.random() - 0.5);
       }
     },
-    random_values: function(state) {
-      return function(topic, amount, excluding) {
-        return topic.items.map(function(item){ return item.value; })
-        .filter(function(item) { return item.value != excluding })
-        .sort( () => Math.random() - 0.5).slice(0, amount);
+    random: function(state) {
+      return function(topic, take, amount, excluding) {
+        return topic.items.map(function(item){
+          return take == "values" ? item.value : item.key;
+        })
+        .filter(function(item) { return item != excluding; })
+        .sort(() => Math.random() - 0.5).slice(0, amount);
       }
     }
   },
@@ -45,8 +50,12 @@ store.registerModule("topics", {
           type: "GET",
           url: "/api/topics",
           success: function(result) {
-            console.log("loaded topics", result);
             context.commit("topics", result);
+            // adopt hash
+            if(window.location.hash) {
+              var t = context.getters.topic(window.location.hash.substring(1));
+              context.commit("selected_topic", t);
+            }
           },
           dataType: "json"
         });
@@ -107,8 +116,32 @@ store.registerModule("topics", {
         }
       });
     },
-    create_quiz: function(context, topic) {
-      context.commit("quiz", context.getters.shuffled(topic));
+    update_item: function(context, updating) {
+      $.ajax({
+        type: "PATCH",
+        url: "/api/topics/" + updating.topic._id + "/items",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(updating.update),
+        success: function(result) {
+          context.commit("updated_item", updating);
+        }
+      });      
+    },
+    delete_item: function(context, removing) {
+      $.ajax({
+        type: "PATCH",
+        url: "/api/topics/" + removing.topic._id + "/items",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(removing.removal),
+        success: function(result) {
+          context.commit("removed_item", removing);
+        }
+      });      
+    },
+    create_quiz: function(context, config) {
+      context.commit("quiz", context.getters.shuffled(config.topic, config.value2key));
     },
     clear_quiz: function(context, topic) {
       context.commit("quiz", []);
@@ -120,6 +153,7 @@ store.registerModule("topics", {
     },
     selected_topic: function(state, selection) {
       Vue.set(state, "selected", selection);
+      window.location.hash = selection._id;
     },
     updated_topic: function(state, updated) {
       var new_topic = null;
@@ -137,7 +171,6 @@ store.registerModule("topics", {
     },
     new_topic: function(state, new_topic) {
       state.topics.push(new_topic);
-      console.log("appended", state.topics);
     },
     removed_topic: function(state, removed) {
       state.topics = state.topics.filter(function(topic){
@@ -152,6 +185,23 @@ store.registerModule("topics", {
         return topic._id == added.topic._id;
       }).items.push(added.item);
     },
+    updated_item: function(state, updated) {
+      var item = state.topics.find(function(topic) {
+        return topic._id == updated.topic._id;
+      }).items.find(function(item){
+        return item.key == updated.update.original.key;
+      });
+      Vue.set(item, "key",   updated.update.key);
+      Vue.set(item, "value", updated.update.value);
+    },
+    removed_item: function(state, removed) {
+      var topic = state.topics.find(function(topic) {
+        return topic._id == removed.topic._id;
+      })
+      topic.items = topic.items.filter(function(item){
+        return item.key != removed.removal.key;
+      });
+    },
     quiz: function(state, new_quiz) {
       Vue.set(state, "quiz", new_quiz);
     },
@@ -164,22 +214,21 @@ store.registerModule("topics", {
   }
 });
 
+store.dispatch("load_topics");
+
 Vue.component("TopicSelector", {
   template : `
     <v-select :items="topics"
-              :hint="show_text"
-              :persistent-hint="show"
+              :hint="hint_text"
+              :persistent-hint="show_hint"
               label="" v-model="selected"></v-select>
 `,
-  mounted: function() {
-    store.dispatch("load_topics");
-  },
   computed: {
-    show: function() {
+    show_hint: function() {
       return this.selected == null;
     },
-    show_text: function() {
-      return this.show ? "pick a topic" : "";
+    hint_text: function() {
+      return this.show_hint ? "pick a topic" : "";
     },
     topics: function() {
       return store.getters.topics;

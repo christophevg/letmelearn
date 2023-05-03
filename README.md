@@ -1,4 +1,4 @@
-# Let Me Learn
+# Let me Learn
 
 > a simple app to support learning definitions, words,...
 
@@ -14,9 +14,10 @@ Of course it also included a few personal itches to be scratched:
 
 So, the setup/architecture of this application will be my (currently) prefered one:
 
-* a SP(A/)PWA
-* using OAuth/OpenID Connect for authentication/authorization
-* to access data from a RESTful service
+* a SP(A/)PWA based on Vue(tify)
+* using OAuth/OpenID Connect for authentication by Google
+* using a RESTful service
+* to access documents in MongoDB
 
 ## Implementation Steps
 
@@ -37,6 +38,9 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Add login + OAuth/OpenIDC
   - [x] Add support for Google Accounts
 - [ ] Implement application logic
-  - [x] Implement "create a set"
-  - [x] Implement "import sets"
-  - [ ] Implement "learn a set"
+  - [x] Implement "create a topic"
+  - [x] Implement "import topics"
+  - [x] Implement "learn a topic"
+    <p align="center">
+      <img src="https://raw.githubusercontent.com/christophevg/letmelearn/master/media/letmelearn.png">
+    </p>  

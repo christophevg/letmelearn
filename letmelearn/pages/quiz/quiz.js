@@ -1,5 +1,5 @@
 var Quiz = {
-  template : `
+  template: `
 <ProtectedPage>
   <template v-slot:subheader>
     <TopicSelector/>
@@ -12,21 +12,19 @@ var Quiz = {
     <v-btn flat icon @click="reset" :disabled="!playing">
       <v-icon>replay</v-icon>
     </v-btn>
-<!--
     <v-btn flat icon @click="swap" :disabled="!selected">
       <v-icon>{{ direction_icon }}</v-icon>
     </v-btn>
--->
   </template>
 
   <h1>Quiz...</h1>
   
-    <v-progress-linear
-        size="items_count"
-        v-model="pct_correct"
-        :buffer-value="pct_asked"
-        buffer
-        v-if="playing"></v-progress-linear>
+  <v-progress-linear
+      size="items_count"
+      v-model="pct_correct"
+      :buffer-value="pct_asked"
+      buffer
+      v-if="playing"></v-progress-linear>
   
   <v-layout v-if="question && !result">
     <v-flex xs12 sm6 offset-sm3>
@@ -66,7 +64,27 @@ var Quiz = {
       </v-card>
     </v-flex>
   </v-layout>
-    
+
+  <v-layout v-if="done">
+    <v-flex xs12 sm6 offset-sm3>
+      <v-card>
+        <v-img src="/app/static/images/happy.png" aspect-ratio="2.75"></v-img>
+
+        <v-card-title primary-title>
+          <div>
+            <h3 class="headline mb-0">🎉 All done!</h3>
+          </div>
+        </v-card-title>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-spacer></v-spacer>
+          <br><br>
+        </v-card-actions>
+      </v-card>
+    </v-flex>
+  </v-layout>
+
 </ProtectedPage>
 `,
   navigation: {
@@ -76,6 +94,11 @@ var Quiz = {
     path:    "/quiz",
     index:   3
   },
+  mounted: function() {
+    if(this.selected && this.selected._id != window.location.hash.substring(1)){
+      window.location.hash = this.selected._id;
+    }
+  },
   computed: {
     selected: function() {
       return store.state.topics.selected;
@@ -84,7 +107,7 @@ var Quiz = {
       return store.state.topics.quiz.length > 0;
     },
     direction_icon: function() {
-      return this.left2right ? "arrow_forward" : "arrow_back";
+      return this.value2key ? "arrow_back" : "arrow_forward";
     },
     items_count: function() {
       return this.selected ? this.selected.items.length : 0;
@@ -104,20 +127,26 @@ var Quiz = {
   },
   methods: {
     start : function() {
+      this.done = false;
       this.result = false;
       this.correct = 0;
       this.asked_keys = []
-      store.dispatch("create_quiz", this.selected);      
+      store.dispatch("create_quiz", {
+        topic: this.selected,
+        value2key: this.value2key
+      });
     },
     stop : function() {
       store.dispatch("clear_quiz");
+      this.result = false;
     },
     reset : function() {
       this.stop();
       this.start();
     },
     swap : function() {
-      // this.left2right = !this.left2right;
+      this.value2key = !this.value2key;
+      this.reset();
     },
     answer: function(guess) {
       var self = this;
@@ -145,14 +174,18 @@ var Quiz = {
         store.commit("mark_incorrect");        
       }
       this.result = false;
+      if( ! this.question ) {
+        this.done = true;
+      }
     }
   },
   data: function() {
     return {
-      left2right: true,
+      value2key: false,
       correct: 0,
       result: false,
-      asked_keys: []
+      done: false,
+      asked_keys: [],
     }
   }
 };

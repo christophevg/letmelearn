@@ -1,48 +1,48 @@
 var Topics = {
-  template : `
+  template: `
 <ProtectedPage>
   <template v-slot:subheader>
     <TopicSelector/>
     <v-btn flat icon @click="show_create_topic_dialog">
       <v-icon>add</v-icon>
     </v-btn>
+    <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected">
+      <v-icon>delete</v-icon>
+    </v-btn>
+    <!--
+      <v-btn flat icon @click="rename_dialog = true" :disabled="!selected">
+        <v-icon>edit</v-icon>
+      </v-btn>
+    -->
   </template>
   
   <v-tabs v-model="tab" v-if="selected">
-    <v-tab>{{ selected.name }}</v-tab>
+    <v-tab>
+      Items
+      <v-btn flat icon @click="show_add_item_dialog" :disabled="tab != 0">
+        <v-icon>add</v-icon>
+      </v-btn>
+
+    </v-tab>
     <v-tab>Import</v-tab>
 
     <v-tab-item key="0" fluid>
       <v-card>
         <v-card-text>
-
-<h2>
-  {{ selected.name }}
-<!--
-  <v-btn flat icon @click="rename_dialog = true">
-    <v-icon>edit</v-icon>
-  </v-btn>
--->
-  <v-btn flat icon @click="show_add_item_dialog">
-    <v-icon>add</v-icon>
-  </v-btn>
-  
-  <v-btn flat icon color="red" @click="remove">
-    <v-icon>delete</v-icon>
-  </v-btn>
-</h2>
-
- <v-data-table
-    :headers="headers"
-    :items="selected.items"
-    class="elevation-1"
-  >
-    <template v-slot:items="props">
-      <td>{{ props.item.key }}</td>
-      <td>{{ props.item.value }}</td>
-    </template>
-  </v-data-table>
-
+          <v-data-table
+            :headers="headers"
+            :items="selected.items"
+            class="elevation-1"
+          >
+            <template v-slot:items="props">
+              <td>{{ props.item.key }}</td>
+              <td>{{ props.item.value }}</td>
+              <td width="95px" class="justify-right">
+                <v-icon small class="mr-2" @click="edit_item(props.item)">edit</v-icon>
+                <v-icon small @click="delete_item(props.item)" color="red">delete</v-icon>
+              </td>
+            </template>
+          </v-data-table>
 
         </v-card-text>
       </v-card>      
@@ -115,6 +115,27 @@ var Topics = {
       </v-card>
     </v-form>
   </v-dialog>
+
+  <v-dialog v-model="edit_item_dialog" persistent width="500px">
+    <v-form @submit.prevent="edit_item_dialog = false; update_item()">
+      <v-card>
+        <v-card-title class="headline grey lighten-2" primary-title>
+          Update item...
+        </v-card-title>
+
+        <v-card-text>
+          <v-text-field v-model="editable_item.key" label="Key" ref="edit_item_key"></v-text-field><br>
+          <v-text-field v-model="editable_item.value" label="Value"></v-text-field>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-btn color="secondary" flat @click="editable_item.key = null; edit_item_dialog = false">Cancel</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" flat type="submit">Update...</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-form>
+  </v-dialog>
   
 </ProtectedPage>
 `,
@@ -124,6 +145,11 @@ var Topics = {
     text:    "Topics",
     path:    "/topics",
     index:   2
+  },
+  mounted: function() {
+    if(this.selected && this.selected._id != window.location.hash.substring(1)){
+      window.location.hash = this.selected._id;
+    }
   },
   computed: {
     selected: function() {
@@ -156,8 +182,10 @@ var Topics = {
         })
       }
     },
-    remove: function() {
-      store.dispatch("remove_topic", this.selected);
+    delete_topic: function() {
+      if( confirm("Deleting topic " + this.selected.name + " ... Are you sure?")) {
+        store.dispatch("remove_topic", this.selected);
+      }
     },
     import_topic: function() {
       var items = this.topic_to_import.split("\n").map(function(item_to_import){
@@ -181,7 +209,31 @@ var Topics = {
             value : this.new_item.value
           }
         });
-        this.show_add_item_dialog();
+        this.show_add_item_dialog(); // keep adding until cancel
+      }
+    },
+    edit_item: function(item) {
+      this.editable_item.original = item;
+      this.editable_item.key = item.key;
+      this.editable_item.value = item.value;
+      this.edit_item_dialog = true;
+    },
+    update_item: function() {
+      if(  this.editable_item.key && (
+           this.editable_item.key   != this.editable_item.original.key
+        || this.editable_item.value != this.editable_item.original.value ) ) {
+        store.dispatch("update_item", {
+          topic : this.selected,
+          update: this.editable_item
+        });
+      }
+    },
+    delete_item: function(item) {
+      if( confirm("Deleting item " + item.key + " ... Are you sure?")) {
+        store.dispatch("delete_item",{
+          topic  : this.selected,
+          removal: item        
+        });
       }
     }
   },
@@ -192,24 +244,21 @@ var Topics = {
       rename_dialog: false,
       create_dialog: false,
       add_item_dialog: false,
+      edit_item_dialog: false,
       new_topic_name: null,
       new_item: {
         key: null,
         value: null
       },
+      editable_item: {
+        original: null,
+        key: null,
+        value: null
+      },
       headers: [
-        {
-          text: "Key",
-          align: "left",
-          sortable: true,
-          value: "key"
-        },
-        {
-          text: "Value",
-          align: "left",
-          sortable: true,
-          value: "value"
-        }
+        { text: "Key",   align: "left", sortable: true,  value: "key"   },
+        { text: "Value", align: "left", sortable: true,  value: "value" },
+        { text: "",                     sortable: false, value: "key"   }
       ]
     }
   }
