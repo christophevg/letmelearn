@@ -32,6 +32,7 @@ store.registerModule("auth", {
         url: "/api/session",
         success: function(result) {
           context.commit("session", result);
+          store.dispatch("load_topics");
         },
         error: on_error,
         dataType: "json"
@@ -40,6 +41,7 @@ store.registerModule("auth", {
     create_session: function(context) {
       oatk.http.postJSON("/api/session", {}, function(result) {
         context.commit("session", result);
+        store.dispatch("load_topics");
       }, function(result) {
         console.warn("login using access token produced error:", result);
         oatk.logout();

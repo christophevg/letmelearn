@@ -214,8 +214,6 @@ store.registerModule("topics", {
   }
 });
 
-store.dispatch("load_topics");
-
 Vue.component("TopicSelector", {
   template : `
     <v-select :items="topics"
