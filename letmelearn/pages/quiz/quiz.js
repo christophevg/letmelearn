@@ -15,6 +15,9 @@ var Quiz = {
     <v-btn flat icon @click="swap" :disabled="!selected">
       <v-icon>{{ direction_icon }}</v-icon>
     </v-btn>
+    <v-btn flat icon @click="toggle_style" :disabled="!selected">
+      <v-icon>{{ style_icon }}</v-icon>
+    </v-btn>
   </template>
 
   <h1>Quiz...</h1>
@@ -25,8 +28,53 @@ var Quiz = {
       :buffer-value="pct_asked"
       buffer
       v-if="playing"></v-progress-linear>
-  
-  <v-layout v-if="question && !result">
+
+  <!-- text -->
+
+  <v-layout v-if="question && !multiplechoice && !result">
+    <v-flex xs12 sm6 offset-sm3>
+      <v-form @submit.prevent="answer(written)">
+        <v-card>
+          <v-card-title primary-title class="justify-center">
+            <h3 class="headline mb-0">{{ question.key }}</h3><br>
+            <div style="width:100%; text-align:center;margin-top:20px;">
+              <v-text-field ref="written" v-model="written"></v-text-field>
+            </div>
+          </v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn type="submit">ok</v-btn>
+            <v-spacer></v-spacer>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-flex>
+  </v-layout>
+
+  <v-layout v-if="!multiplechoice && result">
+    <v-flex xs12 sm6 offset-sm3>
+      <v-form @submit.prevent="next_question">
+        <v-card>
+          <v-card-title primary-title class="justify-center">
+            <h3 class="headline mb-0">{{ question.key }}</h3><br>
+            <div style="width:100%; text-align:center;margin-top:20px;">
+              <v-text-field ref="written_result" v-model="written" :error="!result.correct" :background-color="result.outcome"></v-text-field>
+              <h1 v-if="!result.correct" style="color:green">{{ question.value }}</h1>
+            </div>
+          </v-card-title>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn type="submit">next...</v-btn>
+            <v-spacer></v-spacer>
+          </v-card-actions>
+        </v-card>
+      </v-form>
+    </v-flex>
+  </v-layout>
+
+  <!-- multiple choice -->
+
+  <v-layout v-if="question && multiplechoice && !result">
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
@@ -43,7 +91,7 @@ var Quiz = {
     </v-flex>
   </v-layout>
 
-  <v-layout v-if="result">
+  <v-layout v-if="result && multiplechoice">
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
@@ -56,9 +104,7 @@ var Quiz = {
         </v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="next_question">
-            next...
-          </v-btn>
+          <v-btn @click="next_question">next...</v-btn>
           <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
@@ -109,6 +155,9 @@ var Quiz = {
     direction_icon: function() {
       return this.value2key ? "arrow_back" : "arrow_forward";
     },
+    style_icon: function() {
+      return this.multiplechoice ? "list" : "edit";
+    },
     items_count: function() {
       return this.selected ? this.selected.items.length : 0;
     },
@@ -135,10 +184,16 @@ var Quiz = {
         topic: this.selected,
         value2key: this.value2key
       });
+      if( !this.multiplechoice ) {
+        setTimeout(() => {
+          this.$refs.written.focus();
+        }, 200);
+      }
     },
     stop : function() {
       store.dispatch("clear_quiz");
       this.result = false;
+      this.written = "";
     },
     reset : function() {
       this.stop();
@@ -148,23 +203,32 @@ var Quiz = {
       this.value2key = !this.value2key;
       this.reset();
     },
+    toggle_style: function() {
+      this.multiplechoice = !this.multiplechoice;
+      this.reset();
+    },
     answer: function(guess) {
       var self = this;
       this.result = {
         key: this.question.key,
         correct: this.question.value == guess,
         choices: this.question.choices,
-        outcome: this.question.choices.map(function(choice){
+        outcome: this.multiplechoice ? this.question.choices.map(function(choice){
           if( choice == self.question.value ) { return "success"};
           if( choice == guess && guess != self.question.value ) { return "error"};
           return null;
-        })
+        }) : ( guess == self.question.value ? "success" : "error ")
       }
       if(this.asked_keys.indexOf(this.question.key) === -1) {
         this.asked_keys.push(this.question.key);
       }
       if(this.result.correct) {
         this.correct += 1;
+      }
+      if( !this.multiplechoice ) {
+        setTimeout(() => {
+          this.$refs.written_result.focus();
+        }, 200);
       }
     },
     next_question: function() {
@@ -174,14 +238,22 @@ var Quiz = {
         store.commit("mark_incorrect");        
       }
       this.result = false;
+      this.written = "";
       if( ! this.question ) {
         this.done = true;
+      }
+      if( !this.multiplechoice && !this.done ) {
+        setTimeout(() => {
+          this.$refs.written.focus();
+        }, 200);
       }
     }
   },
   data: function() {
     return {
       value2key: false,
+      multiplechoice: true,
+      written: "",
       correct: 0,
       result: false,
       done: false,
