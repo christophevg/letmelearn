@@ -2,7 +2,7 @@ var Quiz = {
   template: `
 <ProtectedPage>
   <template v-slot:subheader>
-    <TopicSelector/>
+    <TopicSelector @change="change_topic"/>
     <v-btn flat icon @click="start" :disabled="!selected || playing">
       <v-icon>play_arrow</v-icon>
     </v-btn>
@@ -198,6 +198,9 @@ var Quiz = {
     reset : function() {
       this.stop();
       this.start();
+    },
+    change_topic: function(new_topic) {
+      if(this.question) { this.reset(); }
     },
     swap : function() {
       this.value2key = !this.value2key;

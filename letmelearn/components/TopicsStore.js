@@ -219,8 +219,16 @@ Vue.component("TopicSelector", {
     <v-select :items="topics"
               :hint="hint_text"
               :persistent-hint="show_hint"
-              label="" v-model="selected"></v-select>
+              label=""
+              @change="changed_topic"
+              v-model="selected"></v-select>
 `,
+  methods: {
+    changed_topic: function() {
+      console.log("changed topic");
+      this.$emit("change", store.state.topics.selected);
+    }
+  },
   computed: {
     show_hint: function() {
       return this.selected == null;
