@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import os
 
 from functools import wraps
@@ -47,6 +50,19 @@ class User(UserMixin):
       "picture" : picture
     })
     return clazz(email, name, picture)
+
+  def update(self, email=None, name=None, picture=None, **kwargs):
+    self.name    = name
+    self.picture = picture
+    db.users.update_one({
+      "_id" : self.email
+    },
+    {
+      "$set" : {
+        "name"    : self.name,
+        "picture" : self.picture
+      }
+    })
 
   @classmethod
   def find(clazz, email):
@@ -111,7 +127,9 @@ class Session(Resource):
     claims = auth.decode(request.headers["Authorization"][7:])
     user = User.find(claims["email"])
     if not user:
-      user = User.create(**claims)
+      logger.warn(f"unknown user: {claims}")
+      abort(403)
+    user.update(**claims)
     login_user(user)
     return current_user.as_json
 
