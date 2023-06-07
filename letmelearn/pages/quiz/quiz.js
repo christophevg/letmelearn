@@ -65,6 +65,7 @@ var Quiz = {
           <v-card-actions>
             <v-spacer></v-spacer>
             <v-btn type="submit">next...</v-btn>
+            <v-btn @click="accept_error" v-if="!result.correct">correct</v-btn>
             <v-spacer></v-spacer>
           </v-card-actions>
         </v-card>
@@ -233,6 +234,9 @@ var Quiz = {
           this.$refs.written_result.focus();
         }, 200);
       }
+    },
+    accept_error: function() {
+      this.answer(this.question.value);
     },
     next_question: function() {
       if(this.result.correct) {
