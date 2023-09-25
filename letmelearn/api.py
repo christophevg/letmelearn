@@ -43,7 +43,7 @@ class Topic(Resource):
     })
 
   @authenticated
-  def put(self, id):
+  def patch(self, id):
     update = request.json
     update.pop("_id", None)
     update.pop("user", None)

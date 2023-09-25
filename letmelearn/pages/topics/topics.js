@@ -193,9 +193,10 @@ var Topics = {
         return { key: parts[0], value: parts[1] }
       });
       store.dispatch("update_topic", {
-        _id: this.selected._id,
-        name: this.selected.name,
-        items: items
+        topic: this.selected,
+        update: {
+          items: items
+        }
       });
       this.topic_to_import = "";
       this.tab = 0;

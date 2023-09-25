@@ -64,18 +64,15 @@ store.registerModule("topics", {
     clear: function(context) {
       context.commit("topics", []);
     },
-    update_topic: function(context, topic) {
+    update_topic: function(context, updating) {
       $.ajax({
-        type: "PUT",
-        url: "/api/topics/" + topic._id,
+        type: "PATCH",
+        url: "/api/topics/" + updating.topic._id,
         contentType: "application/json",
         dataType: "json",
-        data: JSON.stringify({
-          name : topic.name,
-          items: topic.items
-        }),
+        data: JSON.stringify(updating.update),
         success: function(result) {
-          context.commit("updated_topic", result);
+          context.commit("updated_topic", updating);
         }
       });
     },
@@ -158,14 +155,14 @@ store.registerModule("topics", {
     updated_topic: function(state, updated) {
       var new_topic = null;
       var new_topics = state.topics.map(function(topic) {
-        if(topic._id == updated._id) {
-          new_topic = Object.assign({}, topic, updated);
+        if(topic._id == updated.topic._id) {
+          new_topic = Object.assign({}, topic, updated.update);
           return new_topic;
         }
         return topic;
       });
       Vue.set(state, "topics", new_topics);
-      if(state.selected._id == updated._id) {
+      if(state.selected._id == updated.topic._id) {
         Vue.set(state, "selected", new_topic);
       }
     },
@@ -225,7 +222,6 @@ Vue.component("TopicSelector", {
 `,
   methods: {
     changed_topic: function() {
-      console.log("changed topic");
       this.$emit("change", store.state.topics.selected);
     }
   },
