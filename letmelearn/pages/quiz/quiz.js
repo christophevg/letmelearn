@@ -36,7 +36,7 @@ var Quiz = {
       <v-form @submit.prevent="answer(written)">
         <v-card>
           <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ question.key }}</h3><br>
+            <h3 class="headline mb-0">{{ any_alternative_from(question.key) }}</h3><br>
             <div style="width:100%; text-align:center;margin-top:20px;">
               <v-text-field ref="written" v-model="written"></v-text-field>
             </div>
@@ -56,10 +56,10 @@ var Quiz = {
       <v-form @submit.prevent="next_question">
         <v-card>
           <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ question.key }}</h3><br>
+            <h3 class="headline mb-0">{{ question.key.replace("|", " or ") }}</h3><br>
             <div style="width:100%; text-align:center;margin-top:20px;">
               <v-text-field ref="written_result" v-model="written" :error="!result.correct" :background-color="result.outcome"></v-text-field>
-              <h1 v-if="!result.correct" style="color:green">{{ question.value }}</h1>
+              <h1 v-if="!result.correct" style="color:green">{{ question.value.replace("|", " or ") }}</h1>
             </div>
           </v-card-title>
           <v-card-actions>
@@ -79,10 +79,10 @@ var Quiz = {
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ question.key }}</h3><br>
+          <h3 class="headline mb-0">{{ any_alternative_from(question.key) }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
             <v-btn @click="answer(choice)" v-for="choice in question.choices" v-bind:key="choice" block>
-              {{ choice }}
+              {{ any_alternative_from(choice) }}
             </v-btn>
           </div>
         </v-card-title>
@@ -96,10 +96,10 @@ var Quiz = {
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ result.key }}</h3><br>
+          <h3 class="headline mb-0">{{ result.key.replace("|", " or ") }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
             <v-btn v-for="(choice, index) in result.choices" v-bind:key="index" block :color="result.outcome[index]">
-              {{ choice }}
+              {{ choice.replace("|", " or ") }}
             </v-btn>
           </div>
         </v-card-title>
@@ -171,6 +171,11 @@ var Quiz = {
     question: function() {
       return store.state.topics.quiz[0];
     },
+    answers: function() {
+      return this.question.value.split("|").map(function(value) {
+        return value.trim();
+      });
+    },
     asked: function() {
       return Object.keys(this.asked_keys).length;
     }
@@ -212,16 +217,19 @@ var Quiz = {
       this.reset();
     },
     answer: function(guess) {
-      var self = this;
+      var self = this,
+          result = this.multiplechoice ?
+            this.question.value == guess
+          : this.answers.indexOf(guess) !== -1;
       this.result = {
         key: this.question.key,
-        correct: this.question.value == guess,
+        correct: result,
         choices: this.question.choices,
         outcome: this.multiplechoice ? this.question.choices.map(function(choice){
           if( choice == self.question.value ) { return "success"};
           if( choice == guess && guess != self.question.value ) { return "error"};
           return null;
-        }) : ( guess == self.question.value ? "success" : "error ")
+        }) : ( result ? "success" : "error ")
       }
       if(this.asked_keys.indexOf(this.question.key) === -1) {
         this.asked_keys.push(this.question.key);
@@ -254,7 +262,11 @@ var Quiz = {
           this.$refs.written.focus();
         }, 200);
       }
-    }
+    },
+    any_alternative_from: function(answers_string) {
+      var answers = answers_string.split("|");
+      return answers[answers.length * Math.random() | 0];
+    },
   },
   data: function() {
     return {
