@@ -171,9 +171,12 @@ store.registerModule("topics", {
         return topic;
       });
       Vue.set(state, "topics", new_topics);
-      if(state.selected._id == updated.topic._id) {
-        Vue.set(state, "selected", new_topic);
-      }
+      state.selected = state.selected.map(function(selected){
+        if(selected._id == updated.topic._id) {
+          return new_topic;
+        }
+        return selected;
+      });
     },
     new_topic: function(state, new_topic) {
       state.topics.push(new_topic);
