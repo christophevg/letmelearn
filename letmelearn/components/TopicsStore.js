@@ -1,7 +1,7 @@
 store.registerModule("topics", {
   state: {
     topics  : [],
-    selected: null,
+    selected: [],
     quiz    : []
   },
   getters: {
@@ -13,29 +13,33 @@ store.registerModule("topics", {
       }
     },
     topics: function(state) {
-      return state.topics.map(function(topic) {
-        return { "text" : topic.name, "value" : topic }
-      });
+			return state.topics;
     },
-    shuffled : function(state) {
-      return function(topic, value2key) {
-        return topic.items.map(function(item){
+		selected_items: function(state) {
+			return state.selected.reduce(function(all_items, topic) {
+				all_items.push(...topic.items);
+				return all_items;
+			}, []);
+		},
+    shuffled : function(state, getters) {
+      return function(value2key) {
+        return getters.selected_items.map(function(item){
           var key   = value2key ? item.value : item.key,
               value = value2key ? item.key   : item.value,
               take  = value2key ? "keys"     : "values";
           return {
             key    : key,
             value  : value,
-            choices: store.getters.random(topic, take, 2, value)
+            choices: store.getters.random(take, 2, value)
                                   .concat([value])
                                   .sort(()=>Math.random()-0.5)
           };
         }).sort(() => Math.random() - 0.5);
       }
     },
-    random: function(state) {
-      return function(topic, take, amount, excluding) {
-        return topic.items.map(function(item){
+    random: function(state, getters) {
+      return function(take, amount, excluding) {
+        return getters.selected_items.map(function(item){
           return take == "values" ? item.value : item.key;
         })
         .filter(function(item) { return item != excluding; })
@@ -53,8 +57,11 @@ store.registerModule("topics", {
             context.commit("topics", result);
             // adopt hash
             if(window.location.hash) {
-              var t = context.getters.topic(window.location.hash.substring(1));
-              context.commit("selected_topic", t);
+              var topic_ids = window.location.hash.substring(1);
+							var topics = topic_ids.split(";").map(function(id){
+								return store.getters.topic(id);
+							});
+              context.commit("selected_topic", topics);
             }
           },
           dataType: "json"
@@ -137,8 +144,8 @@ store.registerModule("topics", {
         }
       });      
     },
-    create_quiz: function(context, config) {
-      context.commit("quiz", context.getters.shuffled(config.topic, config.value2key));
+    create_quiz: function(context, value2key) {
+      context.commit("quiz", context.getters.shuffled(value2key));
     },
     clear_quiz: function(context, topic) {
       context.commit("quiz", []);
@@ -150,7 +157,9 @@ store.registerModule("topics", {
     },
     selected_topic: function(state, selection) {
       Vue.set(state, "selected", selection);
-      window.location.hash = selection._id;
+      window.location.hash = selection.map(function(topic){
+      	return topic._id;
+      }).join(";");
     },
     updated_topic: function(state, updated) {
       var new_topic = null;
@@ -170,12 +179,14 @@ store.registerModule("topics", {
       state.topics.push(new_topic);
     },
     removed_topic: function(state, removed) {
+			// filter from all topics
       state.topics = state.topics.filter(function(topic){
         return topic._id != removed._id;
-      })
-      if(state.selected._id == removed._id) {
-        Vue.set(state, "selected", null);
-      }
+      });
+			// filter from selected topics
+			state.selected = state.selected.filter(function(topic){
+				return topic._id != removed._id;
+			});
     },
     added_item: function(state, added) {
       state.topics.find(function(topic) {
@@ -212,13 +223,32 @@ store.registerModule("topics", {
 });
 
 Vue.component("TopicSelector", {
+	props: {
+		multiple: Boolean,
+		tags: Boolean
+	},
   template : `
-    <v-select :items="topics"
-              :hint="hint_text"
-              :persistent-hint="show_hint"
+    <v-select v-if="simple_selection"
+							v-model="single_selection"
+							:items="topics"
+							item-value="_id"
+							item-text="name"
+              :hint="hint_single_topic"
+              :persistent-hint="show_single_hint"
               label=""
               @change="changed_topic"
-              v-model="selected"></v-select>
+		></v-select>
+    <v-combobox v-else
+								v-model="multiple_selection"
+								:items="topics"
+								item-value="_id"
+								item-text="name"
+								chips
+								deletable-chips
+								multiple
+								:hint="hint_multiple_topic"
+              	:persistent-hint="show_multiple_hint"
+    ></v-combobox>
 `,
   methods: {
     changed_topic: function() {
@@ -226,22 +256,40 @@ Vue.component("TopicSelector", {
     }
   },
   computed: {
-    show_hint: function() {
-      return this.selected == null;
+		simple_selection: function() {
+			return ! this.multiple && ! this.tags;
+		},
+    show_single_hint: function() {
+      return this.single_selection == null;
     },
-    hint_text: function() {
-      return this.show_hint ? "pick a topic" : "";
+    show_multiple_hint: function() {
+      return this.multiple_selection.length == 0;
+    },
+    hint_single_topic: function() {
+      return this.show_single_hint ? "kies een topic" : "";
+    },
+    hint_multiple_topic: function() {
+      return this.show_multiple_hint ? "kies één of meerdere topics" : "";
     },
     topics: function() {
       return store.getters.topics;
     },
-    selected: {
+    multiple_selection: {
       get() {
         return store.state.topics.selected;
       },
       set(selection) {
         return store.commit("selected_topic", selection);
       }
+    },
+    single_selection: {
+      get() {
+        return store.state.topics.selected.length == 1 ? store.state.topics.selected[0] : null;
+      },
+      set(selection) {
+        return store.commit("selected_topic", [store.getters.topic(selection)]);
+      }
     }
+		
   }
 });

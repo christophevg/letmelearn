@@ -2,7 +2,7 @@ var Quiz = {
   template: `
 <ProtectedPage>
   <template v-slot:subheader>
-    <TopicSelector @change="change_topic"/>
+    <TopicSelector @change="change_topic" multiple tags/>
     <v-btn flat icon @click="start" :disabled="!selected || playing">
       <v-icon>play_arrow</v-icon>
     </v-btn>
@@ -142,9 +142,9 @@ var Quiz = {
     index:   3
   },
   mounted: function() {
-    if(this.selected && this.selected._id != window.location.hash.substring(1)){
-      window.location.hash = this.selected._id;
-    }
+    // if(this.selected && this.selected._id != window.location.hash.substring(1)){
+    //   window.location.hash = this.selected._id;
+    // }
   },
   computed: {
     selected: function() {
@@ -160,7 +160,7 @@ var Quiz = {
       return this.multiplechoice ? "list" : "edit";
     },
     items_count: function() {
-      return this.selected ? this.selected.items.length : 0;
+      return this.selected ? store.getters.selected_items.length : 0;
     },
     pct_asked: function() {
       return (this.asked / this.items_count) * 100;
@@ -186,10 +186,7 @@ var Quiz = {
       this.result = false;
       this.correct = 0;
       this.asked_keys = []
-      store.dispatch("create_quiz", {
-        topic: this.selected,
-        value2key: this.value2key
-      });
+      store.dispatch("create_quiz", this.value2key);
       if( !this.multiplechoice ) {
         setTimeout(() => {
           this.$refs.written.focus();

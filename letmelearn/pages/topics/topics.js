@@ -190,7 +190,7 @@ var Topics = {
   },
   computed: {
     selected: function() {
-      return store.state.topics.selected;
+			return store.state.topics.selected.length == 1 ? store.state.topics.selected[0] : null;
     }
   },
   methods: {
