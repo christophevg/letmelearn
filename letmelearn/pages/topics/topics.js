@@ -9,6 +9,11 @@ var Topics = {
     <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected">
       <v-icon>delete</v-icon>
     </v-btn>
+
+    <v-btn flat icon @click="show_tag_dialog" :disabled="!selected">
+      <v-icon>bookmark</v-icon>
+    </v-btn>
+  
     <!--
       <v-btn flat icon @click="rename_dialog = true" :disabled="!selected">
         <v-icon>edit</v-icon>
@@ -94,6 +99,38 @@ var Topics = {
       </v-card>
     </v-form>
   </v-dialog>
+
+  <v-dialog v-model="tag_dialog" persistent width="500">
+    <v-form @submit.prevent="tag_dialog = false; update_tags()">
+      <v-card>
+        <v-card-title class="headline grey lighten-2" primary-title>
+          Tags for this topic...
+        </v-card-title>
+
+        <v-card-text>
+          
+          <p>
+          
+            Voeg "tags" toe om deze topic te identificeren. De enter/return
+            knop maakt van je text een tag.
+          
+          </p>
+
+          <v-combobox v-model="tags" chips deletable-chips multiple></v-combobox>
+
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-btn color="secondary" flat @click="selected.tags = []; tag_dialog = false">Cancel</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" flat type="submit">Update...</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-form>
+  </v-dialog>
+
   
   <v-dialog v-model="add_item_dialog" persistent width="500px">
     <v-form @submit.prevent="add_item_dialog = false; add_item()">
@@ -163,6 +200,15 @@ var Topics = {
         this.$refs.new_topic_name.focus();
       }, 200);
     },
+    show_tag_dialog: function() {
+      // copy pre-existing tags
+      if(this.selected.tags) {
+        this.tags = this.selected.tags;
+      } else {
+        this.tags = []; // default to empty list
+      }
+      this.tag_dialog = true;
+    },
     show_add_item_dialog: function() {
       this.new_item.key = null;
       this.new_item.value = null;
@@ -186,6 +232,14 @@ var Topics = {
       if( confirm("Deleting topic " + this.selected.name + " ... Are you sure?")) {
         store.dispatch("remove_topic", this.selected);
       }
+    },
+    update_tags: function() {
+      store.dispatch("update_topic", {
+        topic : this.selected,
+        update: {
+          tags: this.tags
+        }
+      });
     },
     import_topic: function() {
       var items = this.topic_to_import.split("\n").map(function(item_to_import){
@@ -242,10 +296,12 @@ var Topics = {
     return {
       tab: null,
       topic_to_import: "",
-      rename_dialog: false,
       create_dialog: false,
       add_item_dialog: false,
       edit_item_dialog: false,
+      rename_dialog: false,
+      tag_dialog: false,
+      tags: [],
       new_topic_name: null,
       new_item: {
         key: null,
