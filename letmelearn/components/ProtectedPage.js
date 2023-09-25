@@ -22,7 +22,9 @@ Vue.component("ProtectedPage", {
         <slot name="subheader"></slot>
       </template>
     </v-toolbar>
-    <slot></slot>
+    <div style="padding:25px;">
+      <slot></slot>
+    </div>
   </div>
     
   <div v-else>
