@@ -17,6 +17,38 @@ var Home = {
           <v-flex xs7>
             <v-card-title primary-title>
               <div>
+                <div class="headline">Timer!</div>
+								<div class="grey--text">1 oktober 2023</div>
+
+            		<p>
+  
+                  Met de nieuwe timer functie, kan je nu tegen de tijd oefenen.
+                  Of gewoon exact de tijd oefenen dat je <i>moest</i> 😇
+
+								</p>
+
+              </div>
+            </v-card-title>
+          </v-flex>
+          <v-flex xs5>
+						<div style="padding:15px">
+	            <v-img
+	              src="/app/static/images/news/timer.png"
+	              height="125px"
+	              contain
+	            ></v-img>
+						</div>
+          </v-flex>
+        </v-layout>
+      </v-card>
+			
+			<br>
+
+			<v-card>
+        <v-layout row>
+          <v-flex xs7>
+            <v-card-title primary-title>
+              <div>
                 <div class="headline">Meerdere topics per quiz</div>
 								<div class="grey--text">25 september 2023</div>
 
