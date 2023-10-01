@@ -1,8 +1,9 @@
 store.registerModule("topics", {
   state: {
-    topics  : [],
-    selected: [],
-    quiz    : []
+    topics  : [],     // all known topics
+    selected: [],     // list of selected topics
+    quiz    : [],     // shuffled items from all selected topics
+    _count  : 0       // to force shuffling
   },
   getters: {
     topic : function(state) {
@@ -19,48 +20,34 @@ store.registerModule("topics", {
       return state.selected.map(function(topic){ return topic._id; }).join(";");
     },
 		selected_items: function(state) {
+      // returns a list of all items of all selected topics
+      // transparently "upgrades" old BasicQuestions
+      // {
+      //   type  : topic.type | "BasicQuestion" (if missing)
+      //   props : item | { topics: , question: , expected: } (if BasicQuestion)
+      // }
 			return state.selected.reduce(function(all_items, topic) {
-				all_items.push(...topic.items);
+        all_items.push(...topic.items.map(function(item){
+          return {
+            type : topic.type ? topic.type : "BasicQuestion",
+            props: topic.type ? item : {
+              topic   : topic._id,
+              question: item.key,
+              expected: item.value
+            }
+          }
+        }));
 				return all_items;
 			}, []);
 		},
     shuffled : function(state, getters) {
-      return function(value2key) {
-        return getters.selected_items.map(function(item){
-          var key   = value2key ? item.value : item.key,
-              value = value2key ? item.key   : item.value,
-              take  = value2key ? "keys"     : "values";
-          return {
-            key    : key,
-            value  : value,
-            choices: store.getters.random(take, 2, value)
-                                  .concat([value])
-                                  .sort(()=>Math.random()-0.5)
-          };
-        }).sort(() => Math.random() - 0.5);
-      }
-    },
-    random: function(state, getters) {
-      return function(take, amount, excluding) {
-        return getters.selected_items.map(function(item){
-          return take == "values" ? item.value : item.key;
-        })
-        .filter(function(item) { return item != excluding; })
-        .sort(() => Math.random() - 0.5).slice(0, amount);
-      }
+      state._count; // forces recompute
+      // spread it to avoid selected_items to be sorted
+      return [...getters.selected_items].sort(() => Math.random() - 0.5);
     },
     current_question(state) {
-      if(! state.quiz[0]) { return null; }
-      if(state.quiz[0].type) { return state.quiz[0]}
-      // upgrade old style questions
-      return {
-        type : "BasicQuestion",
-        props: {
-          question: state.quiz[0].key,
-          expected: state.quiz[0].value,
-          choices:  state.quiz[0].choices
-        }
-      }
+      if(state.quiz[0]) { return state.quiz[0]}
+      return null
     }
   },
   actions: {
@@ -160,8 +147,9 @@ store.registerModule("topics", {
         }
       });      
     },
-    create_quiz: function(context, value2key) {
-      context.commit("quiz", context.getters.shuffled(value2key));
+    create_quiz: function(context) {
+      // spread it to ensure a clean/local quiz list
+      context.commit("quiz", [...context.getters.shuffled]);
     },
     clear_quiz: function(context, topic) {
       context.commit("quiz", []);
@@ -234,6 +222,7 @@ store.registerModule("topics", {
     },
     quiz: function(state, new_quiz) {
       Vue.set(state, "quiz", new_quiz);
+      state._count++;
     },
     mark_correct: function(state) {
       state.quiz.shift();

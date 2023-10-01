@@ -1,5 +1,9 @@
 Vue.component("BasicQuestion", {
-  props: [ "question", "expected", "choices", "context" ],
+  props: [
+    "topic", "question", "expected",  // actual question properties
+    "context",                        // reference to the quiz
+    "editor", "summary"               // view styles, default is "asking"
+  ],
   template: `
 <div style="padding-top:15px">
   
@@ -10,7 +14,7 @@ Vue.component("BasicQuestion", {
       <v-form @submit.prevent="answer(written)">
         <v-card>
           <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ any_alternative_from(this.question) }}</h3><br>
+            <h3 class="headline mb-0">{{ any_alternative_from(this.current_question) }}</h3><br>
             <div style="width:100%; text-align:center;margin-top:20px;">
               <v-text-field ref="written" v-model="written"></v-text-field>
             </div>
@@ -30,10 +34,10 @@ Vue.component("BasicQuestion", {
       <v-form @submit.prevent="next_question">
         <v-card>
           <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ this.question.replace("|", " of ") }}</h3><br>
+            <h3 class="headline mb-0">{{ this.current_question.replace("|", " of ") }}</h3><br>
             <div style="width:100%; text-align:center;margin-top:20px;">
               <v-text-field ref="written_result" v-model="written" :error="!result.correct" :background-color="result.markup"></v-text-field>
-              <h1 v-if="!result.correct" style="color:green">{{ this.expected.replace("|", " or ") }}</h1>
+              <h1 v-if="!result.correct" style="color:green">{{ this.current_expected.replace("|", " or ") }}</h1>
             </div>
           </v-card-title>
           <v-card-actions>
@@ -53,7 +57,7 @@ Vue.component("BasicQuestion", {
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ any_alternative_from(this.question) }}</h3><br>
+          <h3 class="headline mb-0">{{ any_alternative_from(this.current_question) }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
             <v-btn @click="answer(choice)" v-for="choice in this.choices" v-bind:key="choice" block>
               {{ any_alternative_from(choice) }}
@@ -70,7 +74,7 @@ Vue.component("BasicQuestion", {
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ this.question.replace("|", " of ") }}</h3><br>
+          <h3 class="headline mb-0">{{ this.current_question.replace("|", " of ") }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
             <v-btn v-for="(choice, index) in result.choices"
                    v-bind:key="index"
@@ -98,25 +102,51 @@ Vue.component("BasicQuestion", {
     }
   },
   computed: {
+    asking: function() {
+      return ! this.editor && ! this.summary;
+    },
+    current_question: function() {
+      return this.context.right2left ? this.expected : this.question;
+    },
+    current_expected: function() {
+      return this.context.right2left ? this.question : this.expected;
+    },
     answers: function() {
-      return this.expected.split("|").map(function(possible_value) {
+      return this.current_expected.split("|").map(function(possible_value) {
         return possible_value.trim();
       });
+    },
+    choices: function() {
+      // select 2 additional random items from our topic
+      var self = this;
+      return store.getters.topic(this.topic).items
+        .filter(function(item){ return item.value != self.expected; })
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 2)
+        .map(function(item) {
+          if(self.context.right2left) {
+            return item.key;
+          } else {
+            return item.value;
+          }
+        })
+        .concat([this.current_expected])
+        .sort(()=>Math.random()-0.5);
     }
   },
   methods: {
     answer: function(guess) {
       var self = this,
           outcome = this.context.multiplechoice ?
-            this.expected == guess
+            this.current_expected == guess
           : this.answers.indexOf(guess) !== -1;
       this.result = {
         correct: outcome,
         choices: this.choices,
         markup: this.context.multiplechoice ? 
           this.choices.map(function(choice){
-            if( choice == self.expected )                   { return "success" };
-            if( choice == guess && guess != self.expected ) { return "error"   };
+            if( choice == self.current_expected )                   { return "success" };
+            if( choice == guess && guess != self.current_expected ) { return "error"   };
             return null;
           })
           : ( outcome ? "success" : "error ")
@@ -129,7 +159,7 @@ Vue.component("BasicQuestion", {
     },
     accept_error: function() {
       // fake correct answer by providing a correct one
-      this.answer(this.any_alternative_from(this.expected));
+      this.answer(this.any_alternative_from(this.current_expected));
     },
     any_alternative_from: function(answers_string) {
       var answers = answers_string.split("|");

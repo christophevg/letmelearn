@@ -78,7 +78,7 @@ var Quiz = {
           <v-spacer></v-spacer>
             
             Er waren {{ questions }} vragen.<br>
-            Daarvan zijn er {{ asked_keys.length }} gesteld.<br>
+            Daarvan zijn er {{ asked }} gesteld.<br>
             In {{ tries }} pogingen, had je er {{ correct }} juist.<br>
 
             <template v-if="this.timer_active">
@@ -118,7 +118,7 @@ var Quiz = {
       return store.state.topics.quiz.length > 0;
     },
     direction_icon: function() {
-      return this.value2key ? "arrow_back" : "arrow_forward";
+      return this.right2left ? "arrow_back" : "arrow_forward";
     },
     style_icon: function() {
       return this.multiplechoice ? "list" : "edit";
@@ -139,7 +139,7 @@ var Quiz = {
       return store.getters.current_question;
     },
     asked: function() {
-      return Object.keys(this.asked_keys).length;
+      return this.asked_questions.length;
     }
   },
   methods: {
@@ -148,8 +148,8 @@ var Quiz = {
       this.result = false;
       this.correct = 0;
       this.tries = 0;
-      this.asked_keys = []
-      store.dispatch("create_quiz", this.value2key);
+      this.asked_questions = []
+      store.dispatch("create_quiz");
       this.questions = store.state.topics.quiz.length;
       if( !this.multiplechoice ) {
         setTimeout(() => {
@@ -181,7 +181,7 @@ var Quiz = {
       if(this.question) { this.reset(); }
     },
     swap : function() {
-      this.value2key = !this.value2key;
+      this.right2left = !this.right2left;
       this.reset();
     },
     toggle_style: function() {
@@ -189,8 +189,8 @@ var Quiz = {
       this.reset();
     },
     next_question: function(result) {
-      if(this.asked_keys.indexOf(this.question.key) === -1) {
-        this.asked_keys.push(this.question.key);
+      if(this.asked_questions.indexOf(this.question) === -1) {
+        this.asked_questions.push(this.question);
       }
 
       this.tries += 1;
@@ -210,13 +210,13 @@ var Quiz = {
   },
   data: function() {
     return {
-      value2key: false,
+      right2left: false,
       multiplechoice: true,
       questions: 0,
       tries: 0,
       correct: 0,
       done: false,
-      asked_keys: [],
+      asked_questions: [],
       timer_active: false
     }
   }
