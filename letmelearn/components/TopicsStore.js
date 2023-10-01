@@ -48,6 +48,19 @@ store.registerModule("topics", {
         .filter(function(item) { return item != excluding; })
         .sort(() => Math.random() - 0.5).slice(0, amount);
       }
+    },
+    current_question(state) {
+      if(! state.quiz[0]) { return null; }
+      if(state.quiz[0].type) { return state.quiz[0]}
+      // upgrade old style questions
+      return {
+        type : "BasicQuestion",
+        props: {
+          question: state.quiz[0].key,
+          expected: state.quiz[0].value,
+          choices:  state.quiz[0].choices
+        }
+      }
     }
   },
   actions: {

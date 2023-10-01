@@ -54,9 +54,9 @@ var Quiz = {
 
   <!-- question -->
 
-  <template v-if="current_question">
-    <component :is="current_question.type"
-                v-bind="current_question.props"
+  <template v-if="question">
+    <component :is="question.type"
+                v-bind="question.props"
                 :context="this"
                 @next="next_question"/>
   </template>
@@ -136,18 +136,7 @@ var Quiz = {
       return (this.correct / this.items_count) * 100;
     },
     question: function() {
-      return store.state.topics.quiz[0];
-    },
-    current_question: function() {
-      if(! this.question ) { return null; }
-      return {
-        type : "BasicQuestion",
-        props: {
-          question: this.question.key,
-          expected: this.question.value,
-          choices:  this.question.choices
-        }
-      }
+      return store.getters.current_question;
     },
     asked: function() {
       return Object.keys(this.asked_keys).length;
