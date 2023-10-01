@@ -15,6 +15,9 @@ store.registerModule("topics", {
     topics: function(state) {
 			return state.topics;
     },
+    selected_hash: function(state) {
+      return state.selected.map(function(topic){ return topic._id; }).join(";");
+    },
 		selected_items: function(state) {
 			return state.selected.reduce(function(all_items, topic) {
 				all_items.push(...topic.items);
@@ -158,8 +161,11 @@ store.registerModule("topics", {
     selected_topic: function(state, selection) {
       Vue.set(state, "selected", selection);
       window.location.hash = selection.map(function(topic){
-      	return topic._id;
-      }).join(";");
+      	if( topic && topic._id ) {
+          return topic._id;
+        }
+        return null;
+      }).filter(function(topic) { return topic != null; }).join(";");
     },
     updated_topic: function(state, updated) {
       var new_topic = null;
@@ -241,21 +247,34 @@ Vue.component("TopicSelector", {
               label=""
               @change="changed_topic"
 		></v-select>
-    <v-combobox v-else
-								v-model="multiple_selection"
-								:items="topics"
-								item-value="_id"
-								item-text="name"
-								chips
-								deletable-chips
-								multiple
-								:hint="hint_multiple_topic"
-              	:persistent-hint="show_multiple_hint"
-    ></v-combobox>
+    <v-select v-else
+							v-model="multiple_selection"
+							:items="topics"
+							item-value="_id"
+							item-text="name"
+              :hint="hint_multiple_topic"
+              chips
+              multiple
+              dense
+              :persistent-hint="show_multiple_hint"
+              label=""
+              @change="changed_topic"
+		>
+    <template v-slot:selection="{ item, index }">
+      <v-chip close @input="remove_selected_topic(item);">
+        <span>{{ item.name }}</span>
+      </v-chip>
+    </template>
+  </v-select>
 `,
   methods: {
     changed_topic: function() {
       this.$emit("change", store.state.topics.selected);
+    },
+    remove_selected_topic: function(removed) {
+      this.multiple_selection = this.multiple_selection.filter(function(key){
+        return key != removed._id;
+      });
     }
   },
   computed: {
@@ -279,15 +298,15 @@ Vue.component("TopicSelector", {
     },
     multiple_selection: {
       get() {
-        return store.state.topics.selected;
+        return store.state.topics.selected.map(function(item) { return item._id });
       },
       set(selection) {
-        return store.commit("selected_topic", selection);
+        return store.commit("selected_topic", selection.map(function(key){ return store.getters.topic(key)}));
       }
     },
     single_selection: {
       get() {
-        return store.state.topics.selected.length == 1 ? store.state.topics.selected[0] : null;
+        return store.state.topics.selected.length == 1 ? store.state.topics.selected[0]._id : null;
       },
       set(selection) {
         return store.commit("selected_topic", [store.getters.topic(selection)]);

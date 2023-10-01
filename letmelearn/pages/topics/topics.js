@@ -184,8 +184,10 @@ var Topics = {
     index:   2
   },
   mounted: function() {
-    if(this.selected && this.selected._id != window.location.hash.substring(1)){
-      window.location.hash = this.selected._id;
+    if(! this.selected ) { return }
+    var expected_hash = store.getters.selected_hash
+    if( window.location.hash.substring(1) != expected_hash ){
+      window.location.hash = expected_hash;
     }
   },
   computed: {

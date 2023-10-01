@@ -48,11 +48,14 @@ HERE = os.path.dirname(__file__)
 
 register_static_folder(os.path.join(HERE, "static"))
 
+# TODO: glob folder recursively
 COMPONENTS = os.path.join(HERE, "components")
 for component in [
   "navigation",
+  "Timer",
   "ProtectedPage",
-  "TopicsStore"
+  "TopicsStore",
+  "questions/BasicQuestion"
 ]:
   register_component(f"{component}.js", COMPONENTS)
 

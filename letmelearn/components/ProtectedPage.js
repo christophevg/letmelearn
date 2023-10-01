@@ -1,28 +1,41 @@
 Vue.component("ProtectedPage", {
   template: `
 <div>
-  <div v-if="session">
-    <v-toolbar flat :prominent="show_extended" :extended="show_extended">
-      <v-avatar>
-        <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
-      </v-avatar>
-      <v-toolbar-title>Hi {{ session.name }}! 👋</v-toolbar-title>
-      <v-spacer></v-spacer>
-      <slot name="subheader" v-if="!show_extended"></slot>
-      <v-spacer></v-spacer>
-  
-      <v-tooltip left>
-        <template v-slot:activator="{ on }">
-          <v-btn @click="logout()" flat icon v-on="on"><v-icon>close</v-icon></v-btn>
-        </template>
-        <span>log out</span>
-      </v-tooltip>
+  <div v-if="session" class="pa-0 ma-0">
 
-      <template v-slot:extension v-if="show_extended">
-        <slot name="subheader"></slot>
-      </template>
-    </v-toolbar>
-    <div style="padding:25px;">
+      <v-container style="padding:5px">
+        <v-layout row wrap class="pa-0 mb-0" align-center>
+          
+          <v-flex sm11 md4 d-flex align-center>
+            <h2>
+              <v-avatar>
+                <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
+              </v-avatar>
+              Hi {{ session.name }}! 👋
+            </h2>
+          </v-flex>
+  
+          <v-flex sm12 md7 d-flex align-center v-if="!show_extended">
+            <slot name="subheader"></slot>
+          </v-flex>
+
+          <v-flex xs1 d-flex justify-end>
+            <v-tooltip left>
+              <template v-slot:activator="{ on }">
+                <v-btn @click="logout()" flat icon v-on="on"><v-icon>close</v-icon></v-btn>
+              </template>
+              <span>log out</span>
+            </v-tooltip>
+          </v-flex>
+
+          <v-flex xs12 d-flex align-center v-if="show_extended">
+              <slot name="subheader"></slot>
+          </v-flex>
+
+        </v-layout>
+      </v-container>
+
+    <div>
       <slot></slot>
     </div>
   </div>
@@ -76,7 +89,7 @@ Vue.component("ProtectedPage", {
 `,
   computed: {
     show_extended: function() {
-      return this.$vuetify.breakpoint.name == "xs";
+      return this.$vuetify.breakpoint.name == "xs" || this.$vuetify.breakpoint.name == "sm";
     },
     session : function() {
       return store.state.auth.session;

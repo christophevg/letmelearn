@@ -1,116 +1,67 @@
 var Quiz = {
   template: `
 <ProtectedPage>
+  
+  <!-- toolbar -->
+  
   <template v-slot:subheader>
-    <TopicSelector @change="change_topic" multiple tags/>
-    <v-btn flat icon @click="start" :disabled="!selected || playing">
-      <v-icon>play_arrow</v-icon>
-    </v-btn>
-    <v-btn flat icon @click="stop" :disabled="!playing">
-      <v-icon>stop</v-icon>
-    </v-btn>
-    <v-btn flat icon @click="reset" :disabled="!playing">
-      <v-icon>replay</v-icon>
-    </v-btn>
-    <v-btn flat icon @click="swap" :disabled="!selected">
-      <v-icon>{{ direction_icon }}</v-icon>
-    </v-btn>
-    <v-btn flat icon @click="toggle_style" :disabled="!selected">
-      <v-icon>{{ style_icon }}</v-icon>
-    </v-btn>
+      <v-layout row wrap class="pa-0 ma-0">
+
+        <v-flex xs12 sm7 md6 d-flex align-center>
+          <TopicSelector @change="change_topic" multiple tags/>
+        </v-flex>
+
+        <v-flex xs12 sm5 md6 d-flex align-center>
+          <v-btn flat icon @click="start" :disabled="!selected || playing" class="ma-0">
+            <v-icon>play_arrow</v-icon>
+          </v-btn>
+          <v-btn flat icon @click="toggle_timing" :disabled="!selected" class="ma-0">
+            <v-icon>{{ timing_icon }}</v-icon>
+          </v-btn>
+          <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0">
+            <v-icon>stop</v-icon>
+          </v-btn>
+          <v-btn flat icon @click="reset" :disabled="!playing" class="ma-0">
+            <v-icon>replay</v-icon>
+          </v-btn>
+          <v-btn flat icon @click="swap" :disabled="!selected" class="ma-0">
+            <v-icon>{{ direction_icon }}</v-icon>
+          </v-btn>
+          <v-btn flat icon @click="toggle_style" :disabled="!selected" class="ma-0">
+            <v-icon>{{ style_icon }}</v-icon>
+          </v-btn>
+        </v-flex>
+
+      </v-layout>
   </template>
 
-  <h1>Quiz...</h1>
-  
-  <v-progress-linear
-      size="items_count"
-      v-model="pct_correct"
-      :buffer-value="pct_asked"
-      buffer
-      v-if="playing"></v-progress-linear>
+  <!-- progress bars -->
 
-  <!-- text -->
+  <Timer ref="timer"
+         :visible="playing"
+         @changed="handle_timer_changed"
+         @done="handle_timer_done"/>
 
-  <v-layout v-if="question && !multiplechoice && !result">
-    <v-flex xs12 sm6 offset-sm3>
-      <v-form @submit.prevent="answer(written)">
-        <v-card>
-          <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ any_alternative_from(question.key) }}</h3><br>
-            <div style="width:100%; text-align:center;margin-top:20px;">
-              <v-text-field ref="written" v-model="written"></v-text-field>
-            </div>
-          </v-card-title>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn type="submit">ok</v-btn>
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-      </v-form>
-    </v-flex>
-  </v-layout>
+  <v-toolbar height="40" v-if="playing">
+    <v-toolbar-side-icon><v-icon>play_arrow</v-icon></v-toolbar-side-icon>
+    <v-progress-linear
+        size="items_count"
+        v-model="pct_correct"
+        :buffer-value="pct_asked"
+        buffer
+        v-if="playing"></v-progress-linear>
+  </v-toolbar>
 
-  <v-layout v-if="!multiplechoice && result">
-    <v-flex xs12 sm6 offset-sm3>
-      <v-form @submit.prevent="next_question">
-        <v-card>
-          <v-card-title primary-title class="justify-center">
-            <h3 class="headline mb-0">{{ question.key.replace("|", " or ") }}</h3><br>
-            <div style="width:100%; text-align:center;margin-top:20px;">
-              <v-text-field ref="written_result" v-model="written" :error="!result.correct" :background-color="result.outcome"></v-text-field>
-              <h1 v-if="!result.correct" style="color:green">{{ question.value.replace("|", " or ") }}</h1>
-            </div>
-          </v-card-title>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn type="submit">next...</v-btn>
-            <v-btn @click="accept_error" v-if="!result.correct">correct</v-btn>
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-      </v-form>
-    </v-flex>
-  </v-layout>
+  <!-- question -->
 
-  <!-- multiple choice -->
+  <template v-if="current_question">
+    <component :is="current_question.type"
+                v-bind="current_question.props"
+                :context="this"
+                @next="next_question"/>
+  </template>
 
-  <v-layout v-if="question && multiplechoice && !result">
-    <v-flex xs12 sm6 offset-sm3>
-      <v-card>
-        <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ any_alternative_from(question.key) }}</h3><br>
-          <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-btn @click="answer(choice)" v-for="choice in question.choices" v-bind:key="choice" block>
-              {{ any_alternative_from(choice) }}
-            </v-btn>
-          </div>
-        </v-card-title>
-        <v-card-actions>
-        </v-card-actions>
-      </v-card>
-    </v-flex>
-  </v-layout>
-
-  <v-layout v-if="result && multiplechoice">
-    <v-flex xs12 sm6 offset-sm3>
-      <v-card>
-        <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ result.key.replace("|", " or ") }}</h3><br>
-          <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-btn v-for="(choice, index) in result.choices" v-bind:key="index" block :color="result.outcome[index]">
-              {{ choice.replace("|", " or ") }}
-            </v-btn>
-          </div>
-        </v-card-title>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn @click="next_question">next...</v-btn>
-          <v-spacer></v-spacer>
-        </v-card-actions>
-      </v-card>
-    </v-flex>
-  </v-layout>
+  <!-- done -->
 
   <v-layout v-if="done">
     <v-flex xs12 sm6 offset-sm3>
@@ -125,6 +76,17 @@ var Quiz = {
 
         <v-card-actions>
           <v-spacer></v-spacer>
+            
+            Er waren {{ questions }} vragen.<br>
+            Daarvan zijn er {{ asked_keys.length }} gesteld.<br>
+            In {{ tries }} pogingen, had je er {{ correct }} juist.<br>
+
+            <template v-if="this.timer_active">
+              Je deed dit in {{ this.$refs.timer.elapsed }} seconden.<br>
+            </template>
+  
+            <br>
+              
           <v-spacer></v-spacer>
           <br><br>
         </v-card-actions>
@@ -142,13 +104,15 @@ var Quiz = {
     index:   3
   },
   mounted: function() {
-    // if(this.selected && this.selected._id != window.location.hash.substring(1)){
-    //   window.location.hash = this.selected._id;
-    // }
+    if(! this.selected ) { return }
+    var expected_hash = store.getters.selected_hash
+    if( window.location.hash.substring(1) != expected_hash ){
+      window.location.hash = expected_hash;
+    }
   },
   computed: {
     selected: function() {
-      return store.state.topics.selected;
+      return store.state.topics.selected.length > 0;
     },
     playing: function() {
       return store.state.topics.quiz.length > 0;
@@ -158,6 +122,9 @@ var Quiz = {
     },
     style_icon: function() {
       return this.multiplechoice ? "list" : "edit";
+    },
+    timing_icon: function() {
+      return this.timer_active ? "timer_off" : "timer";
     },
     items_count: function() {
       return this.selected ? store.getters.selected_items.length : 0;
@@ -171,10 +138,16 @@ var Quiz = {
     question: function() {
       return store.state.topics.quiz[0];
     },
-    answers: function() {
-      return this.question.value.split("|").map(function(value) {
-        return value.trim();
-      });
+    current_question: function() {
+      if(! this.question ) { return null; }
+      return {
+        type : "BasicQuestion",
+        props: {
+          question: this.question.key,
+          expected: this.question.value,
+          choices:  this.question.choices
+        }
+      }
     },
     asked: function() {
       return Object.keys(this.asked_keys).length;
@@ -185,18 +158,31 @@ var Quiz = {
       this.done = false;
       this.result = false;
       this.correct = 0;
+      this.tries = 0;
       this.asked_keys = []
       store.dispatch("create_quiz", this.value2key);
+      this.questions = store.state.topics.quiz.length;
       if( !this.multiplechoice ) {
         setTimeout(() => {
           this.$refs.written.focus();
         }, 200);
       }
+      this.$refs.timer.start();
     },
     stop : function() {
       store.dispatch("clear_quiz");
-      this.result = false;
-      this.written = "";
+      this.$refs.timer.stop();
+      this.done = true;
+    },
+    toggle_timing: function() {
+      this.$refs.timer.toggle_timing();
+    },
+    handle_timer_changed: function(duration) {
+      this.timer_active = duration > 0; 
+    },
+    handle_timer_done: function() {
+      this.done = true;
+      this.stop();
     },
     reset : function() {
       this.stop();
@@ -213,67 +199,36 @@ var Quiz = {
       this.multiplechoice = !this.multiplechoice;
       this.reset();
     },
-    answer: function(guess) {
-      var self = this,
-          result = this.multiplechoice ?
-            this.question.value == guess
-          : this.answers.indexOf(guess) !== -1;
-      this.result = {
-        key: this.question.key,
-        correct: result,
-        choices: this.question.choices,
-        outcome: this.multiplechoice ? this.question.choices.map(function(choice){
-          if( choice == self.question.value ) { return "success"};
-          if( choice == guess && guess != self.question.value ) { return "error"};
-          return null;
-        }) : ( result ? "success" : "error ")
-      }
+    next_question: function(result) {
       if(this.asked_keys.indexOf(this.question.key) === -1) {
         this.asked_keys.push(this.question.key);
       }
-      if(this.result.correct) {
+
+      this.tries += 1;
+
+      if(result.correct) {
         this.correct += 1;
-      }
-      if( !this.multiplechoice ) {
-        setTimeout(() => {
-          this.$refs.written_result.focus();
-        }, 200);
-      }
-    },
-    accept_error: function() {
-      this.answer(this.question.value);
-    },
-    next_question: function() {
-      if(this.result.correct) {
         store.commit("mark_correct");
       } else {
         store.commit("mark_incorrect");        
       }
-      this.result = false;
-      this.written = "";
+
+      // no next question?
       if( ! this.question ) {
-        this.done = true;
+        this.stop();
       }
-      if( !this.multiplechoice && !this.done ) {
-        setTimeout(() => {
-          this.$refs.written.focus();
-        }, 200);
-      }
-    },
-    any_alternative_from: function(answers_string) {
-      var answers = answers_string.split("|");
-      return answers[answers.length * Math.random() | 0];
     },
   },
   data: function() {
     return {
       value2key: false,
       multiplechoice: true,
-      written: "",
+      questions: 0,
+      tries: 0,
       correct: 0,
-      result: false,
       done: false,
       asked_keys: [],
+      timer_active: false
     }
   }
 };
