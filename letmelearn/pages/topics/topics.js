@@ -1,25 +1,39 @@
 var Topics = {
   template: `
 <ProtectedPage>
-  <template v-slot:subheader>
-    <TopicSelector/>
-    <v-btn flat icon @click="show_create_topic_dialog">
-      <v-icon>add</v-icon>
-    </v-btn>
-    <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected">
-      <v-icon>delete</v-icon>
-    </v-btn>
 
-    <v-btn flat icon @click="show_tag_dialog" :disabled="!selected">
-      <v-icon>bookmark</v-icon>
-    </v-btn>
+  <!-- toolbars -->
+
+  <template v-slot:subheader>
+    <v-layout row wrap class="pa-0 ma-0">
+
+      <v-flex xs12 sm7 md6 d-flex align-center>
+        <TopicSelector/>
+      </v-flex>
+
+      <v-flex xs12 sm5 md6 d-flex align-center>
+        <v-btn flat icon @click="show_create_topic_dialog" class="ma-0">
+          <v-icon>add</v-icon>
+        </v-btn>
+        <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected" class="ma-0">
+          <v-icon>delete</v-icon>
+        </v-btn>
+
+        <v-btn flat icon @click="show_tag_dialog" :disabled="!selected" class="ma-0">
+          <v-icon>bookmark</v-icon>
+        </v-btn>
   
-    <!--
-      <v-btn flat icon @click="rename_dialog = true" :disabled="!selected">
-        <v-icon>edit</v-icon>
-      </v-btn>
-    -->
+        <!--
+          <v-btn flat icon @click="rename_dialog = true" :disabled="!selected" class="ma-0">
+            <v-icon>edit</v-icon>
+          </v-btn>
+        -->
+      </v-flex>
+
+    </v-layout>
   </template>
+
+  <!-- tabs: items / import --> 
   
   <v-tabs v-model="tab" v-if="selected">
     <v-tab>
