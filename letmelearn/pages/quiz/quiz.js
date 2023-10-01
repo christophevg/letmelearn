@@ -5,34 +5,34 @@ var Quiz = {
   <!-- toolbar -->
   
   <template v-slot:subheader>
-      <v-layout row wrap class="pa-0 ma-0">
+    <v-layout row wrap class="pa-0 ma-0">
 
-        <v-flex xs12 sm7 md6 d-flex align-center>
-          <TopicSelector @change="change_topic" multiple tags/>
-        </v-flex>
+      <v-flex xs12 sm7 md6 d-flex align-center>
+        <TopicSelector @change="change_topic" multiple tags/>
+      </v-flex>
 
-        <v-flex xs12 sm5 md6 d-flex align-center>
-          <v-btn flat icon @click="start" :disabled="!selected || playing" class="ma-0">
-            <v-icon>play_arrow</v-icon>
-          </v-btn>
-          <v-btn flat icon @click="toggle_timing" :disabled="!selected" class="ma-0">
-            <v-icon>{{ timing_icon }}</v-icon>
-          </v-btn>
-          <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0">
-            <v-icon>stop</v-icon>
-          </v-btn>
-          <v-btn flat icon @click="reset" :disabled="!playing" class="ma-0">
-            <v-icon>replay</v-icon>
-          </v-btn>
-          <v-btn flat icon @click="swap" :disabled="!selected" class="ma-0">
-            <v-icon>{{ direction_icon }}</v-icon>
-          </v-btn>
-          <v-btn flat icon @click="toggle_style" :disabled="!selected" class="ma-0">
-            <v-icon>{{ style_icon }}</v-icon>
-          </v-btn>
-        </v-flex>
+      <v-flex xs12 sm5 md6 d-flex align-center>
+        <v-btn flat icon @click="start" :disabled="!selected || playing" class="ma-0">
+          <v-icon>play_arrow</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="toggle_timing" :disabled="!selected" class="ma-0">
+          <v-icon>{{ timing_icon }}</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0">
+          <v-icon>stop</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="reset" :disabled="!playing" class="ma-0">
+          <v-icon>replay</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="swap" :disabled="!selected" class="ma-0">
+          <v-icon>{{ direction_icon }}</v-icon>
+        </v-btn>
+        <v-btn flat icon @click="toggle_style" :disabled="!selected" class="ma-0">
+          <v-icon>{{ style_icon }}</v-icon>
+        </v-btn>
+      </v-flex>
 
-      </v-layout>
+    </v-layout>
   </template>
 
   <!-- progress bars -->
