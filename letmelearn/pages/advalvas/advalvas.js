@@ -17,6 +17,38 @@ var Home = {
           <v-flex xs7>
             <v-card-title primary-title>
               <div>
+                <div class="headline">Foutaanduiding</div>
+								<div class="grey--text">15 oktober 2023</div>
+
+            		<p>
+  
+                  Als je de antwoorden intypt en je maakt een foutje, krijg je
+                  vanaf nu een visuele aanduiding van wat er fout was.
+
+								</p>
+
+              </div>
+            </v-card-title>
+          </v-flex>
+          <v-flex xs5>
+						<div style="padding:15px">
+	            <v-img
+	              src="/app/static/images/news/diffs.png"
+	              height="125px"
+	              contain
+	            ></v-img>
+						</div>
+          </v-flex>
+        </v-layout>
+      </v-card>
+			
+			<br>
+  
+			<v-card>
+        <v-layout row>
+          <v-flex xs7>
+            <v-card-title primary-title>
+              <div>
                 <div class="headline">Timer!</div>
 								<div class="grey--text">1 oktober 2023</div>
 
