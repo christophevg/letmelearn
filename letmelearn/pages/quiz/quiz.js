@@ -162,7 +162,9 @@ var Quiz = {
     stop : function() {
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
-      this.$refs.question.stop();
+      if( this.$refs.question) {
+        this.$refs.question.stop();
+      }
       this.done = true;
     },
     toggle_timing: function() {
