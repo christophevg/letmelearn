@@ -38,6 +38,17 @@ Vue.component("BasicQuestion", {
             <div style="width:100%; text-align:center;margin-top:20px;">
               <v-text-field ref="written_result" v-model="written" :error="!result.correct" :background-color="result.markup"></v-text-field>
               <h1 v-if="!result.correct" style="color:green">{{ this.current_expected.replace("|", " or ") }}</h1>
+              <h1 v-if="!result.correct">
+                <template v-for="possible_answer in diff">
+                  <div>
+                  <template v-for="chunk in possible_answer">
+                      <span style="text-decoration:none;color:#b30000;background:#fadad7;" v-if="chunk.added">{{ chunk.value.replace(" ", "&nbsp;") }}</span>
+                      <span style="text-decoration:none;background:#eaf2c2;color:#406619;" v-if="chunk.removed">{{ chunk.value.replace(" ", "&nbsp;") }}</span>
+                      <span style="text-decoration:none;"                                  v-if="!chunk.removed && !chunk.added">{{ chunk.value }}</span>
+                  </template>
+                  </div>
+                </template>
+              </h1>
             </div>
           </v-card-title>
           <v-card-actions>
@@ -136,6 +147,14 @@ Vue.component("BasicQuestion", {
         })
         .concat([this.current_expected])
         .sort(()=>Math.random()-0.5);
+    },
+    diff: function() {
+      var self = this;
+      diffs = this.answers.map(function(possible_answer) {
+        return JsDiff.diffChars(possible_answer, self.written);
+      });
+      console.log(diffs);
+      return diffs;
     }
   },
   methods: {

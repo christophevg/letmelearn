@@ -69,6 +69,7 @@ import letmelearn.auth
 import letmelearn.api
 
 register_external_script(f"/app/static/auth.js")
+register_external_script(f"/app/static/diff.js")
 
 import letmelearn.pages.advalvas
 import letmelearn.pages.topics
