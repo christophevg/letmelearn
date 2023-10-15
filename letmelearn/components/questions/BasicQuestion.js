@@ -163,7 +163,7 @@ Vue.component("BasicQuestion", {
     },
     any_alternative_from: function(answers_string) {
       var answers = answers_string.split("|");
-      return answers[answers.length * Math.random() | 0];
+      return answers[answers.length * Math.random() | 0].trim();
     },
     next_question: function() {
       this.$emit("next", this.result);
