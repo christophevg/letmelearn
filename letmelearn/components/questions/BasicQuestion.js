@@ -158,6 +158,10 @@ Vue.component("BasicQuestion", {
     }
   },
   methods: {
+    stop: function() {
+      this.written = "";
+      this.result = null;
+    },
     answer: function(guess) {
       guess = guess.trim(); // be gentle and remove leading/trailing space ;-)
       var self = this,

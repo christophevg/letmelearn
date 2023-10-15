@@ -55,10 +55,11 @@ var Quiz = {
   <!-- question -->
 
   <template v-if="question">
-    <component :is="question.type"
-                v-bind="question.props"
-                :context="this"
-                @next="next_question"/>
+    <component ref="question"
+               :is="question.type"
+               v-bind="question.props"
+               :context="this"
+               @next="next_question"/>
   </template>
 
   <!-- done -->
@@ -161,6 +162,7 @@ var Quiz = {
     stop : function() {
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
+      this.$refs.question.stop();
       this.done = true;
     },
     toggle_timing: function() {
