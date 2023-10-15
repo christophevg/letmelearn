@@ -59,7 +59,10 @@ Vue.component("BasicQuestion", {
         <v-card-title primary-title class="justify-center">
           <h3 class="headline mb-0">{{ any_alternative_from(this.current_question) }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-btn @click="answer(choice)" v-for="choice in this.choices" v-bind:key="choice" block>
+            <v-btn @click="answer(choice)"
+                   v-for="choice in this.choices"
+                   v-bind:key="choice" block
+                   class="text-none">
               {{ any_alternative_from(choice) }}
             </v-btn>
           </div>
@@ -79,7 +82,8 @@ Vue.component("BasicQuestion", {
             <v-btn v-for="(choice, index) in result.choices"
                    v-bind:key="index"
                    block
-                   :color="result.markup[index]">
+                   :color="result.markup[index]"
+                   class="text-none">
               {{ choice.replace("|", " of ") }}
             </v-btn>
           </div>
