@@ -140,6 +140,7 @@ Vue.component("BasicQuestion", {
   },
   methods: {
     answer: function(guess) {
+      guess = guess.trim(); // be gentle and remove leading/trailing space ;-)
       var self = this,
           outcome = this.context.multiplechoice ?
             this.current_expected == guess
