@@ -150,11 +150,9 @@ Vue.component("BasicQuestion", {
     },
     diff: function() {
       var self = this;
-      diffs = this.answers.map(function(possible_answer) {
+      return this.answers.map(function(possible_answer) {
         return JsDiff.diffChars(possible_answer, self.written);
       });
-      console.log(diffs);
-      return diffs;
     }
   },
   methods: {
