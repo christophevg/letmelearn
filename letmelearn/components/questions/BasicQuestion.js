@@ -164,19 +164,20 @@ Vue.component("BasicQuestion", {
       guess = guess.trim(); // be gentle and remove leading/trailing space ;-)
       var self = this,
           outcome = this.context.multiplechoice ?
-            this.current_expected == guess
+            this.current_expected.trim() == guess
           : this.answers.indexOf(guess) !== -1;
       this.result = {
         correct: outcome,
         choices: this.choices,
         markup: this.context.multiplechoice ? 
           this.choices.map(function(choice){
-            if( choice == self.current_expected )                   { return "success" };
-            if( choice == guess && guess != self.current_expected ) { return "error"   };
+            if( choice.trim() == self.current_expected.trim() )                   { return "success" };
+            if( choice.trim() == guess && guess != self.current_expected.trim() ) { return "error"   };
             return null;
           })
           : ( outcome ? "success" : "error ")
       }
+
       if( ! this.context.multiplechoice ) {
         setTimeout(() => {
           this.$refs.written_result.focus();
