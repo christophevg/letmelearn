@@ -2,3 +2,4 @@
 *.pyc
 *.local
 client_secret*.json
+.DS_Store
