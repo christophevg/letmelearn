@@ -14,22 +14,26 @@ Vue.component("ProtectedPage", {
               Hi {{ session.name }}! 👋
             </h2>
           </v-flex>
+
+          <v-spacer/>
   
           <v-flex sm12 md7 d-flex align-center v-if="!show_extended">
             <slot name="subheader"></slot>
           </v-flex>
 
+          <v-spacer/>
+
           <v-flex xs1 d-flex justify-end>
-            <v-tooltip left>
+            <v-tooltip bottom>
               <template v-slot:activator="{ on }">
-                <v-btn @click="logout()" flat icon v-on="on"><v-icon>close</v-icon></v-btn>
+                <v-btn @click="logout()" flat v-on="on"><v-icon>close</v-icon></v-btn>
               </template>
               <span>log out</span>
             </v-tooltip>
           </v-flex>
 
           <v-flex xs12 d-flex align-center v-if="show_extended">
-              <slot name="subheader"></slot>
+            <slot name="subheader"></slot>
           </v-flex>
 
         </v-layout>
