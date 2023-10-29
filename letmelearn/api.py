@@ -8,7 +8,7 @@ from flask_login import current_user
 
 from baseweb.rest import api
 
-from letmelearn      import db
+from letmelearn.data import db
 from letmelearn.auth import authenticated
 
 from pymongo.collection import ReturnDocument

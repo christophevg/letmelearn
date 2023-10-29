@@ -31,15 +31,6 @@ for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.in
   if len(module_logger.handlers) > 0:
     module_logger.handlers[0].setFormatter(formatter)
 
-# setup database connection
-
-from pymongo import MongoClient
-
-DB_CONN = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/letmelearn")
-DB_NAME = DB_CONN.split("/")[-1].split("?")[0]
-
-db = MongoClient(DB_CONN)[DB_NAME]
-
 # register components
 
 from baseweb.interface import register_component, register_external_script, register_static_folder

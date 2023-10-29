@@ -7,7 +7,7 @@ from functools import wraps
 
 from baseweb.web import server
 
-from letmelearn import db
+from letmelearn.data import db
 
 from flask import request
 
