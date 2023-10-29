@@ -46,7 +46,8 @@ for component in [
   "Timer",
   "ProtectedPage",
   "TopicsStore",
-  "questions/BasicQuestion"
+  "TextDiff",
+  "questions/BasicQuestion",
 ]:
   register_component(f"{component}.js", COMPONENTS)
 

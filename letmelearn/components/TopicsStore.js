@@ -1,11 +1,22 @@
 store.registerModule("topics", {
   state: {
-    topics  : [],     // all known topics
-    selected: [],     // list of selected topics
-    quiz    : [],     // shuffled items from all selected topics
-    _count  : 0       // to force shuffling
+    questions: [],     // all known questions
+    topics   : [],     // all known topics
+    selected : [],     // list of selected topics
+    quiz     : [],     // shuffled items from all selected topics
+    _count   : 0       // to force shuffling
   },
   getters: {
+    questions: function(state) {
+      return state.questions;
+    },
+    question: function(state) {
+      return function(name) {
+        return state.questions.find(function(question) {
+          return question.name == name;
+        });        
+      }
+    },
     topic : function(state) {
       return function(id) {
         return state.topics.find(function(topic) {
@@ -19,23 +30,18 @@ store.registerModule("topics", {
     selected_hash: function(state) {
       return state.selected.map(function(topic){ return topic._id; }).join(";");
     },
-		selected_items: function(state) {
-      // returns a list of all items of all selected topics
-      // transparently "upgrades" old BasicQuestions
-      // {
-      //   type  : topic.type | "BasicQuestion" (if missing)
-      //   props : item | { topics: , question: , expected: } (if BasicQuestion)
-      // }
+		selected_items: function(state, getters) {
 			return state.selected.reduce(function(all_items, topic) {
         all_items.push(...topic.items.map(function(item){
           return {
-            type : topic.type ? topic.type : "BasicQuestion",
-            props: topic.type ? item : {
-              topic   : topic._id,
-              question: item.key,
-              expected: item.value
-            }
-          }
+            topic    : {
+              _id      : topic._id,
+              name     : topic.name,
+              question : topic.question,
+              tags     : topic.tags
+            },
+            item     : item
+          } 
         }));
 				return all_items;
 			}, []);
@@ -93,8 +99,8 @@ store.registerModule("topics", {
         contentType: "application/json",
         dataType: "json",
         data: JSON.stringify({
-          name : topic.name,
-          items: topic.items
+          name    : topic.name,
+          question: topic.question
         }),
         success: function(new_topic) {
           context.commit("new_topic", new_topic);
@@ -129,7 +135,10 @@ store.registerModule("topics", {
         url: "/api/topics/" + updating.topic._id + "/items",
         contentType: "application/json",
         dataType: "json",
-        data: JSON.stringify(updating.update),
+        data: JSON.stringify({
+          original: updating["original"],
+          update: updating["update"]
+        }),
         success: function(result) {
           context.commit("updated_item", updating);
         }
@@ -137,7 +146,7 @@ store.registerModule("topics", {
     },
     delete_item: function(context, removing) {
       $.ajax({
-        type: "PATCH",
+        type: "DELETE",
         url: "/api/topics/" + removing.topic._id + "/items",
         contentType: "application/json",
         dataType: "json",
@@ -156,6 +165,9 @@ store.registerModule("topics", {
     }
   },
   mutations: {
+    question: function(state, new_question) {
+      state.questions.push(new_question);
+    },
     topics: function(state, new_topics) {
       Vue.set(state, "topics", new_topics);
     },
@@ -207,17 +219,18 @@ store.registerModule("topics", {
       var item = state.topics.find(function(topic) {
         return topic._id == updated.topic._id;
       }).items.find(function(item){
-        return item.key == updated.update.original.key;
+        return JSON.stringify(item) == JSON.stringify(updated.original);
       });
-      Vue.set(item, "key",   updated.update.key);
-      Vue.set(item, "value", updated.update.value);
+      Object.keys(item).map(function(prop) {
+        Vue.set(item, prop, updated.update[prop]);
+      });
     },
     removed_item: function(state, removed) {
       var topic = state.topics.find(function(topic) {
         return topic._id == removed.topic._id;
       })
       topic.items = topic.items.filter(function(item){
-        return item.key != removed.removal.key;
+        return JSON.stringify(item) != JSON.stringify(removed.removal);
       });
     },
     quiz: function(state, new_quiz) {

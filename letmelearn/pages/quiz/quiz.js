@@ -54,12 +54,12 @@ var Quiz = {
 
   <!-- question -->
 
-  <template v-if="question">
+  <template v-if="problem">
     <component ref="question"
-               :is="question.type"
-               v-bind="question.props"
+               :is="problem.topic.question.type"
+               v-bind="problem"
                :context="this"
-               @next="next_question"/>
+               @next="next"/>
   </template>
 
   <!-- done -->
@@ -80,7 +80,7 @@ var Quiz = {
             
             Er waren {{ questions }} vragen.<br>
             Daarvan zijn er {{ asked }} gesteld.<br>
-            In {{ tries }} pogingen, had je er {{ correct }} juist.<br>
+            In {{ attempts }} pogingen, had je er {{ correct }} juist.<br>
 
             <template v-if="this.timer_active">
               Je deed dit in {{ this.$refs.timer.elapsed }} seconden.<br>
@@ -136,7 +136,7 @@ var Quiz = {
     pct_correct: function() {
       return (this.correct / this.items_count) * 100;
     },
-    question: function() {
+    problem: function() {
       return store.getters.current_question;
     },
     asked: function() {
@@ -146,25 +146,16 @@ var Quiz = {
   methods: {
     start : function() {
       this.done = false;
-      this.result = false;
       this.correct = 0;
-      this.tries = 0;
+      this.attempts = 0;
       this.asked_questions = []
       store.dispatch("create_quiz");
       this.questions = store.state.topics.quiz.length;
-      if( !this.multiplechoice ) {
-        setTimeout(() => {
-          this.$refs.written.focus();
-        }, 200);
-      }
       this.$refs.timer.start();
     },
     stop : function() {
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
-      if( this.$refs.question) {
-        this.$refs.question.stop();
-      }
       this.done = true;
     },
     toggle_timing: function() {
@@ -182,7 +173,7 @@ var Quiz = {
       this.start();
     },
     change_topic: function(new_topic) {
-      if(this.question) { this.reset(); }
+      if(this.problem) { this.reset(); }
     },
     swap : function() {
       this.right2left = !this.right2left;
@@ -192,14 +183,14 @@ var Quiz = {
       this.multiplechoice = !this.multiplechoice;
       this.reset();
     },
-    next_question: function(result) {
-      if(this.asked_questions.indexOf(this.question) === -1) {
-        this.asked_questions.push(this.question);
+    next: function(success) {
+      if(this.asked_questions.indexOf(this.problem) === -1) {
+        this.asked_questions.push(this.problem);
       }
 
-      this.tries += 1;
+      this.attempts += 1;
 
-      if(result.correct) {
+      if(success) {
         this.correct += 1;
         store.commit("mark_correct");
       } else {
@@ -207,7 +198,7 @@ var Quiz = {
       }
 
       // no next question?
-      if( ! this.question ) {
+      if( ! this.problem ) {
         this.stop();
       }
     },
@@ -217,7 +208,7 @@ var Quiz = {
       right2left: false,
       multiplechoice: true,
       questions: 0,
-      tries: 0,
+      attempts: 0,
       correct: 0,
       done: false,
       asked_questions: [],
