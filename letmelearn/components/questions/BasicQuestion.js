@@ -332,7 +332,7 @@ Vue.component("BasicQuestionImporter", {
         }
       });
       this.data = "";
-      this.$emit("import_succes");
+      this.$emit("import_success");
     }
   },
   data: function() {
@@ -378,7 +378,7 @@ Vue.component("BasicQuestion", {
                        :item="item"/>
 <BasicQuestionImporter v-else-if="importer"
                        :topic="this.topic"
-                       @import_succes="import_success"/>
+                       @import_success="import_success"/>
 <BasicQuestionEditor   v-else-if="editor"
                        :topic="this.topic"
                        :item="this.item"/>

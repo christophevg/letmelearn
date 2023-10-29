@@ -92,7 +92,7 @@ var Topics = {
           <component importer
                      :is="selected.question.type"
                      :topic="selected"
-                     @import_succes="import_success"/>
+                     @import_success="import_success"/>
 
         </v-card-text>
       </v-card>      
