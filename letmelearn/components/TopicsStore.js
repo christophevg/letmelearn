@@ -309,7 +309,17 @@ Vue.component("TopicSelector", {
       return this.show_multiple_hint ? "kies één of meerdere topics" : "";
     },
     topics: function() {
-      return store.getters.topics;
+      return [...store.getters.topics].sort(function(a, b) {
+        const nameA = a.name.toUpperCase();
+        const nameB = b.name.toUpperCase();
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        return 0;
+      });
     },
     multiple_selection: {
       get() {
