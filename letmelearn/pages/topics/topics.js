@@ -303,7 +303,7 @@ var Topics = {
     },
     show_edit_topic_dialog: function() {
       this.edited_topic.name     = this.selected.name;
-      this.edited_topic.question = this.selected.question;
+      this.edited_topic.question = {...this.selected.question};
       this.edit_dialog = true;
     },
     update_topic: function() {
