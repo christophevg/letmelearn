@@ -172,7 +172,10 @@ store.registerModule("topics", {
       Vue.set(state, "topics", new_topics);
     },
     selected_topic: function(state, selection) {
+      // TODO: make this more robust
+      selection = selection.filter(function(topic) { return topic });
       Vue.set(state, "selected", selection);
+      // update hash to reflect current state
       window.location.hash = selection.map(function(topic){
       	if( topic && topic._id ) {
           return topic._id;
