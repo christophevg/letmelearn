@@ -281,7 +281,7 @@ var Topics = {
   methods: {
 
     show_create_topic_dialog: function() {
-      this.new_topic.name = "";
+      this.new_topic = { name: "", question: { type: null }};
       this.create_dialog  = true;
       setTimeout(() => { this.$refs.new_topic_name.focus(); }, 200);
     },
