@@ -47,6 +47,7 @@ for component in [
   "ProtectedPage",
   "TopicsStore",
   "TextDiff",
+  "SimpleDialog",
   "questions/BasicQuestion",
 ]:
   register_component(f"{component}.js", COMPONENTS)

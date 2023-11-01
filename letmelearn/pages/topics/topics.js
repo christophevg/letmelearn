@@ -101,139 +101,87 @@ var Topics = {
   
   <!-- CREATE TOPIC -->
   
-  <v-dialog v-model="create_dialog" persistent width="500"  @keydown.esc="new_topic.name = null; create_dialog = false;">
-    <v-form @submit.prevent="create_dialog = false; create_topic()">
-      <v-card>
-        <v-card-title class="headline grey lighten-2" primary-title>
-          Create a new topic...
-        </v-card-title>
+  <SimpleDialog :model="create_dialog"
+                title="Maak een nieuwe topic..."
+                submit_label="Creëer..."
+                cancel_label="Annuleer"
+                @cancel="new_topic.name = null; create_dialog = false;"
+                @submit="create_dialog = false; create_topic();">
 
-        <v-card-text>
-          Geef een duidelijke omschrijving voor dit onderwerp:
-          <v-text-field label="Naam" required v-model="new_topic.name" ref="new_topic_name"/>
-          Kies een vraag-type:
-          <v-select :items="question_types" v-model="new_topic.question.type" label="Vraag" @change="question_type_selected"/>
-          <div v-if="question_type">
-            <i>{{ question_type.desc }}</i><br>
-            <br>
-            Geef een passende omschrijving voor elke eigenschap:
-            <v-text-field v-for="(_, prop, index) in question_type.labels" :key="index" :label="prop" required v-model="new_topic.question[prop]"/>
-          </div>
-        </v-card-text>
+    Geef een duidelijke omschrijving voor dit onderwerp:
+    <v-text-field label="Naam" required v-model="new_topic.name" ref="new_topic_name"/>
+    Kies een vraag-type:
+    <v-select :items="question_types" v-model="new_topic.question.type" label="Vraag" @change="question_type_selected"/>
+    <div v-if="question_type">
+      <i>{{ question_type.desc }}</i><br>
+      <br>
+      Geef een passende omschrijving voor elke eigenschap:
+      <v-text-field v-for="(_, prop, index) in question_type.labels" :key="index" :label="prop" required v-model="new_topic.question[prop]"/>
+    </div>
 
-        <v-divider></v-divider>
+  </SimpleDialog>
 
-        <v-card-actions>
-            <v-btn color="secondary" flat @click="new_topic.name = null; create_dialog = false">Cancel</v-btn>
-            <v-spacer></v-spacer>
-            <v-btn color="primary" flat type="submit">Create...</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-form>
-  </v-dialog>
+  <!-- EDIT TOPIC -->
 
-    <!-- EDIT TOPIC -->
-  
-    <v-dialog v-model="edit_dialog" persistent width="500"  @keydown.esc="edited_topic.name = null; edit_dialog = false;">
-      <v-form @submit.prevent="edit_dialog = false; update_topic()">
-        <v-card>
-          <v-card-title class="headline grey lighten-2" primary-title>
-            Edit topic...
-          </v-card-title>
+  <SimpleDialog :model="edit_dialog"
+                title="Werk deze topic bij..."
+                submit_label="Werk bij..."
+                cancel_label="Annuleer"
+                @cancel="edited_topic.name = null; edit_dialog = false;"
+                @submit="edit_dialog = false; update_topic();">
 
-          <v-card-text v-if="edited_topic.question">
-            <v-text-field label="Naam" required v-model="edited_topic.name" ref="edited_topic_name"/>
-            <v-text-field v-for="(_, prop, index) in edited_topic.question" :disabled="prop == 'type'" :key="index" :label="prop" required v-model="edited_topic.question[prop]"/>
-          </v-card-text>
+    <v-text-field label="Naam" required v-model="edited_topic.name" ref="edited_topic_name"/>
+    <v-text-field v-for="(_, prop, index) in edited_topic.question" :disabled="prop == 'type'" :key="index" :label="prop" required v-model="edited_topic.question[prop]"/>
 
-          <v-divider></v-divider>
-
-          <v-card-actions>
-              <v-btn color="secondary" flat @click="edit_dialog = false">Cancel</v-btn>
-              <v-spacer></v-spacer>
-              <v-btn color="primary" flat type="submit">Update...</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-form>
-    </v-dialog>
+  </SimpleDialog>
 
   <!-- EDIT TAGS -->
 
-  <v-dialog v-model="tag_dialog" persistent width="500" @keydown.esc="tag_dialog = false;">
-    <v-form @submit.prevent="tag_dialog = false; update_tags()">
-      <v-card>
-        <v-card-title class="headline grey lighten-2" primary-title>
-          Tags for this topic...
-        </v-card-title>
+  <SimpleDialog :model="tag_dialog"
+                title="Tag deze topic..."
+                submit_label="Werk bij..."
+                cancel_label="Annuleer"
+                @cancel="tag_dialog = false;"
+                @submit="tag_dialog = false; update_tags();">
 
-        <v-card-text>
-          Voeg "tags" toe om deze topic te identificeren. De enter/return
-          knop maakt van je text een tag.
+    Voeg "tags" toe om deze topic te identificeren. De enter/return knop maakt
+    van je text een tag.
 
-          <v-combobox v-model="tags" chips deletable-chips multiple></v-combobox>
+    <v-combobox v-model="tags" chips deletable-chips multiple></v-combobox>
 
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions>
-          <v-btn color="secondary" flat @click="tag_dialog = false">Cancel</v-btn>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" flat type="submit">Update...</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-form>
-  </v-dialog>
+  </SimpleDialog>
 
   <!-- ADD ITEM -->
   
-  <v-dialog v-model="add_item_dialog" persistent width="500px" @keydown.esc="add_item_dialog = false;">
-    <v-form @submit.prevent="add_item_dialog = false; add_item()">
-      <v-card>
-        <v-card-title class="headline grey lighten-2" primary-title>
-          Add a new item...
-        </v-card-title>
+  <SimpleDialog :model="add_item_dialog"
+                title="Voeg een nieuw item toe..."
+                submit_label="Voeg toe..."
+                cancel_label="Annuleer"
+                @cancel="add_item_dialog = false;"
+                @submit="add_item_dialog = false; add_item();">
 
-        <v-card-text>
-          <component editor :is="selected.question.type"
-                            v-if="selected"
-                            :topic="selected"
-                            :item="this.editing"/>
-        </v-card-text>
+    <component editor :is="selected.question.type"
+                      v-if="selected"
+                      :topic="selected"
+                      :item="this.editing"/>
 
-        <v-card-actions>
-          <v-btn color="secondary" flat @click="add_item_dialog = false">Cancel</v-btn>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" flat type="submit">Add...</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-form>
-  </v-dialog>
+  </SimpleDialog>
 
   <!-- EDIT ITEM -->
 
-  <v-dialog v-model="edit_item_dialog" persistent width="500px" @keydown.esc="edit_item_dialog = false;">
-    <v-form @submit.prevent="edit_item_dialog = false; update_item()">
-      <v-card>
-        <v-card-title class="headline grey lighten-2" primary-title>
-          Update item...
-        </v-card-title>
+  <SimpleDialog :model="edit_item_dialog"
+                title="Werk dit item bij..."
+                submit_label="Werk bij..."
+                cancel_label="Annuleer"
+                @cancel="edit_item_dialog = false;"
+                @submit="edit_item_dialog = false; update_item();">
 
-        <v-card-text>
-          <component editor :is="selected.question.type"
-                            v-if="selected"
-                            :topic="selected"
-                            :item="this.editing"/>
-        </v-card-text>
+    <component editor :is="selected.question.type"
+                      v-if="selected"
+                      :topic="selected"
+                      :item="this.editing"/>
 
-        <v-card-actions>
-          <v-btn color="secondary" flat @click="edit_item_dialog = false">Cancel</v-btn>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" flat type="submit">Update...</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-form>
-  </v-dialog>
+  </SimpleDialog>
   
 </ProtectedPage>
 `,
