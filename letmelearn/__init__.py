@@ -48,6 +48,7 @@ for component in [
   "TopicsStore",
   "TextDiff",
   "SimpleDialog",
+  "MultiTextField",
   "questions/BasicQuestion",
 ]:
   register_component(f"{component}.js", COMPONENTS)

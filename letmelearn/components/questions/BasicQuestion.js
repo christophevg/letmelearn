@@ -237,29 +237,15 @@ Vue.component("BasicQuestionEditor", {
   ],
   template: `
 <div v-if="model">
-  <template v-for="(option, index) in model.left">
-    <v-text-field v-model="model.left[index]"  :label="label('left')"
-                  @click:append-outer="remove('left', index)"
-                  ref="left_field">
-      <template v-slot:append-outer>
-        <v-icon small color="red" @click="remove('left', index)">delete</v-icon>
-      </template>
-    </v-text-field>
-  </template>
-  <div style="text-align:right;">
-    <v-icon small @click="add('left')">add</v-icon>
-  </div>
-  <template v-for="(option, index) in model.right">
-    <v-text-field v-model="model.right[index]" :label="label('right')"
-                  @click:append-outer="remove('right', index)">
-      <template v-slot:append-outer>
-        <v-icon small color="red" @click="remove('right', index)">delete</v-icon>
-      </template>
-    </v-text-field>
-  </template>
-  <div style="text-align:right;">
-    <v-icon small @click="add('right')">add</v-icon>
-  </div>
+  <MultiTextField :model="model.left"
+                  :label="label('left')"
+                  :focus="true"
+                  @remove="(index) => { remove('left', index); }"
+                  @add="add('left')"/>
+  <MultiTextField :model="model.right"
+                  :label="label('right')"
+                  @remove="(index) => { remove('right', index); }"
+                  @add="add('right')"/>
 </div>
 `,
   computed: {
@@ -270,7 +256,6 @@ Vue.component("BasicQuestionEditor", {
           left : [...this.item.original.left],
           right: [...this.item.original.right]
         }
-        setTimeout(() => { this.$refs.left_field[0].focus() }, 200);
       }
       return this.item.updated;
     },
