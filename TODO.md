@@ -2,8 +2,8 @@
 
 ## fix
 
-- [ ] clear dialogs on dismissal
-  - [ ] create topic
+- [x] clear dialogs on dismissal
+  - [x] create topic
 
 ## improve
 
@@ -21,9 +21,10 @@
 
 ## extend
 
+- [ ] track results
+  - [ ] create feed -> ad valvas
 - [ ] implement PickCorrectAnswerQuestion
 - [ ] share topics with other users
 - [ ] enable following of other users
-- [ ] add notifications -> ad valvas
-  - [ ] also on followers
+  - [ ] see results in feed
 - [ ] topic selection based on tags
