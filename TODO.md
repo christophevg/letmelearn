@@ -5,6 +5,9 @@
 - [x] clear dialogs on dismissal
   - [x] create topic
 - [ ] Fill In Question: text size according to width when xs
+- [ ] TopicSelector
+  - [ ] improve hiding strategy of multiple selections
+  - [ ] fix hint text vs toolbar height
 
 ## improve
 
