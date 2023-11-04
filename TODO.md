@@ -4,6 +4,7 @@
 
 - [x] clear dialogs on dismissal
   - [x] create topic
+- [ ] Fill In Question: text size according to width when xs
 
 ## improve
 
@@ -23,7 +24,7 @@
 
 - [ ] track results
   - [ ] create feed -> ad valvas
-- [ ] implement PickCorrectAnswerQuestion
+- [x] implement FillInQuestion
 - [ ] share topics with other users
 - [ ] enable following of other users
   - [ ] see results in feed

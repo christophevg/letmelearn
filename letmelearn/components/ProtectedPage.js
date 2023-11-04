@@ -3,44 +3,39 @@ Vue.component("ProtectedPage", {
 <div>
   <div v-if="session" class="pa-0 ma-0">
 
-      <v-container style="padding:5px">
-        <v-layout row wrap class="pa-0 mb-0" align-center>
-          
-          <v-flex sm11 md4 d-flex align-center>
-            <h2>
-              <v-avatar>
-                <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
-              </v-avatar>
-              Hi {{ session.name }}! 👋
-            </h2>
-          </v-flex>
+    <v-toolbar flat>
+      <v-toolbar-title>
+        <v-avatar>
+          <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
+        </v-avatar>
+        Hi {{ session.name }}! 👋
+      </v-toolbar-title>
 
-          <v-spacer/>
+      <v-spacer/>
+
+      <slot name="subheader" v-if="!show_extended"/>
+
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn float icon @click="logout()" v-on="on"><v-icon>close</v-icon></v-btn>
+        </template>
+        <span>log out</span>
+      </v-tooltip>
+
+    </v-toolbar>
+
+    <v-toolbar flat v-if="show_extended">
+
+      <v-spacer/>
   
-          <v-flex sm12 md7 d-flex align-center v-if="!show_extended">
-            <slot name="subheader"></slot>
-          </v-flex>
+      <slot name="subheader"/>
 
-          <v-spacer/>
-
-          <v-flex xs1 d-flex justify-end>
-            <v-tooltip bottom>
-              <template v-slot:activator="{ on }">
-                <v-btn @click="logout()" flat v-on="on"><v-icon>close</v-icon></v-btn>
-              </template>
-              <span>log out</span>
-            </v-tooltip>
-          </v-flex>
-
-          <v-flex xs12 d-flex align-center v-if="show_extended">
-            <slot name="subheader"></slot>
-          </v-flex>
-
-        </v-layout>
-      </v-container>
+      <v-spacer/>
+  
+    </v-toolbar>
 
     <div>
-      <slot></slot>
+      <slot/>
     </div>
   </div>
     

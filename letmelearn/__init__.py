@@ -33,11 +33,14 @@ for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.in
 
 # register components
 
-from baseweb.interface import register_component, register_external_script, register_static_folder
+from baseweb.interface import register_component, register_external_script
+from baseweb.interface import register_static_folder, register_stylesheet
 
 HERE = os.path.dirname(__file__)
 
 register_static_folder(os.path.join(HERE, "static"))
+
+register_stylesheet("custom.css", os.path.join(HERE, "static", "css"))
 
 # TODO: glob folder recursively
 COMPONENTS = os.path.join(HERE, "components")
@@ -50,6 +53,7 @@ for component in [
   "SimpleDialog",
   "MultiTextField",
   "questions/BasicQuestion",
+  "questions/FillInQuestion"
 ]:
   register_component(f"{component}.js", COMPONENTS)
 

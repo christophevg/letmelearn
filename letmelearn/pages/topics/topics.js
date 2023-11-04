@@ -5,43 +5,54 @@ var Topics = {
   <!-- toolbars -->
 
   <template v-slot:subheader>
-    <v-layout row wrap class="pa-0 ma-0">
 
-      <v-flex xs12 sm7 md6 d-flex align-center>
-        <TopicSelector/>
-      </v-flex>
+    <TopicSelector/>
 
-      <v-flex xs12 sm5 md6 d-flex align-center>
+    <v-btn flat icon @click="show_create_topic_dialog" class="ma-0">
+      <v-icon>add</v-icon>
+    </v-btn>
 
-        <v-spacer/>
+    <v-btn flat icon @click="show_edit_topic_dialog" :disabled="!selected" class="ma-0">
+      <v-icon>edit</v-icon>
+    </v-btn>
 
-        <v-btn flat @click="show_create_topic_dialog" class="ma-0">
-          <v-icon>add</v-icon>
+    <v-btn flat icon @click="show_tag_dialog" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
+      <v-icon>bookmark</v-icon>
+    </v-btn>
+
+    <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
+      <v-icon>delete</v-icon>
+    </v-btn>
+
+    <v-menu bottom left v-if="show_in_menu">
+      <template v-slot:activator="{ on }">
+        <v-btn
+          flat
+          icon
+          v-on="on"
+        >
+          <v-icon>more_vert</v-icon>
         </v-btn>
+      </template>
 
-        <v-spacer/>
+      <v-list>
+        <v-list-tile>
 
-        <v-btn flat @click="show_edit_topic_dialog" :disabled="!selected" class="ma-0">
-          <v-icon>edit</v-icon>
-        </v-btn>
+          <v-btn flat icon @click="show_tag_dialog" :disabled="!selected" class="ma-0">
+            <v-icon>bookmark</v-icon>
+          </v-btn>
 
-        <v-spacer/>
+        </v-list-tile>
+        <v-list-tile>
 
-        <v-btn flat @click="show_tag_dialog" :disabled="!selected" class="ma-0">
-          <v-icon>bookmark</v-icon>
-        </v-btn>
+          <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected" class="ma-0">
+            <v-icon>delete</v-icon>
+          </v-btn>
 
-        <v-spacer/>
+        </v-list-tile>
+      </v-list>
+    </v-menu>
 
-        <v-btn flat color="red" @click="delete_topic" :disabled="!selected" class="ma-0">
-          <v-icon>delete</v-icon>
-        </v-btn>
-
-        <v-spacer/>
-  
-      </v-flex>
-
-    </v-layout>
   </template>
 
   <!-- tabs: items / import --> 
@@ -102,28 +113,64 @@ var Topics = {
   <!-- CREATE TOPIC -->
   
   <SimpleDialog :model="create_dialog"
-                title="Maak een nieuwe topic..."
+                title="Maak een nieuw ontwerp..."
                 submit_label="Creëer..."
                 cancel_label="Annuleer"
                 @cancel="new_topic.name = null; create_dialog = false;"
                 @submit="create_dialog = false; create_topic();">
 
     Geef een duidelijke omschrijving voor dit onderwerp:
-    <v-text-field label="Naam" required v-model="new_topic.name" ref="new_topic_name"/>
-    Kies een vraag-type:
-    <v-select :items="question_types" v-model="new_topic.question.type" label="Vraag" @change="question_type_selected"/>
+    <v-text-field label="Naam"
+                  required
+                  v-model="new_topic.name"
+                  ref="new_topic_name"/>
+
+    Kies de soort vraag voor dit ontwerp:
+    <v-select :items="question_types"
+              item-text="title"
+              item-value="name"
+              v-model="new_topic.question.type"
+              label="Soort"
+              @change="question_type_selected"/>
+
     <div v-if="question_type">
-      <i>{{ question_type.desc }}</i><br>
+      <v-alert :value="true" color="info" icon="info" outline>
+        {{ question_type.desc }}
+      </v-alert>
+
       <br>
-      Geef een passende omschrijving voor elke eigenschap:
-      <v-text-field v-for="(_, prop, index) in question_type.labels" :key="index" :label="prop" required v-model="new_topic.question[prop]"/>
+
+      Geef een passende omschrijving voor elk deel van de vragen:
+      <v-text-field v-for="(label, prop, index) in question_type.labels"
+                    :key="index"
+                    :label="label"
+                    required
+                    v-model="new_topic.question.labels[prop]"/>
+
+      <div v-if="question_type.props.topic">
+        Geef elk van onderstaande configuratie parameters een juiste invulling:
+        <template v-for="(config, prop, index) in question_type.props.topic">
+          <MultiTextField v-if="config.multi"
+                          :model="new_topic.question.props[prop]"
+                          :label="question_type.labels[prop]"
+                          @remove="(index) => { new_topic.question.props[prop].splice(index, 1) }"
+                          @add="new_topic.question.props[prop].push('')"/>
+          <v-text-field v-else
+                        :key="index"
+                        :label="question_type.labels[prop]"
+                        required
+                        v-model="new_topic.question.props[prop]"/>
+      
+        </template>
+      </div>
     </div>
 
   </SimpleDialog>
 
   <!-- EDIT TOPIC -->
 
-  <SimpleDialog :model="edit_dialog"
+  <SimpleDialog v-if="selected"
+                :model="edit_dialog"
                 title="Werk deze topic bij..."
                 submit_label="Werk bij..."
                 cancel_label="Annuleer"
@@ -131,7 +178,27 @@ var Topics = {
                 @submit="edit_dialog = false; update_topic();">
 
     <v-text-field label="Naam" required v-model="edited_topic.name" ref="edited_topic_name"/>
-    <v-text-field v-for="(_, prop, index) in edited_topic.question" :disabled="prop == 'type'" :key="index" :label="prop" required v-model="edited_topic.question[prop]"/>
+
+    <v-text-field label="Soort" required :value="selected_type.title" :disabled="true"/>
+
+    <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
+                  :key="index"
+                  :label="selected_type.labels[prop]"
+                  required
+                  v-model="edited_topic.question.labels[prop]"/>
+    
+    <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
+      <MultiTextField v-if="config.multi"
+                      :model="edited_topic.question.props[prop]"
+                      :label="selected_type.labels[prop]"
+                      @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
+                      @add="edited_topic.question.props[prop].push('')"/>
+      <v-text-field v-else
+                    :key="index"
+                    :label="question_type.labels[prop]"
+                    required
+                    v-model="edited_topic.question.props[prop]"/>
+    </template>    
 
   </SimpleDialog>
 
@@ -163,7 +230,8 @@ var Topics = {
     <component editor :is="selected.question.type"
                       v-if="selected"
                       :topic="selected"
-                      :item="this.editing"/>
+                      :item="this.editing"
+                      :showing="add_item_dialog"/>
 
   </SimpleDialog>
 
@@ -179,7 +247,8 @@ var Topics = {
     <component editor :is="selected.question.type"
                       v-if="selected"
                       :topic="selected"
-                      :item="this.editing"/>
+                      :item="this.editing"
+                      :showing="edit_item_dialog"/>
 
   </SimpleDialog>
   
@@ -200,8 +269,14 @@ var Topics = {
     }
   },
   computed: {
+    show_in_menu: function() {
+      return this.$vuetify.breakpoint.name == "xs";
+    },
     selected: function() {
 			return store.state.topics.selected.length == 1 ? store.state.topics.selected[0] : null;
+    },
+    selected_type: function() {
+      return this.selected ? store.getters.question(this.selected.question.type) : null;
     },
     topic_headers: function() {
       return store.getters.question(this.selected.question.type).headers;
@@ -209,15 +284,18 @@ var Topics = {
     headers: function() {
       var self = this;
       return this.topic_headers.map(function(header){
-        return { text: self.selected.question[header], align: "left", sortable: true, value: header };
+        return {
+          text: self.selected.question.labels[header],
+          align: "left",
+          sortable: true,
+          value: header
+        };
       }).concat([
         { text: "", sortable: false, value: "item" }
       ])
     },
     question_types: function() {
-      return store.getters.questions.map(function(question){
-        return question.name;
-      })
+      return store.getters.questions;
     },
     question_type: function() {
       if(this.new_topic.question.type) {
@@ -228,15 +306,31 @@ var Topics = {
   },
   methods: {
 
+    // TOPICS
+
     show_create_topic_dialog: function() {
       this.new_topic = { name: "", question: { type: null }};
       this.create_dialog  = true;
       setTimeout(() => { this.$refs.new_topic_name.focus(); }, 200);
     },
     question_type_selected: function() {
-      this.new_topic.question = {
-        type: this.new_topic.question.type
+      // prepare the question configuration, start fresh
+      var config = {
+        type: this.new_topic.question.type,
+        labels: {}
       }
+      // add all question properties (labels)
+      for(var prop in this.question_type.props.questions) {
+        config.labels[prop] = "";
+      }
+      // add optional topic properties (configuration)
+      if( this.question_type.props.topic ) {
+        config.props = {};
+        for(var prop in this.question_type.props.topic) {
+          config.props[prop] = this.question_type.props.topic[prop].multi ? [""] : "";
+        }
+      }
+      this.new_topic.question = config;
     },
     create_topic: function() {
       if( this.new_topic.name && this.new_topic.question.type ) {
@@ -251,8 +345,21 @@ var Topics = {
     },
     show_edit_topic_dialog: function() {
       this.edited_topic.name     = this.selected.name;
-      this.edited_topic.question = {...this.selected.question};
+      this.edited_topic.question = {
+        type  : this.selected.question.type,
+        labels: {...this.selected.question.labels}
+      }
+      if(this.selected.question.props) {
+        Vue.set(this.edited_topic.question, "props", {});
+        for(var prop in this.selected.question.props) {
+          Vue.set(this.edited_topic.question.props, prop, 
+            Array.isArray(this.selected.question.props[prop]) ?
+              [...this.selected.question.props[prop]]
+            : this.selected.question.props[prop]);
+        }
+      }
       this.edit_dialog = true;
+      setTimeout(() => { this.$refs.edited_topic_name.focus(); }, 200);
     },
     update_topic: function() {
       if( this.edited_topic.name && this.edited_topic.question.type ) {
@@ -266,15 +373,17 @@ var Topics = {
       }
     },
     delete_topic: function() {
-      if( confirm("Deleting topic " + this.selected.name + " ... Are you sure?")) {
+      if( confirm("Ben je zeker dat " + this.selected.name + " weg mag?")) {
         store.dispatch("remove_topic", this.selected);
       }
     },
     
+    // TAGS
+    
     show_tag_dialog: function() {
       // copy pre-existing tags
       if(this.selected.tags) {
-        this.tags = this.selected.tags;
+        this.tags = [...this.selected.tags];
       } else {
         this.tags = []; // default to empty list
       }
@@ -288,6 +397,8 @@ var Topics = {
         }
       });
     },
+
+    // ITEMS
 
     show_add_item_dialog: function() {
       this.editing.original = store.getters.question(this.selected.question.type).defaults;
@@ -319,13 +430,15 @@ var Topics = {
       }
     },
     delete_item: function(item) {
-      if( confirm("Are you sure?") ) {
+      if( confirm("Ben je zeker?") ) {
         store.dispatch("delete_item",{
           topic  : this.selected,
           removal: item        
         });
       }
     },
+
+    // IMPORT
 
     import_success: function() {
       this.tab = 0;
@@ -353,7 +466,10 @@ var Topics = {
 
       edited_topic: {
         name: "",
-        question: null
+        question: {
+          type: null,
+          labels: {}
+        }
       },
 
       editing: {

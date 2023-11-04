@@ -24,8 +24,10 @@ if versions["topics"] < 2:
   for topic in db.topics.find({}):
     topic["question"] = {
       "type" : "BasicQuestion",
-      "left" : "Key",
-      "right": "Value"
+      "labels" : {
+        "left" : "Key",
+        "right": "Value"
+      }
     }
     for item in topic["items"]:
       item["left"]  = item.pop("key").split("|")

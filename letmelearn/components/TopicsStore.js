@@ -279,9 +279,13 @@ Vue.component("TopicSelector", {
               @change="changed_topic"
 		>
     <template v-slot:selection="{ item, index }">
-      <v-chip close @input="remove_selected_topic(item);">
+      <v-chip close @input="remove_selected_topic(item);" v-if="index == 0">
         <span>{{ item.name }}</span>
       </v-chip>
+      <span
+        v-if="index === 1"
+        class="grey--text caption"
+      >+{{ multiple_selection.length - 1 }} meer</span>
     </template>
   </v-select>
 `,

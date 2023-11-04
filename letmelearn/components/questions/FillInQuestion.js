@@ -1,44 +1,56 @@
-var BasicBase = Vue.component("BasicBase", {
+var FillInBase = Vue.component("FillInBase", {
   props : [
     "context",
     "item"
   ],
   computed: {
     question: function() {
-      return this.context.right2left ? this.item.right : this.item.left;
-    },
-    any_question: function() { // doesn't recompute like any(question) in tpl
-      return this.any(this.question);
+      return this.item.question;
     },
     expected: function() {
-      return this.context.right2left ? this.item.left : this.item.right;
+      return this.item.answer;
     }
   },
   methods: {
     any: function(items) {
       return items[items.length * Math.random() | 0];
-    },
-    format: function(items) {
-      return items.join(" or ");
     }
   }
 });
 
-Vue.component("BasicQuestionAskingWritten", {
-  mixins: [ BasicBase ],
-  mounted: function() {
-    setTimeout(this.$refs.written.focus, 200);
-  },
+Vue.component("FillInQuestionAskingWritten", {
+  mixins: [ FillInBase ],
   template: `
 <v-layout v-if="outcome === null">
   <v-flex xs12 sm6 offset-sm3>
     <v-form @submit.prevent="answer(written)">
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ any_question }}</h3><br>
-          <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field ref="written" v-model="written"></v-text-field>
-          </div>
+          <h3 class="headline mb-0">
+        
+            <v-layout row class="pa-0 ma-0">
+
+              <v-flex d-flex align-right v-if="question_start != ''">
+                <div style="display:inline-block;white-space: nowrap;margin-right: 10px;">{{ question_start }}</div>
+              </v-flex>
+
+              <v-flex d-flex align-center>
+                <div style=""
+                <v-text-field v-model="written"
+                              ref="written"
+                              autofocus
+                              hide-details
+                              single-line
+                              class="large-size"/>
+              </v-flex>
+
+              <v-flex d-flex align-left v-if="question_end != ''">
+                <div style="display:inline-block;white-space: nowrap;margin-left: 10px;">{{ question_end }}</div>
+              </v-flex>
+
+            </v-layout>
+                          
+          </h3>
         </v-card-title>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -55,9 +67,34 @@ Vue.component("BasicQuestionAskingWritten", {
     <v-form @submit.prevent="next">
       <v-card>
         <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ format(question) }}</h3><br>
+          <h3 class="headline mb-0">
+
+            <v-layout row class="pa-0 ma-0">
+
+              <v-flex d-flex align-right v-if="question_start != ''">
+                <div style="display:inline-block;white-space: nowrap;margin-right: 10px;">{{ question_start }}</div>
+              </v-flex>
+
+              <v-flex d-flex align-center>
+                <v-text-field v-model="written"
+                              ref="written_result"
+                              :error="outcome === false"
+                              :background-color="outcome ? 'success' : 'error'"
+                              readonly
+                              hide-details
+                              single-line
+                              autofocus
+                              class="large-size"/>
+              </v-flex>
+  
+              <v-flex d-flex align-left v-if="question_end != ''">
+                <div style="display:inline-block;white-space: nowrap;margin-left: 10px;">{{ question_end }}</div>
+              </v-flex>
+            
+            </v-layout>
+  
+          </h3>
           <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field ref="written_result" v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
             <h1 v-if="outcome === false" style="color:green">{{ question.expected }}</h1>
             <h1 v-if="outcome === false">
               <template v-for="possible_answer in expected">
@@ -77,14 +114,24 @@ Vue.component("BasicQuestionAskingWritten", {
   </v-flex>
 </v-layout>
 `,
+  computed: {
+    question_parts: function() {
+      return this.question.split("...")
+    },
+    question_start: function() {
+      return this.question_parts[0];
+    },
+    question_end: function() {
+      return this.question_parts[1];
+    }
+  },
   methods: {
     possible_answers: function() {
       // ensure that all expected/possible answers are trimmed
       return this.expected.map(function(item) { return item.trim() });
     },
     answer: function(guess) {
-      this.outcome = this.possible_answers().indexOf(guess.trim()) !== -1;
-      setTimeout(() => { this.$refs.written_result.focus();}, 200);
+      this.outcome = this.expected.indexOf(guess.trim()) !== -1;
     },
     next: function() {
       this.$emit("next", this.outcome);
@@ -105,8 +152,8 @@ Vue.component("BasicQuestionAskingWritten", {
   }
 });
 
-Vue.component("BasicQuestionAskingChoice", {
-  mixins: [ BasicBase ],
+Vue.component("FillInQuestionAskingChoice", {
+  mixins: [ FillInBase ],
   props : [
     "topic",
   ],
@@ -115,14 +162,14 @@ Vue.component("BasicQuestionAskingChoice", {
   <v-flex xs12 sm6 offset-sm3>
     <v-card>
       <v-card-title primary-title class="justify-center">
-        <h3 class="headline mb-0">{{ any_question }}</h3><br>
+        <h3 class="headline mb-0">{{ question }}</h3><br>
         <div style="width:100%; text-align:center;margin-top:20px;">
           <v-btn @click="answer(choice)"
                  v-for="(choice, index) in choices"
                  v-bind:key="index"
                  block
                  class="text-none">
-            {{ any(choice) }}
+            {{ choice }}
           </v-btn>
         </div>
       </v-card-title>
@@ -136,14 +183,14 @@ Vue.component("BasicQuestionAskingChoice", {
   <v-flex xs12 sm6 offset-sm3>
     <v-card>
       <v-card-title primary-title class="justify-center">
-        <h3 class="headline mb-0">{{ format(question) }}</h3><br>
+        <h3 class="headline mb-0">{{ question }}</h3><br>
         <div style="width:100%; text-align:center;margin-top:20px;">
           <v-btn v-for="(choice, index) in choices"
                  v-bind:key="index"
                  block
                  :color="markup[index]"
                  class="text-none">
-            {{ format(choice) }}
+            {{ choice }}
           </v-btn>
         </div>
       </v-card-title>
@@ -158,30 +205,19 @@ Vue.component("BasicQuestionAskingChoice", {
 `,
   computed: {
     choices: function() {
-      // select 2 additional possible answers and shuffle the triplet
-      var self = this;
-      return store.getters.topic(this.topic._id).items
-        .filter(function(item){ return item != self.item; })
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 2)
-        .map(function(item) {
-          if(self.context.right2left) {
-            return item.left;
-          } else {
-            return item.right;
-          }
-        })
-        .concat([this.expected])
-        .sort(()=>Math.random()-0.5);
+      if(this.topic) {
+        return this.topic.question.props.options;
+      }
+      return [];
     }
   },
   methods: {
     answer: function(guess) {
       var self = this;
-      this.outcome = guess == this.expected;
+      this.outcome = this.expected.indexOf(guess.trim()) !== -1;
       this.markup  = this.choices.map(function(choice){
-        if( choice == self.expected )          { return "success" };
-        if( choice == guess && !self.outcome ) { return "error"   };
+        if( self.expected.indexOf(choice) !== -1 )  { return "success" };
+        if( choice == guess && !self.outcome )      { return "error"   };
         return null;
       });
     },
@@ -201,7 +237,7 @@ Vue.component("BasicQuestionAskingChoice", {
 
 // asking dispatches to the asking style: multiple choice or written
 
-Vue.component("BasicQuestionAsking", {
+Vue.component("FillInQuestionAsking", {
   props: {
     topic    : Object,
     item     : Object,      
@@ -209,12 +245,12 @@ Vue.component("BasicQuestionAsking", {
   },
   template: `
 <div style="padding-top:15px">
-  <BasicQuestionAskingChoice  v-if="this.context.multiplechoice"
+  <FillInQuestionAskingChoice  v-if="this.context.multiplechoice"
                               :topic="this.topic"
                               :context="this.context"
                               :item="this.item"
                               @next="next"/>
-  <BasicQuestionAskingWritten v-if="!this.context.multiplechoice"
+  <FillInQuestionAskingWritten v-if="!this.context.multiplechoice"
                               :topic="this.topic"
                               :context="this.context"
                               :item="this.item"
@@ -230,7 +266,7 @@ Vue.component("BasicQuestionAsking", {
 
 // item editor form
 
-Vue.component("BasicQuestionEditor", {
+Vue.component("FillInQuestionEditor", {
   props: [
     "topic",
     "item",
@@ -238,17 +274,26 @@ Vue.component("BasicQuestionEditor", {
   ],
   template: `
 <div v-if="model">
-  <MultiTextField :model="model.left"
-                  :label="label('left')"
-                  :focus="true"
-                  @remove="(index) => { remove('left', index); }"
-                  @add="add('left')"
-                  :showing="showing"/>
-  <MultiTextField :model="model.right"
-                  :label="label('right')"
-                  @remove="(index) => { remove('right', index); }"
-                  @add="add('right')"
-                  :showing="showing"/>
+  
+  <v-text-field v-model="model.question"
+                :label="label('question')"
+                hint="Gebruik drie puntjes (...) om aan te geven waar het antwoord moet ingevuld worden."
+                :persistent-hint="true"
+                :autofocus="true"
+                v-if="showing"/>
+  <br>
+  <v-select v-model="model.answer"
+						:items="possible_answers"
+            chips
+            multiple
+            dense
+            :label="label('answer')">
+    <template v-slot:selection="{ item, index }">
+      <v-chip close @input="remove(index);">
+        <span>{{ item.value }}</span>
+      </v-chip>
+    </template>
+  </v-select>
 </div>
 `,
   computed: {
@@ -256,8 +301,8 @@ Vue.component("BasicQuestionEditor", {
       if(this.item.original === null) { return null; }
       if(this.item.updated === null) {
         this.item.updated = {
-          left : [...this.item.original.left],
-          right: [...this.item.original.right]
+          question : this.item.original.question,
+          answer   : [...this.item.original.answer]
         }
       }
       return this.item.updated;
@@ -270,21 +315,26 @@ Vue.component("BasicQuestionEditor", {
         }
         return "";
       }
+    },
+    possible_answers: function() {
+      if(this.topic) {
+        return this.topic.question.props.options.map(function(option) {
+          return { text: option, value: option };
+        });
+      }
+      return []
     }
   },
   methods: {
-    add: function(prop) {
-      this.item.updated[prop].push("");
-    },
-    remove: function(prop, index) {
-      this.item.updated[prop].splice(index, 1);
+    remove: function(index) {
+      this.model.answer.splice(index, 1);
     }
   }
 });
 
 // importer is show on the topics page importer tab
 
-Vue.component("BasicQuestionImporter", {
+Vue.component("FillInQuestionImporter", {
   props: [
     "topic"
   ],
@@ -292,9 +342,9 @@ Vue.component("BasicQuestionImporter", {
 <div>
   <h3>Importeer {{ this.topic.name }}</h3>
   <p>
-    Plak hieronder rijen met waarden voor {{ label("left") }} en {{ label("right") }}.
+    Plak hieronder rijen met waarden voor {{ label("question") }} en {{ label("answer") }}.
     Scheid ze van elkaar met een <code>tab</code>.
-    Alternatieve waarden kan je scheiden van elkaar door een <code>pipe</code> symbool (<code>|</code>).<br>
+    Meerdere goede waarden voor {{ label("answer") }} kan je scheiden van elkaar door een <code>pipe</code> symbool (<code>|</code>).<br>
     Druk vervolgens op <code>import...</code>.
   </p>
   
@@ -325,8 +375,8 @@ Vue.component("BasicQuestionImporter", {
       var items = this.data.split("\n").map(function(item){
         var parts = item.split("\t");
         return {
-          left : parts[0].split("|").map(function(opt) { return opt.trim(); }),
-          right: parts[1].split("|").map(function(opt) { return opt.trim(); })
+          question : parts[0].trim(),
+          answer   : parts[1].split("|").map(function(opt) { return opt.trim(); })
         }
       });
       store.dispatch("update_topic", {
@@ -348,7 +398,7 @@ Vue.component("BasicQuestionImporter", {
 
 // summary is shown in the topics page data table
 
-Vue.component("BasicQuestionSummary", {
+Vue.component("FillInQuestionSummary", {
   props: [
     "item",
     "header"
@@ -358,14 +408,19 @@ Vue.component("BasicQuestionSummary", {
 `,
   computed: {
     summary: function() {
-      return this.item[this.header].join(" of ");
+      if(this.header == "question") {
+        return this.item.question;
+      }
+      if(this.header == "answer") {
+        return this.item.answer.join(" of ");
+      }
     }
   }
 });
 
 // top-level view-style dispatcher -> asking, summary, importer or editor
 
-Vue.component("BasicQuestion", {
+Vue.component("FillInQuestion", {
   props: {
     topic    : Object,
     item     : Object,
@@ -379,17 +434,17 @@ Vue.component("BasicQuestion", {
     showing  : Boolean
   },
   template: `
-<BasicQuestionSummary  v-if="summary"
+<FillInQuestionSummary  v-if="summary"
                        :header="this.header"
                        :item="item"/>
-<BasicQuestionImporter v-else-if="importer"
+<FillInQuestionImporter v-else-if="importer"
                        :topic="this.topic"
                        @import_success="import_success"/>
-<BasicQuestionEditor   v-else-if="editor"
+<FillInQuestionEditor   v-else-if="editor"
                        :topic="this.topic"
                        :item="this.item"
                        :showing="showing"/>
-<BasicQuestionAsking   v-else
+<FillInQuestionAsking   v-else
                        :context="this.context"
                        :topic="this.topic"
                        :item="this.item"
@@ -408,13 +463,14 @@ Vue.component("BasicQuestion", {
 // register question
 
 store.commit("question", {
-  name    : "BasicQuestion",
-  title   : "Eenvoudige vragen/antwoorden.",
-  desc    : "Leer begrippen van links naar rechts en omgekeerd. Met meerdere mogelijkheden.",
-  headers : [ "left", "right" ],
-  labels  : { left: "Links", right: "Rechts" },
+  name    : "FillInQuestion",
+  title   : "Vul het ontbrekende deel in.",
+  desc    : "Vervolledig de vraag met het juiste ontbrekende deel.",
+  headers : [ "question", "answer" ],
+  labels  : { question: "Vraag", answer: "Juist", options: "Mogelijkheden" },
   props   : {
-    questions : { left : {}, right: {} }
+    questions : { question : {}, answer: {}  },
+    topic     : { options  : { multi: true } }
   },
-  defaults: { left: [""], right: [""] }
+  defaults: { question: "", answer: [] }
 });

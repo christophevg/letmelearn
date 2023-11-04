@@ -2,14 +2,17 @@ Vue.component("MultiTextField", {
   props: [
     "model",
     "label",
-    "focus"
+    "focus",
+    "showing"
   ],
   template: `
 <div>
   <template v-for="(option, index) in model">
     <v-text-field v-model="model[index]"
                   :label="label"
-                  ref="multitextfield">
+                  ref="multitextfield"
+                  :autofocus="focus && index == 0"
+                  v-if="showing">
       <template v-slot:append-outer>
         <v-icon small color="red" @click="$emit('remove', index)">delete</v-icon>
       </template>
@@ -19,10 +22,5 @@ Vue.component("MultiTextField", {
     <v-icon small @click="$emit('add')">add</v-icon>
   </div>
 </div>
-`,
-  mounted: function() {
-    if(this.focus) {
-      setTimeout(() => { this.$refs.multitextfield[0].focus() }, 200);
-    }
-  }
+`  
 });
