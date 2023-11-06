@@ -10,7 +10,7 @@ Vue.component("AdvalvasUpdates", {
       <v-flex xs7>
         <v-card-title primary-title>
           <div>
-            <div class="headline">{{ item.title }}</div>
+            <div class="headline" v-html="item.title"/>
 						<div class="grey--text">{{ item.date }}</div>
             <p v-for="par in item.pars" v-html="par"/>
           </div>
@@ -18,7 +18,9 @@ Vue.component("AdvalvasUpdates", {
       </v-flex>
       <v-flex xs5>
 				<div style="padding:15px">
-          <v-img :src="'/app/static/images/news/' + item.image" height="125px" contain/>
+          <v-img :src="'/app/static/images/news/' + item.image"
+                 :height="item.height ? item.height : '125px'"
+                  contain/>
 				</div>
       </v-flex>
     </v-layout>
@@ -29,6 +31,22 @@ Vue.component("AdvalvasUpdates", {
   data: function() {
     return {
       news: [
+        {
+          title: "Nieuwe vraagstelling: Invullen!<br>En onderwerpen zijn aanpasbaar 🥳",
+          date: "6 november 2023",
+          pars: [
+            `Naast de reeds bestaande eenvoudige vraagstelling. Kan je nu ook
+             kiezen voor een invulbare vraag. Hierbij moet je ergens in de
+             vraag één of meerdere juiste antwoorden invullen uit een lijst
+             van mogelijkheden.`,
+            `Je kan vanaf nu ook je bestaande onderwerpen aanpassen. Zo kan je
+             de naam aanpassen en ook je eigen titels voor eigenschappen van de
+             vragen aanpassen. Dus je kan bv. kiezen voor de omschrijving "FR" 
+             of "NL" ipv "Key" en "Value".`
+          ],
+          image: "new-question-type.png",
+          height: "275px"
+        },
         {
           title: "Foutaanduiding",
           date: "15 oktober 2023",
