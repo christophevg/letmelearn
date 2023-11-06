@@ -154,7 +154,8 @@ var Topics = {
                           :model="new_topic.question.props[prop]"
                           :label="question_type.labels[prop]"
                           @remove="(index) => { new_topic.question.props[prop].splice(index, 1) }"
-                          @add="new_topic.question.props[prop].push('')"/>
+                          @add="new_topic.question.props[prop].push('')"
+                          :showing="true"/>
           <v-text-field v-else
                         :key="index"
                         :label="question_type.labels[prop]"
@@ -192,7 +193,8 @@ var Topics = {
                       :model="edited_topic.question.props[prop]"
                       :label="selected_type.labels[prop]"
                       @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
-                      @add="edited_topic.question.props[prop].push('')"/>
+                      @add="edited_topic.question.props[prop].push('')"
+                      :showing="true"/>
       <v-text-field v-else
                     :key="index"
                     :label="question_type.labels[prop]"
