@@ -1,9 +1,9 @@
 Vue.component("ProtectedPage", {
   template: `
 <div>
-  <div v-if="session" class="pa-0 ma-0">
+  <div v-if="session" style="margin-top:64px">
 
-    <v-toolbar flat>
+    <v-toolbar flat fixed height="64px" style="padding-top:64px">
       <v-toolbar-title>
         <v-avatar>
           <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
@@ -24,7 +24,7 @@ Vue.component("ProtectedPage", {
 
     </v-toolbar>
 
-    <v-toolbar flat v-if="show_extended">
+    <v-toolbar flat fixed height="48px" style="margin-top:120px" v-if="show_extended">
 
       <v-spacer/>
   
@@ -34,7 +34,7 @@ Vue.component("ProtectedPage", {
   
     </v-toolbar>
 
-    <div>
+    <div :style="content_style">
       <slot/>
     </div>
   </div>
@@ -92,6 +92,12 @@ Vue.component("ProtectedPage", {
     },
     session : function() {
       return store.state.auth.session;
+    },
+    content_style: function() {
+      return "padding-top: " + this.content_top_margin + "px";
+    },
+    content_top_margin: function() {
+      return this.show_extended ? 40 : 0;
     }
   },
   methods: {
