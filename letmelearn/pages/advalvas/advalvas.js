@@ -1,7 +1,7 @@
 Vue.component("AdvalvasUpdates", {
   template: `
 <div>
-	<h2 align="center">📣 Nieuwigheden</h2>
+	<h2 style="border-bottom: 1px solid #ddd">📣 Nieuwigheden</h2>
 
 	<br>
 
@@ -102,7 +102,11 @@ Vue.component("AdvalvasFeed", {
 var Home = {
   template : `
 <ProtectedPage>
-  <h1 align="center">🎓 Ad Valvas...</h1>
+  
+  <template v-slot:subheader>
+    <h1 align="center">🎓 Ad Valvas...</h1>
+    <v-spacer/>
+  </template>
 
   <v-layout row wrap>
     <v-flex sm12 md6 v-if="feed.length">
