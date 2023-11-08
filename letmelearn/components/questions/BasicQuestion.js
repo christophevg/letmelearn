@@ -26,9 +26,6 @@ var BasicBase = Vue.component("BasicBase", {
 
 Vue.component("BasicQuestionAskingWritten", {
   mixins: [ BasicBase ],
-  mounted: function() {
-    setTimeout(this.$refs.written.focus, 200);
-  },
   template: `
 <v-layout v-if="outcome === null">
   <v-flex xs12 sm6 offset-sm3>
@@ -37,7 +34,7 @@ Vue.component("BasicQuestionAskingWritten", {
         <v-card-title primary-title class="justify-center">
           <h3 class="headline mb-0">{{ any_question }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field ref="written" v-model="written"></v-text-field>
+            <v-text-field autofocus v-if="outcome === null" v-model="written"></v-text-field>
           </div>
         </v-card-title>
         <v-card-actions>
@@ -57,7 +54,7 @@ Vue.component("BasicQuestionAskingWritten", {
         <v-card-title primary-title class="justify-center">
           <h3 class="headline mb-0">{{ format(question) }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field ref="written_result" v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
+            <v-text-field autofocus v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
             <h1 v-if="outcome === false" style="color:green">{{ question.expected }}</h1>
             <h1 v-if="outcome === false">
               <template v-for="possible_answer in expected">
@@ -84,13 +81,11 @@ Vue.component("BasicQuestionAskingWritten", {
     },
     answer: function(guess) {
       this.outcome = this.possible_answers().indexOf(guess.trim()) !== -1;
-      setTimeout(() => { this.$refs.written_result.focus();}, 200);
     },
     next: function() {
       this.$emit("next", this.outcome);
       this.written = "";
       this.outcome = null;
-      setTimeout(() => { if(this.$refs.written) { this.$refs.written.focus();}}, 200);
     },
     accept_error: function() {
       // fake correct answer by providing a correct one

@@ -123,7 +123,8 @@ var Topics = {
     <v-text-field label="Naam"
                   required
                   v-model="new_topic.name"
-                  ref="new_topic_name"/>
+                  autofocus
+                  v-if="create_dialog"/>
 
     Kies de soort vraag voor dit ontwerp:
     <v-select :items="question_types"
@@ -170,38 +171,42 @@ var Topics = {
 
   <!-- EDIT TOPIC -->
 
-  <SimpleDialog v-if="selected"
-                :model="edit_dialog"
+  <SimpleDialog :model="edit_dialog"
                 title="Werk deze topic bij..."
                 submit_label="Werk bij..."
                 cancel_label="Annuleer"
                 @cancel="edited_topic.name = null; edit_dialog = false;"
                 @submit="edit_dialog = false; update_topic();">
 
-    <v-text-field label="Naam" required v-model="edited_topic.name" ref="edited_topic_name"/>
-
-    <v-text-field label="Soort" required :value="selected_type.title" :disabled="true"/>
-
-    <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
-                  :key="index"
-                  :label="selected_type.labels[prop]"
+    <v-text-field label="Naam"
                   required
-                  v-model="edited_topic.question.labels[prop]"/>
-    
-    <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
-      <MultiTextField v-if="config.multi"
-                      :model="edited_topic.question.props[prop]"
-                      :label="selected_type.labels[prop]"
-                      @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
-                      @add="edited_topic.question.props[prop].push('')"
-                      :showing="true"/>
-      <v-text-field v-else
-                    :key="index"
-                    :label="question_type.labels[prop]"
-                    required
-                    v-model="edited_topic.question.props[prop]"/>
-    </template>    
+                  v-model="edited_topic.name"
+                  autofocus
+                  v-if="edit_dialog"/>
 
+    <div v-if="selected">
+      <v-text-field label="Soort" required :value="selected_type.title" :disabled="true"/>
+
+      <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
+                    :key="index"
+                    :label="selected_type.labels[prop]"
+                    required
+                    v-model="edited_topic.question.labels[prop]"/>
+    
+      <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
+        <MultiTextField v-if="config.multi"
+                        :model="edited_topic.question.props[prop]"
+                        :label="selected_type.labels[prop]"
+                        @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
+                        @add="edited_topic.question.props[prop].push('')"
+                        :showing="true"/>
+        <v-text-field v-else
+                      :key="index"
+                      :label="question_type.labels[prop]"
+                      required
+                      v-model="edited_topic.question.props[prop]"/>
+      </template>    
+    </div>
   </SimpleDialog>
 
   <!-- EDIT TAGS -->
@@ -313,7 +318,6 @@ var Topics = {
     show_create_topic_dialog: function() {
       this.new_topic = { name: "", question: { type: null }};
       this.create_dialog  = true;
-      setTimeout(() => { this.$refs.new_topic_name.focus(); }, 200);
     },
     question_type_selected: function() {
       // prepare the question configuration, start fresh
@@ -361,7 +365,6 @@ var Topics = {
         }
       }
       this.edit_dialog = true;
-      setTimeout(() => { this.$refs.edited_topic_name.focus(); }, 200);
     },
     update_topic: function() {
       if( this.edited_topic.name && this.edited_topic.question.type ) {

@@ -61,7 +61,7 @@ Vue.component("Timer", {
       if(!this.active) { return; }
       this.seconds_left--;
       if( this.seconds_left > 0) {
-        setTimeout(() => this.tick(), 1000);
+        setTimeout(this.tick, 1000);
       } else {
         this.$emit("done");
       }

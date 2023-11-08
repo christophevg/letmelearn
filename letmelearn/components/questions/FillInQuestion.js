@@ -37,8 +37,8 @@ Vue.component("FillInQuestionAskingWritten", {
               <v-flex d-flex align-center>
                 <div style=""
                 <v-text-field v-model="written"
-                              ref="written"
                               autofocus
+                              v-if="outcome == null"
                               hide-details
                               single-line
                               class="large-size"/>
@@ -137,7 +137,6 @@ Vue.component("FillInQuestionAskingWritten", {
       this.$emit("next", this.outcome);
       this.written = "";
       this.outcome = null;
-      setTimeout(() => { if(this.$refs.written) { this.$refs.written.focus();}}, 200);
     },
     accept_error: function() {
       // fake correct answer by providing a correct one
