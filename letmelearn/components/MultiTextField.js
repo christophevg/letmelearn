@@ -10,7 +10,6 @@ Vue.component("MultiTextField", {
   <template v-for="(option, index) in model">
     <v-text-field v-model="model[index]"
                   :label="label"
-                  ref="multitextfield"
                   :autofocus="focus && index == 0"
                   v-if="showing">
       <template v-slot:append-outer>
