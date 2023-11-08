@@ -412,7 +412,7 @@ var Topics = {
         topic: this.selected,
         item:  this.editing.updated
       });
-      this.show_add_item_dialog(); // keep adding until cancel
+      this.$nextTick(this.show_add_item_dialog); // keep adding until cancel
     },
 
     edit_item: function(item) {
