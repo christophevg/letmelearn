@@ -25,8 +25,8 @@
 
 ## extend
 
-- [ ] track results
-  - [ ] create feed -> ad valvas
+- [x] track results
+  - [x] create feed -> ad valvas
 - [x] implement FillInQuestion
 - [ ] share topics with other users
 - [ ] enable following of other users
