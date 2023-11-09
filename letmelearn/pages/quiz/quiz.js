@@ -107,7 +107,7 @@ var Quiz = {
 
   <!-- done -->
 
-  <v-layout v-if="done">
+  <v-layout v-if="result">
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
         <v-img src="/app/static/images/happy.png" aspect-ratio="2.75"></v-img>
@@ -121,12 +121,12 @@ var Quiz = {
         <v-card-actions>
           <v-spacer></v-spacer>
             
-            Er waren {{ questions }} vragen.<br>
-            Daarvan zijn er {{ asked }} gesteld.<br>
-            In {{ attempts }} pogingen, had je er {{ correct }} juist.<br>
+            Er waren {{ result.questions }} vragen.<br>
+            Daarvan zijn er {{ result.asked }} gesteld.<br>
+            In {{ result.attempts }} pogingen, had je er {{ result.correct }} juist.<br>
 
             <template v-if="this.timer_active">
-              Je deed dit in {{ this.$refs.timer.elapsed }} seconden.<br>
+              Je deed dit in {{ result.elapsed }} seconden.<br>
             </template>
   
             <br>
@@ -191,7 +191,7 @@ var Quiz = {
   },
   methods: {
     start : function() {
-      this.done = false;
+      this.result = null;
       this.correct = 0;
       this.attempts = 0;
       this.asked_questions = []
@@ -202,7 +202,16 @@ var Quiz = {
     stop : function() {
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
-      this.done = true;
+      this.result = {
+        kind     : "quiz result",
+        topics   : store.state.topics.selected.map(function(topic) { return topic._id }),
+        questions: this.questions,
+        asked    : this.asked,
+        attempts : this.attempts,
+        correct  : this.correct,
+        elapsed  : this.$refs.timer.elapsed
+      }
+      store.dispatch("add_feed_item", this.result);
     },
     toggle_timing: function() {
       this.$refs.timer.toggle_timing();
@@ -258,7 +267,8 @@ var Quiz = {
       correct: 0,
       done: false,
       asked_questions: [],
-      timer_active: false
+      timer_active: false,
+      result: null
     }
   }
 };

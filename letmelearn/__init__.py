@@ -48,6 +48,7 @@ for component in [
   "navigation",
   "Timer",
   "ProtectedPage",
+  "FeedStore",
   "TopicsStore",
   "TextDiff",
   "SimpleDialog",

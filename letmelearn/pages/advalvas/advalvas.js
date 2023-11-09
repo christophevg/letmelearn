@@ -32,6 +32,15 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
+          title: "Jouw Feed",
+          date: "9 november 2023",
+          pars: [
+            `Ad Valvas toont je vanaf nu ook jouw resultaten in jouw eigen feed!`,
+            `Stay tuned for more...`
+          ],
+          image: "feed.png"
+        },
+        {
           title: "Nieuwe vraagstelling: Invullen!<br>En onderwerpen zijn aanpasbaar 🥳",
           date: "6 november 2023",
           pars: [
@@ -91,11 +100,55 @@ Vue.component("AdvalvasUpdates", {
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
-	<h2 align="center">💪 Jouw Feed</h2>
+	<h2 style="border-bottom: 1px solid #ddd">💪 Jouw Feed</h2>
+  
   <br>
-  Coming Soon
+
+  <v-list two-line>
+    <template v-for="(item, index) in feed">
+      <v-list-tile
+        :key="index"
+        avatar
+        ripple
+      >
+        <v-list-tile-avatar>
+          <img :src="item.user[0].picture">
+        </v-list-tile-avatar>
+        <v-list-tile-content>
+          <v-list-tile-title>{{ item.kind }}</v-list-tile-title>
+          <v-list-tile-sub-title v-if="item.topics" class="text--primary">
+            onderwerp{{ item.topics.length < 2 ? "" : "en" }}: {{ item.topics.join(", ") }}
+          </v-list-tile-sub-title>
+          <v-list-tile-sub-title>
+            {{ item.questions }} vragen | 
+            {{ item.asked }} gevraagd | 
+            {{ item.attempts }} pogingen |  
+            {{ item.correct }} correct
+            <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
+          </v-list-tile-sub-title>
+        </v-list-tile-content>
+
+        <v-list-tile-action>
+          <v-list-tile-action-text>{{ format_date(item.when) }}</v-list-tile-action-text>
+        </v-list-tile-action>
+
+      </v-list-tile>
+      <v-divider v-if="index + 1 < feed.length" :key="index"/>
+    </template>
+  </v-list>
+  <br>
 </div>
-`
+`,
+  computed: {
+    feed: function() {
+      return store.state.feed.feed;
+    },
+    format_date: function() {
+      return function(when) {
+        return moment(when).calendar();
+      }
+    }
+  }
 })
 
 
@@ -110,7 +163,7 @@ var Home = {
 
   <v-layout row wrap>
     <v-flex sm12 md6 v-if="feed.length">
-      <AdvalvasFeed/>
+      <AdvalvasFeed :feed="feed"/>
     </v-flex>
 
     <v-flex sm12 md6 :offset-md3="!feed.length">
@@ -129,7 +182,7 @@ var Home = {
   },
   computed: {
     feed: function() {
-      return [] // TODO get from "feed" store
+      return store.state.feed.feed;
     }
   }
 };

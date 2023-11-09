@@ -6,12 +6,14 @@ from flask_restful import Resource
 
 from flask_login import current_user
 
+from pymongo.collection import ReturnDocument
+
+from datetime import datetime
+
 from baseweb.rest import api
 
 from letmelearn.data import db
 from letmelearn.auth import authenticated
-
-from pymongo.collection import ReturnDocument
 
 class Topics(Resource):
   @authenticated
@@ -105,3 +107,48 @@ class Items(Resource):
     )
 
 api.add_resource(Items, "/api/topics/<id>/items", endpoint="items")
+
+class Feed(Resource):
+  @authenticated
+  def get(self):
+    return list(db.feed.aggregate([
+      {
+        "$match" : {
+          "user": current_user.email
+        }
+      },
+      {
+        "$lookup" : {
+          "from" : "users",
+          "localField": "user.0",
+          "foreignField" : "_id",
+          "as" : "user"
+        }
+      },
+      {
+        "$project" : {
+          "_id" : False,
+          "user._id" : False
+        }
+      },
+      {
+        "$sort" : {
+          "when" : -1
+        }
+      },
+      {
+        "$limit" : 10
+      }
+    ]))
+
+  @authenticated
+  def post(self):
+    new_item = request.json
+    new_item["user"] = [ current_user.email ]
+    new_item["when"] = datetime.now().isoformat()
+
+    db.feed.insert_one(new_item)
+    new_item.pop("_id")
+    return new_item
+
+api.add_resource(Feed, "/api/feed", endpoint="feed")
