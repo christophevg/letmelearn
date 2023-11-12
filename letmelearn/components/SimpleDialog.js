@@ -2,7 +2,8 @@ Vue.component("SimpleDialog", {
   props: [
     "model",
     "title",
-    "submit_label"
+    "submit_label",
+    "invalid"
   ],
   template: `
   <v-dialog v-model="model" persistent width="500"  @keydown.esc="$emit('cancel')">
@@ -21,7 +22,7 @@ Vue.component("SimpleDialog", {
         <v-card-actions>
             <v-btn color="secondary" flat @click="$emit('cancel')">Annuleer</v-btn>
             <v-spacer></v-spacer>
-            <v-btn color="primary" flat type="submit">{{ submit_label }}</v-btn>
+            <v-btn color="primary" flat :disabled="invalid" type="submit">{{ submit_label }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-form>

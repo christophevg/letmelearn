@@ -116,12 +116,12 @@ var Topics = {
                 title="Maak een nieuw ontwerp..."
                 submit_label="Creëer..."
                 cancel_label="Annuleer"
+                :invalid="new_topic.question.type == null"
                 @cancel="new_topic.name = null; create_dialog = false;"
                 @submit="create_dialog = false; create_topic();">
 
     Geef een duidelijke omschrijving voor dit onderwerp:
     <v-text-field label="Naam"
-                  required
                   v-model="new_topic.name"
                   autofocus
                   v-if="create_dialog"/>
@@ -145,7 +145,6 @@ var Topics = {
       <v-text-field v-for="(label, prop, index) in question_type.labels"
                     :key="index"
                     :label="label"
-                    required
                     v-model="new_topic.question.labels[prop]"/>
 
       <div v-if="question_type.props.topic">
@@ -160,7 +159,6 @@ var Topics = {
           <v-text-field v-else
                         :key="index"
                         :label="question_type.labels[prop]"
-                        required
                         v-model="new_topic.question.props[prop]"/>
       
         </template>
@@ -179,18 +177,16 @@ var Topics = {
                 @submit="edit_dialog = false; update_topic();">
 
     <v-text-field label="Naam"
-                  required
                   v-model="edited_topic.name"
                   autofocus
                   v-if="edit_dialog"/>
 
     <div v-if="selected">
-      <v-text-field label="Soort" required :value="selected_type.title" :disabled="true"/>
+      <v-text-field label="Soort" :value="selected_type.title" :disabled="true"/>
 
       <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
                     :key="index"
                     :label="selected_type.labels[prop]"
-                    required
                     v-model="edited_topic.question.labels[prop]"/>
     
       <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
@@ -203,7 +199,6 @@ var Topics = {
         <v-text-field v-else
                       :key="index"
                       :label="question_type.labels[prop]"
-                      required
                       v-model="edited_topic.question.props[prop]"/>
       </template>    
     </div>
