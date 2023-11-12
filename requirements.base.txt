@@ -1,0 +1,6 @@
+baseweb
+pymongo
+Flask-Login
+oatk
+gunicorn
+eventlet
