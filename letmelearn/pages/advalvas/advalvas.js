@@ -108,6 +108,7 @@ Vue.component("AdvalvasFeedQuizResult", {
         <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
         <span v-if="index < topics.length - 1">,&nbsp;</span>
       </template>
+      &nbsp;<a :href="'/quiz#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</a>
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
@@ -133,6 +134,8 @@ Vue.component("AdvalvasFeedNewTopic", {
    <v-list-tile-title><b>🆕 Nieuw onderwerp</b></v-list-tile-title>
    <v-list-tile-sub-title class="text--primary">
       <a :href="'/topics#'+ topic._id">{{ topic.name }}</a>
+      &nbsp;<a :href="'/quiz#' + topic._id" style="text-decoration:none">▶️</a>
+  
    </v-list-tile-sub-title>
    <v-list-tile-sub-title>
       Stijl: {{ topic.question.type }} |
@@ -142,7 +145,6 @@ Vue.component("AdvalvasFeedNewTopic", {
 `,
   computed: {
     topic: function() {
-      console.log(store.getters.topic(this.item.topic));
       return store.getters.topic(this.item.topic);
     }
   }        
