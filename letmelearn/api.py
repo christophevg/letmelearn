@@ -115,7 +115,10 @@ class Feed(Resource):
       {
         "$match" : {
           "user": current_user.email,
-          "asked" : { "$gt" : 0 }
+          "$or" : [
+            { "asked" : { "$exists": False } },
+            { "asked" : { "$gt" : 0        } }
+          ]
         }
       },
       {

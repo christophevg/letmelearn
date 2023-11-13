@@ -97,6 +97,57 @@ Vue.component("AdvalvasUpdates", {
   }
 });
 
+Vue.component("AdvalvasFeedQuizResult", {
+  props : [ "item" ],
+  template: `
+  <v-list-tile-content>
+    <v-list-tile-title><b>🥇 Resultaat</b></v-list-tile-title>
+    <v-list-tile-sub-title v-if="topics" class="text--primary">
+      onderwerp{{ topics.length < 2 ? "" : "en" }}:
+      <template v-for="topic, index in topics">
+        <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
+        <span v-if="index < topics.length - 1">,&nbsp;</span>
+      </template>
+    </v-list-tile-sub-title>
+
+    <v-list-tile-sub-title>
+      {{ item.questions }} vragen | 
+      {{ item.asked }} gevraagd | 
+      {{ item.attempts }} pogingen |  
+      {{ item.correct }} correct
+      <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
+    </v-list-tile-sub-title>
+ </v-list-tile-content>
+`,
+  computed: {
+    topics: function() {
+      return this.item.topics.map((id) => store.getters.topic(id));
+    }
+  }  
+})
+
+Vue.component("AdvalvasFeedNewTopic", {
+  props: [ "item" ],
+  template: `
+ <v-list-tile-content>
+   <v-list-tile-title><b>🆕 Nieuw onderwerp</b></v-list-tile-title>
+   <v-list-tile-sub-title class="text--primary">
+      <a :href="'/topics#'+ topic._id">{{ topic.name }}</a>
+   </v-list-tile-sub-title>
+   <v-list-tile-sub-title>
+      Stijl: {{ topic.question.type }} |
+      {{ topic.items.length }} {{ topic.items.length < 2 ? "vraag" : "vragen" }}
+   </v-list-tile-sub-title>
+</v-list-tile-content>
+`,
+  computed: {
+    topic: function() {
+      console.log(store.getters.topic(this.item.topic));
+      return store.getters.topic(this.item.topic);
+    }
+  }        
+});
+
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
@@ -114,19 +165,8 @@ Vue.component("AdvalvasFeed", {
         <v-list-tile-avatar>
           <img :src="item.user[0].picture">
         </v-list-tile-avatar>
-        <v-list-tile-content>
-          <v-list-tile-title>{{ item.kind }}</v-list-tile-title>
-          <v-list-tile-sub-title v-if="item.topics" class="text--primary">
-            onderwerp{{ item.topics.length < 2 ? "" : "en" }}: {{ item.topics.join(", ") }}
-          </v-list-tile-sub-title>
-          <v-list-tile-sub-title>
-            {{ item.questions }} vragen | 
-            {{ item.asked }} gevraagd | 
-            {{ item.attempts }} pogingen |  
-            {{ item.correct }} correct
-            <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
-          </v-list-tile-sub-title>
-        </v-list-tile-content>
+
+        <component :is="detail_of(item)" :item="item"/>
 
         <v-list-tile-action>
           <v-list-tile-action-text>{{ format_date(item.when) }}</v-list-tile-action-text>
@@ -140,6 +180,14 @@ Vue.component("AdvalvasFeed", {
 </div>
 `,
   computed: {
+    detail_of: function() {
+      return function(item) {
+        return {
+          "quiz result" : "AdvalvasFeedQuizResult",
+          "new topic"   : "AdvalvasFeedNewTopic"
+        }[item.kind];
+      }
+    },
     feed: function() {
       return store.state.feed.feed;
     },

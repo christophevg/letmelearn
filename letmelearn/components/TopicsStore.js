@@ -104,6 +104,10 @@ store.registerModule("topics", {
         }),
         success: function(new_topic) {
           context.commit("new_topic", new_topic);
+          store.dispatch("add_feed_item", {
+            "kind" : "new topic",
+            "topic" : new_topic["_id"]
+          });
           if(topic.handler) { topic.handler(new_topic); }
         }
       });
