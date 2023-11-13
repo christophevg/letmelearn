@@ -65,9 +65,17 @@ class Topic(Resource):
 
   @authenticated
   def delete(self, id):
+    # delete the topic
     db.topics.delete_one({
       "_id": id,
       "user": current_user.email
+    })
+    # delete feed items referencing it
+    db.feed.delete_many({
+      "$or" : [
+        { "topic"  : id },
+        { "topics" : id }
+      ]
     })
     return True
 
