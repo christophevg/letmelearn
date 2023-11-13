@@ -100,9 +100,9 @@ Vue.component("AdvalvasUpdates", {
 Vue.component("AdvalvasFeedQuizResult", {
   props : [ "item" ],
   template: `
-  <v-list-tile-content>
+  <v-list-tile-content v-if="topics.every((i)=>i!==undefined)">
     <v-list-tile-title><b>{{ result }} Resultaat</b></v-list-tile-title>
-    <v-list-tile-sub-title v-if="topics" class="text--primary">
+    <v-list-tile-sub-title class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
       <template v-for="topic, index in topics">
         <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
@@ -117,6 +117,12 @@ Vue.component("AdvalvasFeedQuizResult", {
       {{ item.attempts }} pogingen |  
       {{ item.correct }} correct
       <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
+    </v-list-tile-sub-title>
+ </v-list-tile-content>
+ <v-list-tile-content v-else>
+    <v-list-tile-title><b>Whoops: 😢</b></v-list-tile-title>
+    <v-list-tile-sub-title class="text--primary">
+      Daar is iets verdwenen.
     </v-list-tile-sub-title>
  </v-list-tile-content>
 `,
@@ -141,7 +147,7 @@ Vue.component("AdvalvasFeedQuizResult", {
 Vue.component("AdvalvasFeedNewTopic", {
   props: [ "item" ],
   template: `
- <v-list-tile-content>
+ <v-list-tile-content v-if="topic">
    <v-list-tile-title><b>🆕 Nieuw onderwerp</b></v-list-tile-title>
    <v-list-tile-sub-title class="text--primary">
       <a :href="'/topics#'+ topic._id">{{ topic.name }}</a>
@@ -153,10 +159,17 @@ Vue.component("AdvalvasFeedNewTopic", {
       {{ topic.items.length }} {{ topic.items.length < 2 ? "vraag" : "vragen" }}
    </v-list-tile-sub-title>
 </v-list-tile-content>
+ <v-list-tile-content v-else>
+    <v-list-tile-title><b>Whoops: 😢</b></v-list-tile-title>
+    <v-list-tile-sub-title class="text--primary">
+      Daar is iets verdwenen.
+    </v-list-tile-sub-title>
+ </v-list-tile-content>
 `,
   computed: {
     topic: function() {
-      return store.getters.topic(this.item.topic);
+      var topic = store.getters.topic(this.item.topic);
+      if(topic) { return topic; }
     }
   }        
 });
