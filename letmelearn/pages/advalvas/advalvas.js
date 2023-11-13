@@ -191,7 +191,7 @@ Vue.component("AdvalvasFeed", {
       }
     },
     feed: function() {
-      return store.state.feed.feed;
+      return store.getters.feed;
     },
     format_date: function() {
       return function(when) {
@@ -232,7 +232,7 @@ var Home = {
   },
   computed: {
     feed: function() {
-      return store.state.feed.feed;
+      return store.getters.feed;
     }
   }
 };

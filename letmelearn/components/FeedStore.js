@@ -2,6 +2,13 @@ store.registerModule("feed", {
   state: {
     feed: []
   },
+  getters: {
+    feed: function(state) {
+      return [...state.feed].sort(function(a, b) {
+        return a.when < b.when;
+      });
+    }
+  },
   actions: {
     load_feed: function(context) {
       if(context.state.feed.length < 1) {
