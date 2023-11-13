@@ -67,8 +67,8 @@ server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 import letmelearn.auth
 import letmelearn.api
 
-register_external_script(f"/app/static/auth.js")
-register_external_script(f"/app/static/diff.js")
+for script in [ "auth", "diff", "nl"]:
+  register_external_script(f"/app/static/{script}.js")
 
 import letmelearn.pages.advalvas
 import letmelearn.pages.topics
