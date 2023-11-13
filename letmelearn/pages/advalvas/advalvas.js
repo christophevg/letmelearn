@@ -133,7 +133,7 @@ Vue.component("AdvalvasFeed", {
         </v-list-tile-action>
 
       </v-list-tile>
-      <v-divider v-if="index + 1 < feed.length" :key="index"/>
+      <v-divider v-if="index < feed.length - 1"/>
     </template>
   </v-list>
   <br>
