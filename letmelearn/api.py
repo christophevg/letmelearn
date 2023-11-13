@@ -150,6 +150,8 @@ class Feed(Resource):
 
     db.feed.insert_one(new_item)
     new_item.pop("_id")
+    
+    new_item["user" ] = [ current_user.as_json ]
     return new_item
 
 api.add_resource(Feed, "/api/feed", endpoint="feed")
