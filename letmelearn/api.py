@@ -114,7 +114,8 @@ class Feed(Resource):
     return list(db.feed.aggregate([
       {
         "$match" : {
-          "user": current_user.email
+          "user": current_user.email,
+          "asked" : { "$gt" : 0 }
         }
       },
       {

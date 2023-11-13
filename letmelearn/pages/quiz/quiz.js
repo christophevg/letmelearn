@@ -211,7 +211,9 @@ var Quiz = {
         correct  : this.correct,
         elapsed  : this.$refs.timer.elapsed
       }
-      store.dispatch("add_feed_item", this.result);
+     if(this.result.asked > 0) {
+        store.dispatch("add_feed_item", this.result);
+      }
     },
     toggle_timing: function() {
       this.$refs.timer.toggle_timing();
