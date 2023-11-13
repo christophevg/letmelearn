@@ -101,7 +101,7 @@ Vue.component("AdvalvasFeedQuizResult", {
   props : [ "item" ],
   template: `
   <v-list-tile-content>
-    <v-list-tile-title><b>🥇 Resultaat</b></v-list-tile-title>
+    <v-list-tile-title><b>{{ result }} Resultaat</b></v-list-tile-title>
     <v-list-tile-sub-title v-if="topics" class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
       <template v-for="topic, index in topics">
@@ -123,6 +123,17 @@ Vue.component("AdvalvasFeedQuizResult", {
   computed: {
     topics: function() {
       return this.item.topics.map((id) => store.getters.topic(id));
+    },
+    result: function() {
+      if(this.item.questions == this.item.asked) {     // all questions asked
+        if(this.item.correct == this.item.attempts ) { // all correct on 1st try
+          return "🥇";
+        } else {
+          return "🥈";
+        }
+      } else {
+        return "🥉";
+      }
     }
   }  
 })
