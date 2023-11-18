@@ -70,9 +70,6 @@ import letmelearn.api
 for script in [ "auth", "diff", "nl"]:
   register_external_script(f"/app/static/{script}.js")
 
-import letmelearn.pages.advalvas
-import letmelearn.pages.topics
-import letmelearn.pages.quiz
-import letmelearn.pages.about
+import letmelearn.pages
 
 logger.info("✅ everything loaded...")
