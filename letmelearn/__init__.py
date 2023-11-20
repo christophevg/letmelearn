@@ -41,6 +41,7 @@ HERE = os.path.dirname(__file__)
 register_static_folder(os.path.join(HERE, "static"))
 
 register_stylesheet("custom.css", os.path.join(HERE, "static", "css"))
+register_stylesheet("flashcards.css", os.path.join(HERE, "static", "css"))
 
 # TODO: glob folder recursively
 COMPONENTS = os.path.join(HERE, "components")

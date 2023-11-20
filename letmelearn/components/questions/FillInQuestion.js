@@ -430,11 +430,19 @@ Vue.component("FillInQuestion", {
     summary  : Boolean,
     importer : Boolean,
     
+    training : Boolean,
+    
+    question : Boolean,
+    answer:    Boolean,
+    
     showing  : Boolean
   },
   template: `
-<FillInQuestionSummary  v-if="summary"
+<FillInQuestionSummary v-if="summary"
                        :header="this.header"
+                       :item="item"/>
+<FillInQuestionSummary v-else-if="training && (question || answer)"
+                       :header="question ? 'question' : 'answer'"
                        :item="item"/>
 <FillInQuestionImporter v-else-if="importer"
                        :topic="this.topic"

@@ -32,6 +32,14 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
+          title: "Train met Flash Cards",
+          date: "20 november 2023",
+          pars: [
+            `Naast Quizes, kan je nu ook al je onderwerpen <a href="/training">inoefenen</a> met "flash cards!". Hierbij krijg je de vraag te zien en kan je zelf kijken naar het antwoord op de achterzijde, en bepalen of je het nog eens opnieuw wil proberen of dat je het wel kent.`
+          ],
+          image: "flashcards.gif"
+        },
+        {
           title: "Jouw Feed",
           date: "9 november 2023",
           pars: [
@@ -142,6 +150,53 @@ Vue.component("AdvalvasFeedQuizResult", {
       }
     }
   }  
+});
+
+Vue.component("AdvalvasFeedTraining", {
+  props : [ "item" ],
+  template: `
+  <v-list-tile-content v-if="topics.every((i)=>i!==undefined)">
+    <v-list-tile-title><b>{{ result }} Training</b></v-list-tile-title>
+    <v-list-tile-sub-title class="text--primary">
+      onderwerp{{ topics.length < 2 ? "" : "en" }}:
+      <template v-for="topic, index in topics">
+        <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
+        <span v-if="index < topics.length - 1">,&nbsp;</span>
+      </template>
+      &nbsp;<a :href="'/training#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</a>
+    </v-list-tile-sub-title>
+
+    <v-list-tile-sub-title>
+      {{ item.questions }} vragen | 
+      {{ item.asked }} gevraagd | 
+      {{ item.attempts }} pogingen |  
+      {{ item.correct }} correct
+      <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
+    </v-list-tile-sub-title>
+ </v-list-tile-content>
+ <v-list-tile-content v-else>
+    <v-list-tile-title><b>Whoops: 😢</b></v-list-tile-title>
+    <v-list-tile-sub-title class="text--primary">
+      Daar is iets verdwenen.
+    </v-list-tile-sub-title>
+ </v-list-tile-content>
+`,
+  computed: {
+    topics: function() {
+      return this.item.topics.map((id) => store.getters.topic(id));
+    },
+    result: function() {
+      if(this.item.questions == this.item.asked) {     // all questions asked
+        if(this.item.correct == this.item.attempts ) { // all correct on 1st try
+          return "🙌";
+        } else {
+          return "💪";
+        }
+      } else {
+        return "👏";
+      }
+    }
+  }  
 })
 
 Vue.component("AdvalvasFeedNewTopic", {
@@ -177,7 +232,7 @@ Vue.component("AdvalvasFeedNewTopic", {
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
-	<h2 style="border-bottom: 1px solid #ddd">💪 Jouw Feed</h2>
+	<h2 style="border-bottom: 1px solid #ddd">📢 Jouw Feed</h2>
   
   <br>
 
@@ -209,8 +264,9 @@ Vue.component("AdvalvasFeed", {
     detail_of: function() {
       return function(item) {
         return {
-          "quiz result" : "AdvalvasFeedQuizResult",
-          "new topic"   : "AdvalvasFeedNewTopic"
+          "quiz result"     : "AdvalvasFeedQuizResult",
+          "training result" : "AdvalvasFeedTraining",
+          "new topic"       : "AdvalvasFeedNewTopic"
         }[item.kind];
       }
     },

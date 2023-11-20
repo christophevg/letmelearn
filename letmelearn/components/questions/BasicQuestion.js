@@ -371,11 +371,19 @@ Vue.component("BasicQuestion", {
     summary  : Boolean,
     importer : Boolean,
     
+    training : Boolean,
+
+    question : Boolean,
+    answer   : Boolean,
+    
     showing  : Boolean
   },
   template: `
 <BasicQuestionSummary  v-if="summary"
                        :header="this.header"
+                       :item="item"/>
+<BasicQuestionSummary  v-else-if="training && (question || answer)"
+                       :header="question ? 'left' : 'right'"
                        :item="item"/>
 <BasicQuestionImporter v-else-if="importer"
                        :topic="this.topic"

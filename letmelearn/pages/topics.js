@@ -259,7 +259,7 @@ var Topics = {
   navigation: {
     section: "learn",
     icon:    "edit",
-    text:    "Topics",
+    text:    "Onderwerpen",
     path:    "/topics",
     index:   2
   },
