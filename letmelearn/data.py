@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 DB_CONN = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/letmelearn")
 DB_NAME = DB_CONN.split("/")[-1].split("?")[0]
 
-db = MongoClient(DB_CONN)[DB_NAME]
+db = MongoClient(DB_CONN, serverSelectionTimeoutMS=3000)[DB_NAME]
 versions = {
   version["_id"] : version["version"]
   for version in db.versions.find({})

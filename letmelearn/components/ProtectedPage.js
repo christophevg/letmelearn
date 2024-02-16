@@ -1,6 +1,64 @@
-Vue.component("ProtectedPage", {
+Vue.component("Page", {
   template: `
 <div>
+<slot/>
+<v-snackbar v-model="show" color="error" :timeout="timeout" top>
+  {{ text }}
+  <v-btn dark flat @click="show = ''">
+    Close
+  </v-btn>
+</v-snackbar>
+</div>
+`,
+  computed: {
+    show: {
+      set: function(value) {
+        store.commit("show_error", value);
+      },
+      get: function() {
+        return store.getters.showing_error;
+      }
+    },
+    text: function() {
+      return store.state.status.error_msg;
+    }
+  },
+  data: function() {
+    return {
+      timeout: 6000
+    }
+  }
+});
+
+store.registerModule("status", {
+  state: {
+    showing_error: false,
+    error_msg : ""
+  },
+  getters: {
+    showing_error: function(state) {
+      return state.showing_error;
+    }
+  },
+  actions: {
+    raise_error: function(context, msg) {
+      context.commit("error", msg);
+      if(msg !== "") { context.commit("show_error", true); }
+    }
+  },
+  mutations: {
+    show_error: function(state, showing) {
+      state.showing_error = showing;
+    },
+    error: function(state, msg) {
+      state.error_msg = msg;
+    }
+  }
+});
+
+Vue.component("ProtectedPage", {
+  template: `
+<Page>
   <div v-if="session" style="margin-top:64px">
 
     <v-toolbar flat fixed height="64px" style="padding-top:64px">
@@ -84,7 +142,7 @@ Vue.component("ProtectedPage", {
 
     <slot name="public"></slot>
   </div>  
-</div>
+</Page>
 `,
   computed: {
     show_extended: function() {

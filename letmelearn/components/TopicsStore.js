@@ -62,6 +62,7 @@ store.registerModule("topics", {
         $.ajax({
           type: "GET",
           url: "/api/topics",
+          dataType: "json",
           success: function(result) {
             context.commit("topics", result);
             // adopt hash
@@ -73,7 +74,12 @@ store.registerModule("topics", {
               context.commit("selected_topic", topics);
             }
           },
-          dataType: "json"
+          error: function(result) {
+            store.dispatch(
+              "raise_error",
+              "er ging iets mis, probeer het opnieuw: " + result.statusText
+            );
+          }
         });
       }
     },
@@ -89,6 +95,12 @@ store.registerModule("topics", {
         data: JSON.stringify(updating.update),
         success: function(result) {
           context.commit("updated_topic", updating);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });
     },
@@ -109,6 +121,12 @@ store.registerModule("topics", {
             "topic" : new_topic["_id"]
           });
           if(topic.handler) { topic.handler(new_topic); }
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });
     },
@@ -118,6 +136,12 @@ store.registerModule("topics", {
         url: "/api/topics/" + topic._id,
         success: function(result) {
           context.commit("removed_topic", topic);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });
     },
@@ -130,6 +154,12 @@ store.registerModule("topics", {
         data: JSON.stringify(adding.item),
         success: function(result) {
           context.commit("added_item", adding);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });
     },
@@ -145,6 +175,12 @@ store.registerModule("topics", {
         }),
         success: function(result) {
           context.commit("updated_item", updating);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });      
     },
@@ -157,6 +193,12 @@ store.registerModule("topics", {
         data: JSON.stringify(removing.removal),
         success: function(result) {
           context.commit("removed_item", removing);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
         }
       });      
     },
