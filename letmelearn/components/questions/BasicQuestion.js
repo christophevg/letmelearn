@@ -19,7 +19,8 @@ var BasicBase = Vue.component("BasicBase", {
       return items[items.length * Math.random() | 0];
     },
     format: function(items) {
-      return items.join(" or ");
+      if(items.length === 1) { return items[0]; }
+      return "'" + items.join("' of '") + "'";
     }
   }
 });
