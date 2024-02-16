@@ -55,7 +55,7 @@ Vue.component("BasicQuestionAskingWritten", {
           <h3 class="headline mb-0">{{ format(question) }}</h3><br>
           <div style="width:100%; text-align:center;margin-top:20px;">
             <v-text-field autofocus v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
-            <h1 v-if="outcome === false" style="color:green">{{ question.expected }}</h1>
+            <h1 v-if="outcome === false" style="color:green">{{ format(expected) }}</h1>
             <h1 v-if="outcome === false">
               <template v-for="possible_answer in expected">
                 <TextDiff :expected="possible_answer" :actual="written"/>
