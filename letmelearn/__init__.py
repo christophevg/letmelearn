@@ -8,7 +8,7 @@ eventlet.monkey_patch()
 
 # load the environment variables for this setup from .env file
 from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv())
 load_dotenv(find_dotenv(".env.local"))
 
 import logging
