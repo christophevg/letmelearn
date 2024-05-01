@@ -1,17 +1,13 @@
 import re
 
-from flask import request
-
 from flask_restful import Resource
-
 from flask_login import current_user
 
 from pymongo.collection import ReturnDocument
 
 from datetime import datetime
 
-from baseweb.rest import api
-
+from letmelearn      import server
 from letmelearn.data import db
 from letmelearn.auth import authenticated
 
@@ -22,9 +18,9 @@ class Topics(Resource):
 
   @authenticated
   def post(self):
-    name     = request.json["name"]
-    question = request.json["question"]
-    items    = request.json.get("items", [])
+    name     = server.request.json["name"]
+    question = server.request.json["question"]
+    items    = server.request.json.get("items", [])
     id = re.sub(r"[^a-zA-Z0-9 ]", "", name.lower()).replace(" ", "-")
     new_topic = {
       "_id"      : id,
@@ -36,7 +32,7 @@ class Topics(Resource):
     db.topics.insert_one(new_topic)
     return new_topic
 
-api.add_resource(Topics, "/api/topics", endpoint="topics")
+server.api.add_resource(Topics, "/api/topics", endpoint="topics")
 
 class Topic(Resource):
   @authenticated
@@ -48,7 +44,7 @@ class Topic(Resource):
 
   @authenticated
   def patch(self, id):
-    update = request.json
+    update = server.request.json
     update.pop("_id", None)
     update.pop("user", None)
 
@@ -79,7 +75,7 @@ class Topic(Resource):
     })
     return True
 
-api.add_resource(Topic, "/api/topics/<id>", endpoint="topic")
+server.api.add_resource(Topic, "/api/topics/<id>", endpoint="topic")
 
 class Items(Resource):
   @authenticated
@@ -90,7 +86,7 @@ class Items(Resource):
         "user" : current_user.email
       },
       {
-        "$push" : { "items" : request.json }
+        "$push" : { "items" : server.request.json }
       })
 
   @authenticated
@@ -99,11 +95,11 @@ class Items(Resource):
       {
         "_id"   : id,
         "user"  : current_user.email,
-        "items" : request.json["original"]
+        "items" : server.request.json["original"]
       },
       {
         "$set" : {
-          "items.$" : request.json["update"]
+          "items.$" : server.request.json["update"]
         }
       })
 
@@ -111,10 +107,10 @@ class Items(Resource):
   def delete(self, id):
     return db.topics.find_one_and_update(
       { "_id" : id, "user" : current_user.email },
-      { "$pull" : { "items" : request.json }}
+      { "$pull" : { "items" : server.request.json }}
     )
 
-api.add_resource(Items, "/api/topics/<id>/items", endpoint="items")
+server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="items")
 
 class Feed(Resource):
   @authenticated
@@ -155,7 +151,7 @@ class Feed(Resource):
 
   @authenticated
   def post(self):
-    new_item = request.json
+    new_item = server.request.json
     new_item["user"] = [ current_user.email ]
     new_item["when"] = datetime.now().isoformat()
 
@@ -165,4 +161,4 @@ class Feed(Resource):
     new_item["user" ] = [ current_user.as_json ]
     return new_item
 
-api.add_resource(Feed, "/api/feed", endpoint="feed")
+server.api.add_resource(Feed, "/api/feed", endpoint="feed")

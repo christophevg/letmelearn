@@ -1,4 +1,4 @@
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 # needed explicitly for recursion issue in eventlet+ssl on outgoing pymongo
 # and to be able to create single pymongo Database object
@@ -15,6 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
+from pathlib import Path
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL") or "INFO"
 FORMAT    = "[%(name)s] [%(levelname)s] %(message)s"
@@ -25,7 +26,7 @@ formatter = logging.Formatter(FORMAT, DATEFMT)
 logging.getLogger().handlers[0].setFormatter(formatter)
 
 # "silence" lower-level modules
-for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.interface" ]:
+for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.interface", "pymongo.serverSelection" ]:
   module_logger = logging.getLogger(module)
   module_logger.setLevel(logging.WARN)
   if len(module_logger.handlers) > 0:
@@ -33,18 +34,19 @@ for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.in
 
 # register components
 
-from baseweb.interface import register_component, register_external_script
-from baseweb.interface import register_static_folder, register_stylesheet
+from baseweb import Baseweb
 
-HERE = os.path.dirname(__file__)
+server = Baseweb("LetMeLearn")
 
-register_static_folder(os.path.join(HERE, "static"))
+HERE = Path(__file__).resolve().parent
 
-register_stylesheet("custom.css", os.path.join(HERE, "static", "css"))
-register_stylesheet("flashcards.css", os.path.join(HERE, "static", "css"))
+server.app_static_folder = HERE / "static"
+
+server.register_stylesheet("custom.css", HERE / "static" / "css")
+server.register_stylesheet("flashcards.css", HERE / "static" / "css")
 
 # TODO: glob folder recursively
-COMPONENTS = os.path.join(HERE, "components")
+COMPONENTS = HERE / "components"
 for component in [
   "navigation",
   "Timer",
@@ -57,10 +59,7 @@ for component in [
   "questions/BasicQuestion",
   "questions/FillInQuestion"
 ]:
-  register_component(f"{component}.js", COMPONENTS)
-
-# expose baseweb server and perform additional configuration
-from baseweb.web import server
+  server.register_component(f"{component}.js", COMPONENTS)
 
 server.config["TEMPLATES_AUTO_RELOAD"] = True
 server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
@@ -69,7 +68,7 @@ import letmelearn.auth
 import letmelearn.api
 
 for script in [ "auth", "diff", "nl"]:
-  register_external_script(f"/app/static/{script}.js")
+  server.register_external_script(f"/app/static/{script}.js")
 
 import letmelearn.pages
 

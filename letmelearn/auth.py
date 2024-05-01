@@ -5,11 +5,9 @@ import os
 
 from functools import wraps
 
-from baseweb.web import server
+from letmelearn import server
 
 from letmelearn.data import db
-
-from flask import request
 
 # setup flask_login infrastructure
 
@@ -84,26 +82,22 @@ def load_user(email):
 from flask import Response, abort
 from flask_restful import Resource
 
-from baseweb.interface import register_external_script
-from baseweb.config    import app
-from baseweb.rest      import api
-
 import oatk.js
 from oatk import OAuthToolkit
 
 # add discovery url and client_id from env
-app["oauth"] = {
+server.settings["oauth"] = {
   "provider" : os.environ.get("OAUTH_PROVIDER"),
   "client_id": os.environ.get("OAUTH_CLIENT_ID")
 }
 
 # route for oatk.js from the oatk package
-@server.route("/oatk.js", methods=["GET"])
+@server.route("/oatk.js")
 def oatk_script():
   return Response(oatk.js.as_src(), mimetype="application/javascript")
 
 # and have it included in the HTML
-register_external_script("/oatk.js")
+server.register_external_script("/oatk.js")
 
 # a protected session setup API endpoint
 
@@ -117,14 +111,14 @@ def authenticated(func):
   return wrapper
 
 # setup oatk
-auth = OAuthToolkit()
-auth.using_provider(os.environ["OAUTH_PROVIDER"]);
-auth.with_client_id(os.environ["OAUTH_CLIENT_ID"])
+oauth = OAuthToolkit()
+oauth.using_provider(os.environ["OAUTH_PROVIDER"]);
+oauth.with_client_id(os.environ["OAUTH_CLIENT_ID"])
 
 class Session(Resource):
-  @auth.authenticated  # oauth token required to create session
+  @oauth.authenticated  # oauth token required to create session
   def post(self):
-    claims = auth.decode(request.headers["Authorization"][7:])
+    claims = oauth.decode(server.request.headers["Authorization"][7:])
     user = User.find(claims["email"])
     if not user:
       logger.warn(f"unknown user: {claims}")
@@ -133,13 +127,13 @@ class Session(Resource):
     login_user(user)
     return current_user.as_json
 
-  @authenticated       # flask login session required to get the current_user
+  @authenticated # flask login session required to get the current_user
   def get(self):
     return current_user.as_json
 
-  @authenticated       # flask login session required to delete/logout session
+  @authenticated # flask login session required to delete/logout session
   def delete(self):
     logout_user()
     return True
 
-api.add_resource(Session, "/api/session")
+server.api.add_resource(Session, "/api/session")

@@ -1,7 +1,6 @@
 import os
 
-from baseweb.interface import register_component
+from letmelearn import server
 
 for page in [ "about", "advalvas", "quiz", "topics", "training" ]:
-  register_component(f"{page}.js", os.path.dirname(__file__))
-
+  server.register_component(f"{page}.js", os.path.dirname(__file__))
