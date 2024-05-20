@@ -1,5 +1,6 @@
 var BasicBase = Vue.component("BasicBase", {
   props : [
+    "topic",
     "context",
     "item"
   ],
@@ -25,52 +26,116 @@ var BasicBase = Vue.component("BasicBase", {
   }
 });
 
+Vue.component("QuestionCard", {
+  props: [
+    "title",
+    "submit",
+    "topic",
+    "item"
+  ],
+  template: `
+<v-card>
+  <v-card-title primary-title class="justify-center">
+    <h3 class="headline mb-0">{{ title }}</h3><br>
+    <slot/>
+  </v-card-title>
+  <v-card-actions>
+    <v-spacer></v-spacer>
+    <v-btn v-if="submit" type="submit">{{ submit }}</v-btn>
+    <slot name="actions"></slot>
+    <v-spacer></v-spacer>
+
+    <v-btn icon @click="toggle_editor" v-if="item">
+      <v-icon>{{ show ? 'keyboard_arrow_down' : 'keyboard_arrow_up' }}</v-icon>
+    </v-btn>
+  </v-card-actions>
+  <v-slide-y-transition>
+    <v-card-text v-show="show">
+      <v-card>
+        <v-card-title primary-title>
+          <component editor :is="topic.question.type"
+                            v-if="item"
+                            :topic="topic"
+                            :item="editing"
+                            :showing="show"/>
+        </v-card-title>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="update_item">update</v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-card-text>
+  </v-slide-y-transition>
+</v-card>
+`,
+  methods: {
+    toggle_editor: function() {
+      if(this.show) {
+        this.show = false;
+      } else {
+        this.editing.topic    = this.topic
+        this.editing.original = this.item;
+        this.editing.updated  = null;
+        this.show = true;
+      }
+    },
+    update_item: function() {
+      var o = JSON.stringify({...this.editing.original}),
+          u = JSON.stringify({...this.editing.updated});
+      if( o != u  ) {
+        store.dispatch("update_item", {
+          topic   : this.editing.topic,
+          original: this.editing.original,
+          update  : this.editing.updated
+        });
+      }
+    }
+  },
+  data : function() {
+    return {
+      show : false,
+      editing: {
+        topic: null,
+        original: null,
+        updated: null
+      }
+    }
+  }
+});
+
 Vue.component("BasicQuestionAskingWritten", {
   mixins: [ BasicBase ],
   template: `
 <v-layout v-if="outcome === null">
   <v-flex xs12 sm6 offset-sm3>
     <v-form @submit.prevent="answer(written)">
-      <v-card>
-        <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ any_question }}</h3><br>
-          <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field autofocus v-if="outcome === null" v-model="written"></v-text-field>
-          </div>
-        </v-card-title>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn type="submit">ok</v-btn>
-          <v-spacer></v-spacer>
-        </v-card-actions>
-      </v-card>
+      <QuestionCard :title="any_question" submit="ok">
+        <div style="width:100%; text-align:center;margin-top:20px;">
+          <v-text-field autofocus v-if="outcome === null" v-model="written"></v-text-field>
+        </div>
+      </QuestionCard>
     </v-form>
   </v-flex>
 </v-layout>
-
 <v-layout v-else>
   <v-flex xs12 sm6 offset-sm3>
     <v-form @submit.prevent="next">
-      <v-card>
-        <v-card-title primary-title class="justify-center">
-          <h3 class="headline mb-0">{{ format(question) }}</h3><br>
-          <div style="width:100%; text-align:center;margin-top:20px;">
-            <v-text-field readonly autofocus v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
-            <h1 v-if="outcome === false" style="color:green">{{ format(expected) }}</h1>
-            <h1 v-if="outcome === false">
-              <template v-for="possible_answer in expected">
-                <TextDiff :expected="possible_answer" :actual="written"/>
-              </template>
-            </h1>
-          </div>
-        </v-card-title>
-        <v-card-actions>
+      <QuestionCard :title="format(question)" submit="next" :topic="topic" :item="item">
+        <div style="width:100%; text-align:center;margin-top:20px;">
+          <v-text-field readonly autofocus v-model="written" :error="outcome === false" :background-color="outcome ? 'success' : 'error'"></v-text-field>
+          <h1 v-if="outcome === false" style="color:green">{{ format(expected) }}</h1>
+          <h1 v-if="outcome === false">
+            <template v-for="possible_answer in expected">
+              <TextDiff :expected="possible_answer" :actual="written"/>
+            </template>
+          </h1>
+        </div>
+        <template v-slot:actions>
           <v-spacer></v-spacer>
-          <v-btn type="submit">next...</v-btn>
           <v-btn @click="accept_error" v-if="outcome === false">correct</v-btn>
-          <v-spacer></v-spacer>
-        </v-card-actions>
-      </v-card>
+        </template>
+      </QuestionCard>
     </v-form>
   </v-flex>
 </v-layout>
@@ -130,9 +195,8 @@ Vue.component("BasicQuestionAskingChoice", {
 
 <v-layout v-else-if="outcome !== null">
   <v-flex xs12 sm6 offset-sm3>
-    <v-card>
-      <v-card-title primary-title class="justify-center">
-        <h3 class="headline mb-0">{{ format(question) }}</h3><br>
+    <v-form @submit.prevent="next">
+      <QuestionCard :title="format(question)" submit="next" :topic="topic" :item="item">
         <div style="width:100%; text-align:center;margin-top:20px;">
           <v-btn v-for="(choice, index) in choices"
                  v-bind:key="index"
@@ -142,13 +206,8 @@ Vue.component("BasicQuestionAskingChoice", {
             {{ format(choice) }}
           </v-btn>
         </div>
-      </v-card-title>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn @click="next">next...</v-btn>
-        <v-spacer></v-spacer>
-      </v-card-actions>
-    </v-card>
+      </QuestionCard>
+    </form>
   </v-flex>
 </v-layout>
 `,
@@ -233,7 +292,7 @@ Vue.component("BasicQuestionEditor", {
     "showing"
   ],
   template: `
-<div v-if="model">
+<div v-if="model" style="width:100%">
   <MultiTextField :model="model.left"
                   :label="label('left')"
                   :focus="true"
