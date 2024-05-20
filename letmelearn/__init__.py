@@ -26,7 +26,7 @@ formatter = logging.Formatter(FORMAT, DATEFMT)
 logging.getLogger().handlers[0].setFormatter(formatter)
 
 # "silence" lower-level modules
-for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.interface", "pymongo.serverSelection" ]:
+for module in [ "gunicorn.error", "pymongo.serverSelection", "urllib3" ]:
   module_logger = logging.getLogger(module)
   module_logger.setLevel(logging.WARN)
   if len(module_logger.handlers) > 0:
@@ -35,7 +35,6 @@ for module in [ "gunicorn.error", "baseweb.socketio", "baseweb.web", "baseweb.in
 # register components
 
 from baseweb import Baseweb
-
 server = Baseweb("LetMeLearn")
 
 HERE = Path(__file__).resolve().parent
