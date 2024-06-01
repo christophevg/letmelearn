@@ -207,7 +207,7 @@ Vue.component("BasicQuestionAskingChoice", {
           </v-btn>
         </div>
       </QuestionCard>
-    </form>
+    </v-form>
   </v-flex>
 </v-layout>
 `,
