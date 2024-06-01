@@ -202,7 +202,8 @@ Vue.component("BasicQuestionAskingChoice", {
                  v-bind:key="index"
                  block
                  :color="markup[index]"
-                 class="text-none">
+                 class="text-none"
+                 @click="nextIf(index)">
             {{ format(choice) }}
           </v-btn>
         </div>
@@ -244,6 +245,9 @@ Vue.component("BasicQuestionAskingChoice", {
       this.$emit("next", this.outcome);
       this.outcome = null;
       this.markup  = null;
+    },
+    nextIf: function(index) {
+      if( this.markup[index] == "success" ) { this.next(); }
     }
   },
   data: function() {
