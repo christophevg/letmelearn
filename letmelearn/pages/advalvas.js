@@ -32,6 +32,14 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
+          title: "Click om verder te gaan...",
+          date: "1 juni 2024",
+          pars: [
+            `Klein maar fijn. Bij multiple choise vragen, kan je nu ook gewoon op het juiste antwoord klikken om verder te gaan en moet je niet meer helemaal naar de "Next..." knop.`
+          ],
+          image: "double-click-next.png"
+        },
+        {
           title: "Train met Flash Cards",
           date: "20 november 2023",
           pars: [
