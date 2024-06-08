@@ -47,21 +47,24 @@ Vue.component("Timer", {
       }
     },
     start: function() {
-      if( this.seconds < 1 ) {
+      if( this.seconds <= 0 ) {
+        // we only start when there are a number of seconds selected
         return;
       }
+      // set the number of seconds to count down and start the clock
       this.seconds_left = this.seconds;
-      this.active = true;
-      this.tick();
+      this.timeout_id = setTimeout(this.tick, 1000);
     },
     stop: function() {
-      this.active = false;
+      clearTimeout(this.timeout_id);
     },
     tick: function() {
-      if(!this.active) { return; }
-      this.seconds_left--;
+      // the timer ticks every second using a timeout.
+      // when there are still seconds left, it continues
+      // when there are no more seconds left, the "done event" is emitted
       if( this.seconds_left > 0) {
-        setTimeout(this.tick, 1000);
+        this.seconds_left--;
+        this.timeout_id = setTimeout(this.tick, 1000);
       } else {
         this.$emit("done");
       }
@@ -80,9 +83,9 @@ Vue.component("Timer", {
   },
   data: function() {
     return {
+      timeout_id: null,
       timing_dialog: false,
       minutes: 0,
-      active: false,
       seconds_left: 0
     }
   }
