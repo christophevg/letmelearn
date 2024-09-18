@@ -32,6 +32,14 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
+          title: "Archiveer topics...",
+          date: "18 september 2024",
+          pars: [
+            `Door middel van een nieuw knopje, kan je nu topics archiveren. Daardoor verdwijnen ze uit de topic lijst. Geen zorgen, ze blijven bewaard en zijn met een kleine handeling terug te voorschijn te toveren.`
+          ],
+          image: "archive.png"
+        },
+        {
           title: "Click om verder te gaan...",
           date: "1 juni 2024",
           pars: [

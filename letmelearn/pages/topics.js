@@ -20,6 +20,10 @@ var Topics = {
       <v-icon>bookmark</v-icon>
     </v-btn>
 
+    <v-btn flat icon @click="archive_topic" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
+      <v-icon>archive</v-icon>
+    </v-btn>
+
     <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
       <v-icon>delete</v-icon>
     </v-btn>
@@ -44,6 +48,10 @@ var Topics = {
 
         </v-list-tile>
         <v-list-tile>
+
+          <v-btn flat icon @click="archive_topic" :disabled="!selected" class="ma-0">
+            <v-icon>archive</v-icon>
+          </v-btn>
 
           <v-btn flat icon color="red" @click="delete_topic" :disabled="!selected" class="ma-0">
             <v-icon>delete</v-icon>
@@ -375,6 +383,17 @@ var Topics = {
     delete_topic: function() {
       if( confirm("Ben je zeker dat " + this.selected.name + " weg mag?")) {
         store.dispatch("remove_topic", this.selected);
+      }
+    },
+    archive_topic: function() {
+      if( confirm("Ben je zeker dat je " + this.selected.name + " wil archiveren?")) {
+        if(this.selected.tags) {
+          this.tags = [...this.selected.tags];
+        } else {
+          this.tags = []; // default to empty list
+        }
+        this.tags.push("archived");
+        this.update_tags();
       }
     },
     
