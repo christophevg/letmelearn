@@ -3,13 +3,13 @@ all: run
 run:
 	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn:server
 
-clear:
-	@pip freeze | cut -d"=" -f1 | xargs pip uninstall -y
-
-upgrade: clear
+requirements.txt:
+	@cat $@ | cut -d"=" -f1 | xargs pip uninstall -y
 	pip install -U pip
 	pip install -r requirements.base.txt
-	pip freeze > requirements.txt
+	pip freeze > $@
+
+.PHONY: requirements.txt
 
 DB=letmelearn
 COLLECTION=topics
