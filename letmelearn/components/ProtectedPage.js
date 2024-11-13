@@ -122,7 +122,7 @@ Vue.component("ProtectedPage", {
   
                 If you haven't been granted access yet, you'll have to contact
                 me 😉 Currently <i>Let me Learn</i> is a closed community. The
-                <a href="/about">about page</a> contains a little more
+                <router-link to="/about">about page</router-link> contains a little more
                 information about what's behind the curve.
   
               </p>

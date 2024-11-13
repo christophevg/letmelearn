@@ -51,7 +51,7 @@ Vue.component("AdvalvasUpdates", {
           title: "Train met Flash Cards",
           date: "20 november 2023",
           pars: [
-            `Naast Quizes, kan je nu ook al je onderwerpen <a href="/training">inoefenen</a> met "flash cards!". Hierbij krijg je de vraag te zien en kan je zelf kijken naar het antwoord op de achterzijde, en bepalen of je het nog eens opnieuw wil proberen of dat je het wel kent.`
+            `Naast Quizes, kan je nu ook al je onderwerpen <router-link to="/training">inoefenen</router-link> met "flash cards!". Hierbij krijg je de vraag te zien en kan je zelf kijken naar het antwoord op de achterzijde, en bepalen of je het nog eens opnieuw wil proberen of dat je het wel kent.`
           ],
           image: "flashcards.gif"
         },
@@ -129,10 +129,10 @@ Vue.component("AdvalvasFeedQuizResult", {
     <v-list-tile-sub-title class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
       <template v-for="topic, index in topics">
-        <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
+        <router-link :to="'/topics#'+topic._id">{{ topic.name}}</router-link>
         <span v-if="index < topics.length - 1">,&nbsp;</span>
       </template>
-      &nbsp;<a :href="'/quiz#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</a>
+      &nbsp;<router-link :to="'/quiz#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</router-link>
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
@@ -176,10 +176,10 @@ Vue.component("AdvalvasFeedTraining", {
     <v-list-tile-sub-title class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
       <template v-for="topic, index in topics">
-        <a :href="'/topics#'+topic._id">{{ topic.name}}</a>
+        <router-link :to="'/topics#'+topic._id">{{ topic.name}}</router-link>
         <span v-if="index < topics.length - 1">,&nbsp;</span>
       </template>
-      &nbsp;<a :href="'/training#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</a>
+      &nbsp;<router-link :ro="'/training#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</router-link>
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
@@ -221,8 +221,8 @@ Vue.component("AdvalvasFeedNewTopic", {
  <v-list-tile-content v-if="topic">
    <v-list-tile-title><b>🆕 Nieuw onderwerp</b></v-list-tile-title>
    <v-list-tile-sub-title class="text--primary">
-      <a :href="'/topics#'+ topic._id">{{ topic.name }}</a>
-      &nbsp;<a :href="'/quiz#' + topic._id" style="text-decoration:none">▶️</a>
+      <router-link :to="'/topics#'+ topic._id">{{ topic.name }}</router-link>
+      &nbsp;<router-link :to="'/quiz#' + topic._id" style="text-decoration:none">▶️</router-link>
   
    </v-list-tile-sub-title>
    <v-list-tile-sub-title>
