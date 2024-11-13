@@ -1,4 +1,4 @@
-baseweb
+baseweb>=0.4.0
 pymongo
 Flask-Login
 oatk

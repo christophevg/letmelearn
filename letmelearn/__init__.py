@@ -36,6 +36,7 @@ for module in [ "gunicorn.error", "pymongo.serverSelection", "urllib3" ]:
 
 from baseweb import Baseweb
 server = Baseweb("LetMeLearn")
+server.log_config()
 
 HERE = Path(__file__).resolve().parent
 
@@ -71,4 +72,5 @@ for script in [ "auth", "diff", "nl"]:
 
 import letmelearn.pages
 
+server.log_routes()
 logger.info("✅ everything loaded...")

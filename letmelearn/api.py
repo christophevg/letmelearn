@@ -32,7 +32,7 @@ class Topics(Resource):
     db.topics.insert_one(new_topic)
     return new_topic
 
-server.api.add_resource(Topics, "/api/topics", endpoint="topics")
+server.api.add_resource(Topics, "/api/topics", endpoint="api-topics")
 
 class Topic(Resource):
   @authenticated
@@ -75,7 +75,7 @@ class Topic(Resource):
     })
     return True
 
-server.api.add_resource(Topic, "/api/topics/<id>", endpoint="topic")
+server.api.add_resource(Topic, "/api/topics/<id>", endpoint="api-topic")
 
 class Items(Resource):
   @authenticated
@@ -110,7 +110,7 @@ class Items(Resource):
       { "$pull" : { "items" : server.request.json }}
     )
 
-server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="items")
+server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="api-items")
 
 class Feed(Resource):
   @authenticated
@@ -161,4 +161,4 @@ class Feed(Resource):
     new_item["user" ] = [ current_user.as_json ]
     return new_item
 
-server.api.add_resource(Feed, "/api/feed", endpoint="feed")
+server.api.add_resource(Feed, "/api/feed", endpoint="api-feed")
