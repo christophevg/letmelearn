@@ -11,22 +11,36 @@ requirements.txt:
 
 .PHONY: requirements.txt
 
-DB=letmelearn
-COLLECTION=topics
+DB?=letmelearn
+COLLECTION?=topics
+FILE?=${COLLECTION}
 
-backup: local/${COLLECTION}.json
+export-production:
+	@echo "⬅️  exporting from remote '${COLLECTION}'..."
+	@. ./.env.local; mongoexport --quiet --uri=$$URI --collection=${COLLECTION} --username=$$MONGO_USER --password=$$MONGO_PASS --db=${DB} --out=local/${FILE}.json
+	@wc -l local/${FILE}.json
 
-local/${COLLECTION}.json:
-	@echo "*** exporting local '${COLLECTION}'..."
-	@mongoexport --quiet --collection=${COLLECTION} --db=${DB} --out=$@ --pretty
+import-production:
+	@echo "➡️  importing to remote '${COLLECTION}'..."
+	@. ./.env.local; mongoimport --quiet --uri=$$URI --collection=${COLLECTION} --drop --username=$$MONGO_USER --password=$$MONGO_PASS --db=${DB} local/${FILE}.json
+
+export-local:
+	@echo "⬅️  exporting from local '${COLLECTION}'..."
+	@mongoexport --quiet --collection=${COLLECTION} --db=${DB} --out=local/${FILE}.json
+	@wc -l local/${FILE}.json
 
 import-local:
-	@echo "*** importing local '${COLLECTION}'..."
-	@mongoimport --quiet --collection=${COLLECTION} --drop --db=${DB} local/${COLLECTION}.json
+	@echo "➡️  importing to local '${COLLECTION}'..."
+	@mongoimport --quiet --collection=${COLLECTION} --drop --db=${DB} local/${FILE}.json
 
-backup-remote: local/$(COLLECTION)-remote.json
+sync-from-production: export-production import-local
 
-local/$(COLLECTION)-remote.json:
-	. local/credentials.txt; \
-	mongoexport --quiet --collection=${COLLECTION} --db=${DB} --out=$@ --pretty \
-	             --username=$$MONGO_USER --password=$$MONGO_PASS $$MONGO_URI
+sync-to-production: export-local import-production
+
+COLLECTIONS=feed topics users versions
+
+sync:
+	@for col in $(COLLECTIONS); do \
+		echo "$(RED)** $$col$(NC)"; \
+		COLLECTION=$$col $(MAKE) sync-from-production; \
+	done
