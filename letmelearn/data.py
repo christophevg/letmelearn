@@ -1,6 +1,5 @@
 import logging
 import os
-import json
 
 from pymongo import MongoClient
 
