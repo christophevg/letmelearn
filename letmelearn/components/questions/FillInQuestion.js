@@ -469,7 +469,7 @@ Vue.component("FillInQuestion", {
 
 // register question
 
-store.commit("question", {
+store.commit("question_type", {
   name    : "FillInQuestion",
   title   : "Vul het ontbrekende deel in.",
   desc    : "Vervolledig de vraag met het juiste ontbrekende deel.",

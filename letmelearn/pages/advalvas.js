@@ -32,7 +32,15 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
-          title: "Archiveer topics...",
+          title: "Folders voor Topics",
+          date: "1 mei 2025",
+          pars: [
+            `De selectielijst voor Topics is niet meer. Je kan nu een hele boomstructuur aan folders maken om al je topics overzichtelijk in te bewaren.`
+          ],
+          image: "folders.png"
+        },
+        {
+          title: "Archiveer Topics...",
           date: "18 september 2024",
           pars: [
             `Door middel van een nieuw knopje, kan je nu topics archiveren. Daardoor verdwijnen ze uit de topic lijst. Geen zorgen, ze blijven bewaard en zijn met een kleine handeling terug te voorschijn te toveren.`
@@ -179,7 +187,7 @@ Vue.component("AdvalvasFeedTraining", {
         <router-link :to="'/topics#'+topic._id">{{ topic.name}}</router-link>
         <span v-if="index < topics.length - 1">,&nbsp;</span>
       </template>
-      &nbsp;<router-link :ro="'/training#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</router-link>
+      &nbsp;<router-link :to="'/training#' + topics.map((t)=>t._id).join(';')" style="text-decoration:none">▶️</router-link>
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
@@ -303,7 +311,7 @@ var Home = {
 <ProtectedPage>
   
   <template v-slot:subheader>
-    <h1 align="center">🎓 Ad Valvas...</h1>
+    <h1 align="center"><v-icon>dashboard</v-icon> Ad Valvas</h1>
     <v-spacer/>
   </template>
 

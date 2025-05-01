@@ -1,7 +1,12 @@
+import logging
+logger = logging.getLogger(__name__)
+
+import json
 import re
 
 from flask_restful import Resource
 from flask_login import current_user
+from flask import abort
 
 from pymongo.collection import ReturnDocument
 
@@ -10,6 +15,56 @@ from datetime import datetime
 from letmelearn      import server
 from letmelearn.data import db
 from letmelearn.auth import authenticated
+
+class Folders(Resource):
+  @authenticated
+  def get(self):
+    folders = db.folders.find_one({ "_id": current_user.email })
+    if folders and "items" in folders:
+      return folders["items"]
+    return []
+
+  @authenticated
+  def post(self, parent=""):
+    name = server.request.json["name"]
+    logger.info(f"adding {name} to {parent}")
+    # retrieve current folder structure or default
+    folders = db.folders.find_one({ "_id": current_user.email })
+    if not folders:
+      folders = { "items" : [] }
+
+    # follow path to parent, 404 if step is missing (= no upserting intemediate)
+    current = folders["items"]
+    if parent:
+      for step in parent.split("/"):
+        for existing_step in current:
+          if existing_step["name"] == step and "children" in existing_step:
+            current = existing_step["children"]
+            break
+        else:
+          # we didn't found this step
+          logger.warn(f"couldn't find parent '{parent}'")
+          abort(404)
+    
+    # found all steps we're at the parent
+    current.append({
+      "id"       : parent + "/" + name if parent else name,
+      "name"     : name,
+      "children" : []
+    })
+
+    # replace entire folder structure with new one
+    db.folders.replace_one(
+      { "_id"   : current_user.email },
+      folders,
+      upsert=True
+    )
+    
+    return folders["items"]
+
+server.api.add_resource(Folders, "/api/folders",               endpoint="api-folders")
+server.api.add_resource(Folders, "/api/folders/",              endpoint="api-folders-root")
+server.api.add_resource(Folders, "/api/folders/<path:parent>", endpoint="api-folders-parent")
 
 class Topics(Resource):
   @authenticated
@@ -47,8 +102,9 @@ class Topic(Resource):
     update = server.request.json
     update.pop("_id", None)
     update.pop("user", None)
+    folder = update.pop("folder", None)
 
-    return db.topics.find_one_and_update(
+    updated_topic = db.topics.find_one_and_update(
       {
         "_id"  : id,
         "user" : current_user.email
@@ -58,6 +114,36 @@ class Topic(Resource):
       },
       return_document=ReturnDocument.AFTER
     );
+
+    updated_folders = []
+    if folder:
+      folders = db.folders.find_one({ "_id": current_user.email })
+      if not folders:
+        folders = { "items" : [] }
+      def recurse(items):
+        # remove this topic (id) from items if here is old location
+        indices = [ idx for idx, item in enumerate(items) if item["id"] == id ]
+        for idx in reversed(indices):
+          del items[idx]
+        # recurse remaining items, looking for folder(id)
+        for item in items:
+          if "children" in item:
+            recurse(item["children"])
+            if item["id"] == folder:
+              item["children"].append({ "id" : id, "name" : update["name"] })
+      recurse(folders["items"])
+      # replace entire folder structure with new one
+      db.folders.replace_one(
+        { "_id"   : current_user.email },
+        folders,
+        upsert=True
+      )
+      updated_folders = folders["items"]
+    
+    return {
+      "topic"   : updated_topic,
+      "folders" : updated_folders
+    }
 
   @authenticated
   def delete(self, id):

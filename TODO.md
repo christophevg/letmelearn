@@ -4,13 +4,12 @@
 
 - [x] clear dialogs on dismissal
   - [x] create topic
-- [ ] Fill In Question: text size according to width when xs
-- [ ] TopicSelector
-  - [ ] improve hiding strategy of multiple selections
-  - [ ] fix hint text vs toolbar height
+- [x] new tree/folder-based TopicSelector
+- [ ] fill In Question: text size according to width when xs
 
 ## improve
 
+- [ ] add testing ;-)
 - [ ] generic error catch-all
   - [ ] all API calls
   - [ ] start up
@@ -31,4 +30,4 @@
 - [ ] share topics with other users
 - [ ] enable following of other users
   - [ ] see results in feed
-- [ ] topic selection based on tags
+- [ ] search/filter topics in new selected on all aspects (name, tags,...)

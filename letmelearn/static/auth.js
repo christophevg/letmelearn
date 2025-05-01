@@ -33,6 +33,7 @@ store.registerModule("auth", {
         success: function(result) {
           context.commit("session", result);
           store.dispatch("load_topics");
+          store.dispatch("load_folders");
           store.dispatch("load_feed");
         },
         error: on_error,
@@ -43,6 +44,7 @@ store.registerModule("auth", {
       oatk.http.postJSON("/api/session", {}, function(result) {
         context.commit("session", result);
         store.dispatch("load_topics");
+        store.dispatch("load_folders");
         store.dispatch("load_feed");
       }, function(result) {
         console.warn("login using access token produced error:", result);

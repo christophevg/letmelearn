@@ -6,18 +6,13 @@ var Topics = {
 
   <template v-slot:subheader>
 
+    <h1 align="center"><v-icon>edit</v-icon> Onderwerpen</h1>
+    <v-spacer/>
+    
     <TopicSelector/>
 
     <v-btn flat icon @click="show_create_topic_dialog" class="ma-0">
       <v-icon>add</v-icon>
-    </v-btn>
-
-    <v-btn flat icon @click="show_edit_topic_dialog" :disabled="!selected" class="ma-0">
-      <v-icon>edit</v-icon>
-    </v-btn>
-
-    <v-btn flat icon @click="show_tag_dialog" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
-      <v-icon>bookmark</v-icon>
     </v-btn>
 
     <v-btn flat icon @click="archive_topic" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
@@ -30,23 +25,12 @@ var Topics = {
 
     <v-menu bottom left v-if="show_in_menu">
       <template v-slot:activator="{ on }">
-        <v-btn
-          flat
-          icon
-          v-on="on"
-        >
+        <v-btn flat icon v-on="on">
           <v-icon>more_vert</v-icon>
         </v-btn>
       </template>
 
       <v-list>
-        <v-list-tile>
-
-          <v-btn flat icon @click="show_tag_dialog" :disabled="!selected" class="ma-0">
-            <v-icon>bookmark</v-icon>
-          </v-btn>
-
-        </v-list-tile>
         <v-list-tile>
 
           <v-btn flat icon @click="archive_topic" :disabled="!selected" class="ma-0">
@@ -66,6 +50,7 @@ var Topics = {
   <!-- tabs: items / import --> 
   
   <v-tabs v-model="tab" v-if="selected">
+
     <v-tab>
       Items
       <v-btn flat icon @click="show_add_item_dialog" :disabled="tab != 0">
@@ -73,6 +58,9 @@ var Topics = {
       </v-btn>
 
     </v-tab>
+
+    <v-tab>Topic</v-tab>
+  
     <v-tab>Import</v-tab>
 
     <v-tab-item key="0" fluid>
@@ -105,6 +93,51 @@ var Topics = {
     </v-tab-item>
 
     <v-tab-item key="1" fluid>
+      <v-card>
+        <v-card-text>
+
+          <v-text-field label="Naam"
+                        v-model="edited_topic.name"
+                        autofocus
+                        />
+
+          <div v-if="selected">
+            <v-text-field label="Soort" :value="selected_type.title" :readonly="true"/>
+
+            <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
+                          :key="index"
+                          :label="selected_type.labels[prop]"
+                          v-model="edited_topic.question.labels[prop]"/>
+    
+            <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
+              <MultiTextField v-if="config.multi"
+                              :model="edited_topic.question.props[prop]"
+                              :label="selected_type.labels[prop]"
+                              @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
+                              @add="edited_topic.question.props[prop].push('')"
+                              :showing="true"/>
+              <v-text-field v-else
+                            :key="index"
+                            :label="question_type.labels[prop]"
+                            v-model="edited_topic.question.props[prop]"/>
+            </template>    
+
+            <v-combobox label="Tags laten toe om de topic te identificeren. Enter/return maakt van je tekst een tag." v-model="tags" chips deletable-chips multiple></v-combobox>
+
+            <FolderSelector :value="current_folder" @change="change_folder"/>
+
+          </div>
+
+        </v-card-text>
+
+        <v-card-actions>
+          <v-btn flat :disabled="!topic_is_modified" @click="update_topic">Update</v-btn>
+        </v-card-actions>
+
+      </v-card>      
+    </v-tab-item>
+
+    <v-tab-item key="2" fluid>
       <v-card>
         <v-card-text>
 
@@ -175,59 +208,6 @@ var Topics = {
 
   </SimpleDialog>
 
-  <!-- EDIT TOPIC -->
-
-  <SimpleDialog :model="edit_dialog"
-                title="Werk deze topic bij..."
-                submit_label="Werk bij..."
-                cancel_label="Annuleer"
-                @cancel="edited_topic.name = null; edit_dialog = false;"
-                @submit="edit_dialog = false; update_topic();">
-
-    <v-text-field label="Naam"
-                  v-model="edited_topic.name"
-                  autofocus
-                  v-if="edit_dialog"/>
-
-    <div v-if="selected">
-      <v-text-field label="Soort" :value="selected_type.title" :disabled="true"/>
-
-      <v-text-field v-for="(_, prop, index) in edited_topic.question.labels"
-                    :key="index"
-                    :label="selected_type.labels[prop]"
-                    v-model="edited_topic.question.labels[prop]"/>
-    
-      <template v-for="(config, prop, index) in selected_type.props.topic" v-if="edited_topic.question.props">
-        <MultiTextField v-if="config.multi"
-                        :model="edited_topic.question.props[prop]"
-                        :label="selected_type.labels[prop]"
-                        @remove="(index) => { edited_topic.question.props[prop].splice(index, 1) }"
-                        @add="edited_topic.question.props[prop].push('')"
-                        :showing="true"/>
-        <v-text-field v-else
-                      :key="index"
-                      :label="question_type.labels[prop]"
-                      v-model="edited_topic.question.props[prop]"/>
-      </template>    
-    </div>
-  </SimpleDialog>
-
-  <!-- EDIT TAGS -->
-
-  <SimpleDialog :model="tag_dialog"
-                title="Tag deze topic..."
-                submit_label="Werk bij..."
-                cancel_label="Annuleer"
-                @cancel="tag_dialog = false;"
-                @submit="tag_dialog = false; update_tags();">
-
-    Voeg "tags" toe om deze topic te identificeren. De enter/return knop maakt
-    van je text een tag.
-
-    <v-combobox v-model="tags" chips deletable-chips multiple></v-combobox>
-
-  </SimpleDialog>
-
   <!-- ADD ITEM -->
   
   <SimpleDialog :model="add_item_dialog"
@@ -271,6 +251,22 @@ var Topics = {
     path:    "/topics",
     index:   2
   },
+  created: function() {
+    // ensure there is only a single topic selected
+    if(store.getters.selected_topics.length > 1) {
+      store.commit("selected_items", [store.getters.selected_topics[0]]);
+    }
+    
+    // track changes to the selected topic
+    this.unsubscribe = store.subscribe((mutation, state) => {
+      if (mutation.type === "updated_topic" || mutation.type == "selected_items") {
+        this.prepare_topic_for_editing();
+      }
+    });
+  },
+  beforeDestroy() {
+    this.unsubscribe();
+  },
   mounted: function() {
     if(! this.selected ) { return }
     var expected_hash = store.getters.selected_hash
@@ -283,13 +279,13 @@ var Topics = {
       return this.$vuetify.breakpoint.name == "xs";
     },
     selected: function() {
-			return store.state.topics.selected.length == 1 ? store.state.topics.selected[0] : null;
+			return store.getters.selected_topics.length > 0 ? store.getters.selected_topics[0] : null;
     },
     selected_type: function() {
-      return this.selected ? store.getters.question(this.selected.question.type) : null;
+      return this.selected ? store.getters.question_type(this.selected.question.type) : null;
     },
     topic_headers: function() {
-      return store.getters.question(this.selected.question.type).headers;
+      return store.getters.question_type(this.selected.question.type).headers;
     },
     headers: function() {
       var self = this;
@@ -305,13 +301,23 @@ var Topics = {
       ])
     },
     question_types: function() {
-      return store.getters.questions;
+      return store.getters.question_types;
     },
     question_type: function() {
       if(this.new_topic.question.type) {
-        return store.getters.question(this.new_topic.question.type);
+        return store.getters.question_type(this.new_topic.question.type);
       }
       return null;
+    },
+    topic_is_modified: function() {
+      if(!this.edited_topic.prepared) { return false; }
+      if(this.edited_topic.name != this.selected.name) { return true; }
+      if(this.edited_topic.question.type != this.selected.question.type) { return true; }
+      if(JSON.stringify(this.edited_topic.question.labels) != JSON.stringify(this.selected.question.labels)) { return true; }
+      if(JSON.stringify(this.edited_topic.question.props) != JSON.stringify(this.selected.question.props)) { return true; }
+      if(JSON.stringify(this.tags) != JSON.stringify(this.selected.tags)) { return true; }
+      if(this.edited_folder != store.getters.path2topic(this.selected._id)) { return true; }
+      return false;
     }
   },
   methods: {
@@ -340,6 +346,13 @@ var Topics = {
         }
       }
       this.new_topic.question = config;
+      // tags
+      // copy pre-existing tags
+      if(this.selected.tags) {
+        this.tags = [...this.selected.tags];
+      } else {
+        this.tags = []; // default to empty list
+      }
     },
     create_topic: function() {
       if( this.new_topic.name && this.new_topic.question.type ) {
@@ -347,12 +360,14 @@ var Topics = {
           name: this.new_topic.name,
           question: this.new_topic.question,
           handler: function(created) {
-            store.commit("selected_topic", [store.getters.topic(created._id)])
+            store.commit("selected_items", [store.getters.topic(created._id)])
           }
         })
       }
     },
-    show_edit_topic_dialog: function() {
+    prepare_topic_for_editing: function() {
+      if(!this.selected) { return; }
+      this.edited_topic.prepared = false;
       this.edited_topic.name     = this.selected.name;
       this.edited_topic.question = {
         type  : this.selected.question.type,
@@ -367,7 +382,17 @@ var Topics = {
             : this.selected.question.props[prop]);
         }
       }
-      this.edit_dialog = true;
+      // copy pre-existing tags
+      if(this.selected.tags) {
+        this.tags = [...this.selected.tags];
+      } else {
+        this.tags = []; // default to empty list
+      }
+      // folder
+      this.current_folder = store.getters.path2topic(this.selected._id)
+      this.edited_folder  = this.current_folder
+      
+      this.edited_topic.prepared = true;
     },
     update_topic: function() {
       if( this.edited_topic.name && this.edited_topic.question.type ) {
@@ -375,9 +400,11 @@ var Topics = {
           topic   : this.selected,
           update:  {
             name    : this.edited_topic.name,
-            question: this.edited_topic.question
+            question: this.edited_topic.question,
+            tags    : this.tags,
+            folder  : this.edited_folder
           }
-        })
+        });
       }
     },
     delete_topic: function() {
@@ -397,30 +424,10 @@ var Topics = {
       }
     },
     
-    // TAGS
-    
-    show_tag_dialog: function() {
-      // copy pre-existing tags
-      if(this.selected.tags) {
-        this.tags = [...this.selected.tags];
-      } else {
-        this.tags = []; // default to empty list
-      }
-      this.tag_dialog = true;
-    },
-    update_tags: function() {
-      store.dispatch("update_topic", {
-        topic : this.selected,
-        update: {
-          tags: this.tags
-        }
-      });
-    },
-
     // ITEMS
 
     show_add_item_dialog: function() {
-      this.editing.original = store.getters.question(this.selected.question.type).defaults;
+      this.editing.original = store.getters.question_type(this.selected.question.type).defaults;
       this.editing.updated  = null;
       this.add_item_dialog  = true;
     },
@@ -456,6 +463,10 @@ var Topics = {
         });
       }
     },
+    
+    change_folder: function(new_folder) {
+      this.edited_folder = new_folder;
+    },
 
     // IMPORT
 
@@ -465,14 +476,13 @@ var Topics = {
   },
   data: function() {
     return {
+      unsubscribe: null,
       tab: null,
 
       create_dialog: false,
-      edit_dialog: false,
       add_item_dialog: false,
       edit_item_dialog: false,
       rename_dialog: false,
-      tag_dialog: false,
 
       tags: [],
 
@@ -484,12 +494,15 @@ var Topics = {
       },
 
       edited_topic: {
+        prepared: false,
         name: "",
         question: {
           type: null,
           labels: {}
         }
       },
+      current_folder: null,
+      edited_folder: null,
 
       editing: {
         original: null,

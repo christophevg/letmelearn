@@ -474,7 +474,7 @@ Vue.component("BasicQuestion", {
 
 // register question
 
-store.commit("question", {
+store.commit("question_type", {
   name    : "BasicQuestion",
   title   : "Eenvoudige vragen/antwoorden.",
   desc    : "Leer begrippen van links naar rechts en omgekeerd. Met meerdere mogelijkheden.",

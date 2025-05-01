@@ -1,10 +1,14 @@
 Vue.component("SimpleDialog", {
-  props: [
-    "model",
-    "title",
-    "submit_label",
-    "invalid"
-  ],
+  props: {
+    "model" : Boolean,
+    "title" : String,
+    "cancel_label" : {
+      type: String,
+      default: "Annuleer"
+    },
+    "submit_label" : String,
+    "invalid" : Boolean
+  },
   template: `
   <v-dialog v-model="model" persistent width="500"  @keydown.esc="$emit('cancel')">
     <v-form @submit.prevent="$emit('submit')">
@@ -20,9 +24,9 @@ Vue.component("SimpleDialog", {
         <v-divider></v-divider>
 
         <v-card-actions>
-            <v-btn color="secondary" flat @click="$emit('cancel')">Annuleer</v-btn>
-            <v-spacer></v-spacer>
-            <v-btn color="primary" flat :disabled="invalid" type="submit">{{ submit_label }}</v-btn>
+          <v-btn color="secondary" flat @click="$emit('cancel')">{{ cancel_label }}</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" flat :disabled="invalid" type="submit">{{ submit_label }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-form>

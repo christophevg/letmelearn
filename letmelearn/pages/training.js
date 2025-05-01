@@ -6,7 +6,8 @@ var Train = {
   
   <template v-slot:subheader>
   
-    <v-icon>fitness_center</v-icon>
+    <h1 align="center"><v-icon>fitness_center</v-icon> Trainen</h1>
+    <v-spacer/>
     
     <TopicSelector @change="change_topic" multiple tags/>
   
@@ -175,10 +176,10 @@ var Train = {
       return this.$vuetify.breakpoint.name == "xs";
     },
     selected: function() {
-      return store.state.topics.selected.length > 0;
+      return store.getters.selected_topics.length > 0;
     },
     playing: function() {
-      return store.state.topics.quiz.length > 0;
+      return store.getters.quiz.length > 0;
     },
     direction_icon: function() {
       return this.right2left ? "arrow_back" : "arrow_forward";
@@ -209,7 +210,7 @@ var Train = {
       this.attempts = 0;
       this.asked_questions = []
       store.dispatch("create_quiz");
-      this.questions = store.state.topics.quiz.length;
+      this.questions = store.getters.quiz.length;
       this.$refs.timer.start();
     },
     stop : function() {
@@ -217,7 +218,7 @@ var Train = {
       this.$refs.timer.stop();
       this.result = {
         kind     : "training result",
-        topics   : store.state.topics.selected.map(function(topic) { return topic._id }),
+        topics   : store.getters.selected_topics.map(function(topic) { return topic._id }),
         questions: this.questions,
         asked    : this.asked,
         attempts : this.attempts,
