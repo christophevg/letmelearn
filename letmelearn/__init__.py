@@ -7,15 +7,15 @@ import eventlet
 eventlet.monkey_patch()
 
 # load the environment variables for this setup from .env file
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv, find_dotenv # noqa
 load_dotenv(find_dotenv())
 load_dotenv(find_dotenv(".env.local"))
 
-import logging
+import logging # noqa
 logger = logging.getLogger(__name__)
 
-import os
-from pathlib import Path
+import os # noqa
+from pathlib import Path # noqa
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL") or "INFO"
 FORMAT    = "[%(name)s] [%(levelname)s] %(message)s"
@@ -34,7 +34,7 @@ for module in [ "gunicorn.error", "pymongo.serverSelection", "urllib3" ]:
 
 # register components
 
-from baseweb import Baseweb
+from baseweb import Baseweb # noqa
 server = Baseweb("LetMeLearn")
 server.log_config()
 
@@ -64,13 +64,13 @@ for component in [
 server.config["TEMPLATES_AUTO_RELOAD"] = True
 server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 
-import letmelearn.auth
-import letmelearn.api
+import letmelearn.auth # noqa
+import letmelearn.api  # noqa
 
 for script in [ "auth", "diff", "nl"]:
   server.register_external_script(f"/app/static/{script}.js")
 
-import letmelearn.pages
+import letmelearn.pages # noqa
 
 server.log_routes()
 logger.info("✅ everything loaded...")

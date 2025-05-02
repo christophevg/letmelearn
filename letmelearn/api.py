@@ -1,7 +1,5 @@
 import logging
-logger = logging.getLogger(__name__)
 
-import json
 import re
 
 from flask_restful import Resource
@@ -12,59 +10,52 @@ from pymongo.collection import ReturnDocument
 
 from datetime import datetime
 
-from letmelearn      import server
-from letmelearn.data import db
-from letmelearn.auth import authenticated
+from letmelearn           import server
+from letmelearn.data      import db
+from letmelearn.auth      import authenticated
+from letmelearn.treeitems import TreeItems, Folder
+
+logger = logging.getLogger(__name__)
 
 class Folders(Resource):
+  @staticmethod
+  def _get():
+    items = db.folders.find_one({ "_id": current_user.email })
+    if items and "items" in items:
+      return items["items"]
+    return []
+  
+  @staticmethod
+  def _set(items):
+    return db.folders.find_one_and_replace(
+      { "_id"   : current_user.email },
+      { "items" : items },
+      upsert=True,
+      return_document=ReturnDocument.AFTER
+    )["items"]
+  
   @authenticated
   def get(self):
-    folders = db.folders.find_one({ "_id": current_user.email })
-    if folders and "items" in folders:
-      return folders["items"]
-    return []
+    return self._get()
 
   @authenticated
-  def post(self, parent=""):
+  def post(self, path=None):
     name = server.request.json["name"]
-    logger.info(f"adding {name} to {parent}")
-    # retrieve current folder structure or default
-    folders = db.folders.find_one({ "_id": current_user.email })
-    if not folders:
-      folders = { "items" : [] }
+    logger.info(f"adding {name} to {path}")
 
-    # follow path to parent, 404 if step is missing (= no upserting intemediate)
-    current = folders["items"]
-    if parent:
-      for step in parent.split("/"):
-        for existing_step in current:
-          if existing_step["name"] == step and "children" in existing_step:
-            current = existing_step["children"]
-            break
-        else:
-          # we didn't found this step
-          logger.warn(f"couldn't find parent '{parent}'")
-          abort(404)
-    
-    # found all steps we're at the parent
-    current.append({
-      "id"       : parent + "/" + name if parent else name,
-      "name"     : name,
-      "children" : []
-    })
+    tree = TreeItems.from_dicts(Folders._get())
+    try:
+      tree[path].add(Folder(name))
+      return Folders._set(tree.as_dicts())
+    except KeyError:
+      # we didn't find this folder
+      logger.warn(f"couldn't find folder '{path}'")
+      abort(404)
 
-    # replace entire folder structure with new one
-    db.folders.replace_one(
-      { "_id"   : current_user.email },
-      folders,
-      upsert=True
-    )
-    
-    return folders["items"]
 
-server.api.add_resource(Folders, "/api/folders",               endpoint="api-folders")
-server.api.add_resource(Folders, "/api/folders/",              endpoint="api-folders-root")
-server.api.add_resource(Folders, "/api/folders/<path:parent>", endpoint="api-folders-parent")
+server.api.add_resource(Folders, "/api/folders",             endpoint="api-folders")
+server.api.add_resource(Folders, "/api/folders/",            endpoint="api-folders-root")
+server.api.add_resource(Folders, "/api/folders/<path:path>", endpoint="api-folders-parent")
 
 class Topics(Resource):
   @authenticated
@@ -89,7 +80,7 @@ class Topics(Resource):
 
 server.api.add_resource(Topics, "/api/topics", endpoint="api-topics")
 
-class Topic(Resource):
+class TopicResource(Resource):
   @authenticated
   def get(self, id):    
     return db.topics.find_one({
@@ -103,7 +94,10 @@ class Topic(Resource):
     update.pop("_id", None)
     update.pop("user", None)
     folder = update.pop("folder", None)
+    
+    logger.info(f"patching {id} with {update} and {folder}")
 
+    # patch topic
     updated_topic = db.topics.find_one_and_update(
       {
         "_id"  : id,
@@ -113,36 +107,24 @@ class Topic(Resource):
         "$set" : update
       },
       return_document=ReturnDocument.AFTER
-    );
+    )
 
-    updated_folders = []
+    # optionally move to new folder
+    tree = TreeItems.from_dicts(Folders._get())
     if folder:
-      folders = db.folders.find_one({ "_id": current_user.email })
-      if not folders:
-        folders = { "items" : [] }
-      def recurse(items):
-        # remove this topic (id) from items if here is old location
-        indices = [ idx for idx, item in enumerate(items) if item["id"] == id ]
-        for idx in reversed(indices):
-          del items[idx]
-        # recurse remaining items, looking for folder(id)
-        for item in items:
-          if "children" in item:
-            recurse(item["children"])
-            if item["id"] == folder:
-              item["children"].append({ "id" : id, "name" : update["name"] })
-      recurse(folders["items"])
-      # replace entire folder structure with new one
-      db.folders.replace_one(
-        { "_id"   : current_user.email },
-        folders,
-        upsert=True
-      )
-      updated_folders = folders["items"]
-    
+      # (re)move
+      try:
+        parent = tree[folder]
+        logger.info(f"{folder} -> {parent}")
+        parent.add(tree.remove(id))
+      except KeyError:
+        # we didn't find this folder
+        logger.warn(f"couldn't find item '{id}'")
+        abort(404)
+  
     return {
       "topic"   : updated_topic,
-      "folders" : updated_folders
+      "folders" : Folders._set(tree.as_dicts())
     }
 
   @authenticated
@@ -152,6 +134,14 @@ class Topic(Resource):
       "_id": id,
       "user": current_user.email
     })
+
+    # remove it from the folders structure
+    try:
+      Folders._get().remove(id)
+    except KeyError:
+      # might happen if the topic wasn't added to the TreeItems yet
+      pass
+      
     # delete feed items referencing it
     db.feed.delete_many({
       "$or" : [
@@ -161,7 +151,7 @@ class Topic(Resource):
     })
     return True
 
-server.api.add_resource(Topic, "/api/topics/<id>", endpoint="api-topic")
+server.api.add_resource(TopicResource, "/api/topics/<id>", endpoint="api-topic")
 
 class Items(Resource):
   @authenticated

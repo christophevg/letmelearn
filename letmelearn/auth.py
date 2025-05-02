@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 
 import os
 
@@ -14,6 +13,14 @@ from letmelearn.data import db
 from flask_login import LoginManager
 from flask_login import UserMixin
 from flask_login import current_user, login_user, logout_user
+
+from flask import Response, abort
+from flask_restful import Resource
+
+import oatk.js
+from oatk import OAuthToolkit
+
+logger = logging.getLogger(__name__)
 
 login_manager = LoginManager()
 login_manager.init_app(server)
@@ -78,13 +85,6 @@ def load_user(email):
   return User.find(email)
 
 # setup OATK infrastructure
-
-from flask import Response, abort
-from flask_restful import Resource
-
-import oatk.js
-from oatk import OAuthToolkit
-
 # add discovery url and client_id from env
 server.settings["oauth"] = {
   "provider" : os.environ.get("OAUTH_PROVIDER"),
@@ -112,7 +112,7 @@ def authenticated(func):
 
 # setup oatk
 oauth = OAuthToolkit()
-oauth.using_provider(os.environ["OAUTH_PROVIDER"]);
+oauth.using_provider(os.environ["OAUTH_PROVIDER"])
 oauth.with_client_id(os.environ["OAUTH_CLIENT_ID"])
 
 class Session(Resource):

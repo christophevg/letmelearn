@@ -4,3 +4,4 @@
 client_secret*.json
 .DS_Store
 local
+.coverage
