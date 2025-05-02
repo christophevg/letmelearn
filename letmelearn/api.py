@@ -147,19 +147,21 @@ class TopicResource(Resource):
 
     # remove it from the folders structure
     try:
-      Folders._get().remove(id)
+      tree = TreeItems.from_dicts(Folders._get())
+      tree.remove(id)
+      Folders._set(tree.as_dicts())
     except KeyError:
       # might happen if the topic wasn't added to the TreeItems yet
       pass
       
     # delete feed items referencing it
-    db.feed.delete_many({
-      "$or" : [
-        { "topic"  : id },
-        { "topics" : id }
-      ]
-    })
-    return True
+    db.feed.delete_many({ "topics" : id })
+
+    return {
+      "topic"   : id,
+      "folders" : Folders._set(tree.as_dicts()),
+      "feed"    : Feed._get()
+    }
 
 server.api.add_resource(TopicResource, "/api/topics/<id>", endpoint="api-topic")
 
@@ -199,8 +201,8 @@ class Items(Resource):
 server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="api-items")
 
 class Feed(Resource):
-  @authenticated
-  def get(self):
+  @staticmethod
+  def _get():
     return list(db.feed.aggregate([
       {
         "$match" : {
@@ -234,6 +236,10 @@ class Feed(Resource):
         "$limit" : 10
       }
     ]))
+
+  @authenticated
+  def get(self):
+    return Feed._get()
 
   @authenticated
   def post(self):

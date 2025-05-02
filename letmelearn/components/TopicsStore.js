@@ -294,6 +294,8 @@ store.registerModule("topics", {
         url: "/api/topics/" + topic._id,
         success: function(result) {
           context.commit("removed_topic", topic);
+          context.commit("folders",       result.folders);
+          context.commit("new_feed",      result.feed);
         },
         error: function(result) {
           store.dispatch(
@@ -456,9 +458,10 @@ store.registerModule("topics", {
         return topic._id != removed._id;
       });
 			// filter from selected topics
-			state._selected = state._selected.filter(function(topic){
+			state._selected_items = state._selected_items.filter(function(topic){
 				return topic._id != removed._id;
 			});
+      // TODO: clean up window.hash
     },
     added_item: function(state, added) {
       state._topics.find(function(topic) {
