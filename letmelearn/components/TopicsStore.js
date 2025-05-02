@@ -489,6 +489,7 @@ Vue.component("FolderSelector", {
   <!-- selection dialog -->
 
   <SimpleDialog :model="select_folder_dialog"
+                v-if="select_folder_dialog"
                 title="Selecteer..."
                 submit_label="OK"
                 cancel_label="Annuleer"
@@ -552,7 +553,6 @@ Vue.component("FolderSelector", {
     return {
       select_folder_dialog: false,
       create_folder_dialog: false,
-      open: [],
       active : [],
       search: null,
       caseSensitive: false,
@@ -575,6 +575,14 @@ Vue.component("FolderSelector", {
     }
   },
   computed: {
+    open : {
+      get : function() {
+        return store.getters.open_folders;
+      },
+      set: function(selection) {
+        store.commit("open_folders", selection);
+      }
+    },
     items: function() {
       return store.getters.folders;
     },
