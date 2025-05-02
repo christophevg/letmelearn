@@ -103,7 +103,7 @@ store.registerModule("topics", {
     selected_topics: function(state, getters) {
       // expands the list of selected topics to include their folder
       return state._selected_items
-        .filter(function(item) { return !("children" in item )})
+        .filter(function(item) { return item && !("children" in item )})
         .map(function(topic){
           return {
             _id     : topic._id,
@@ -222,12 +222,11 @@ store.registerModule("topics", {
           dataType: "json",
           success: function(topics) {
             context.commit("topics", topics);
-            // adopt hash
+            // adopt hash for selection
             if(window.location.hash) {
-              var topic_ids = window.location.hash.substring(1);
-							var topics = topic_ids.split(";").map(function(id){
-								return store.getters.topic(id);
-							});
+              var topics = window.location.hash.substring(1).split(";")
+							  .map   (function(id)    { return store.getters.topic(id); })
+                .filter(function(topic) { return topic; });
               context.commit("selected_items", topics);
             }
           },
@@ -239,8 +238,6 @@ store.registerModule("topics", {
           }
         });
       }
-
-      
     },
     update_topic: function(context, updating) {
       console.log("updating", updating);
@@ -425,8 +422,9 @@ store.registerModule("topics", {
     selected_items: function(state, selection) {
       Vue.set(state, "_selected_items", selection);      
       // update hash to reflect current state
+      // only valid topics
       window.location.hash = selection
-      .filter(function(item) { return !("children" in item)}) // only topics
+      .filter(function(item) { return item && !("children" in item)})
       .map(function(topic){
       	if( topic && topic._id ) {
           return topic._id;
