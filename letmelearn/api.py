@@ -52,6 +52,16 @@ class Folders(Resource):
       logger.warn(f"couldn't find folder '{path}'")
       abort(404)
 
+  @authenticated
+  def delete(self, path):
+    tree = TreeItems.from_dicts(Folders._get())
+    try:
+      tree.remove(path)
+      return Folders._set(tree.as_dicts())
+    except KeyError:
+      # we didn't find this folder
+      logger.warn(f"couldn't find item '{path}'")
+      abort(404)
 
 server.api.add_resource(Folders, "/api/folders",             endpoint="api-folders")
 server.api.add_resource(Folders, "/api/folders/",            endpoint="api-folders-root")

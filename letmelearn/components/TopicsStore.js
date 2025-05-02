@@ -193,6 +193,24 @@ store.registerModule("topics", {
         }
       });
     },
+
+    delete_folder: function(context, folder) {
+      $.ajax({
+        type: "DELETE",
+        url: `/api/folders/${folder}`,
+        contentType: "application/json",
+        dataType: "json",
+        success: function(folders) {
+          context.commit("folders", folders);
+        },
+        error: function(result) {
+          store.dispatch(
+            "raise_error",
+            "er ging iets mis, probeer het opnieuw: " + result.statusText
+          );
+        }
+      });
+    },
     
     // TOPIC ACTIONS
     
@@ -507,6 +525,13 @@ Vue.component("FolderSelector", {
         <span>maak een nieuwe folder</span>
       </v-tooltip>
 
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn float icon @click="delete_folder" :disabled="active.length == 0" v-on="on"><v-icon color="red">delete</v-icon></v-btn>
+        </template>
+        <span>verwijder geselecteerde folder</span>
+      </v-tooltip>
+
     </v-toolbar>
 
 
@@ -571,7 +596,7 @@ Vue.component("FolderSelector", {
       store.dispatch("create_folder", { path: this.active, name: this.new_folder_name });
     },
     delete_folder: function() {
-      // TODO
+      store.dispatch("delete_folder", this.active);      
     }
   },
   computed: {
