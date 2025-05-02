@@ -10,7 +10,7 @@ from pymongo.collection import ReturnDocument
 
 from datetime import datetime
 
-from letmelearn           import server
+from letmelearn.web       import server
 from letmelearn.data      import db
 from letmelearn.auth      import authenticated
 from letmelearn.treeitems import TreeItems, Folder

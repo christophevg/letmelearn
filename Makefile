@@ -1,7 +1,7 @@
 all: run
 
 run:
-	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn:server
+	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
 
 requirements.txt:
 	@cat $@ | cut -d"=" -f1 | xargs pip uninstall -y

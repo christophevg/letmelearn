@@ -1,6 +1,6 @@
 import os
 
-from letmelearn import server
+from letmelearn.web import server
 
 for page, route in {
   "about"    : "/about",

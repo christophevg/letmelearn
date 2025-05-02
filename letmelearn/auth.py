@@ -4,7 +4,7 @@ import os
 
 from functools import wraps
 
-from letmelearn import server
+from letmelearn.web import server
 
 from letmelearn.data import db
 
