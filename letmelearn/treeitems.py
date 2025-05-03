@@ -1,5 +1,10 @@
+import re
+
 from dataclasses import dataclass, field
 from typing import List
+
+def idfy(name):
+  return re.sub(r"[^a-zA-Z0-9 ]", "", name.lower()).replace(" ", "-")
 
 @dataclass
 class TreeItem:
@@ -34,13 +39,13 @@ class TreeItem:
 @dataclass
 class Topic(TreeItem):
   """
-  simple class representing a Topic TreeITem
+  simple class representing a Topic TreeItem
   """
   @property
   def id(self):
     if self._id:
       return self._id
-    return self.name
+    return idfy(self.name)
 
   @id.setter
   def id(self, value):
@@ -58,8 +63,8 @@ class Folder(TreeItem):
     if self._id:
       return self._id
     if self.parent:
-      return self.parent.id + "/" + self.name
-    return self.name
+      return self.parent.id + "/" + idfy(self.name)
+    return idfy(self.name)
 
   @id.setter
   def id(self, value):

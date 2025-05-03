@@ -177,7 +177,7 @@ var Quiz = {
       return this.timer_active ? "timer_off" : "timer";
     },
     items_count: function() {
-      return this.selected ? store.getters.selected_items.length : 0;
+      return this.selected ? store.getters.all_selected_items.length : 0;
     },
     pct_asked: function() {
       return (this.asked / this.items_count) * 100;

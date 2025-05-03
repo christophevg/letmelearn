@@ -1,12 +1,12 @@
 store.registerModule("topics", {
   state: {
-    _question_types   : [],     // all known question types
-    _folders          : [],     // folders
-    _open_folders     : [],     // opened folders
-    _topics           : [],     // all known topics
-    _selected_items   : [],     // mix of selected items (folders and topics)
-    _quiz             : [],     // shuffled items from all selected topics
-    _count            : 0       // to force shuffling
+    _question_types     : [],     // all known question types
+    _topics             : [],     // all known topics
+    _treeitems          : [],     // nested tree structure (folders and topics)
+    _selected_treeitems : [],     // selected treeitems (folders and topics)
+    _open_folders       : [],     // opened folders
+    _quiz               : [],     // shuffled items from all selected topics
+    _count              : 0       // to force shuffling
   },
   getters: {
     question_types: function(state) {
@@ -26,11 +26,12 @@ store.registerModule("topics", {
       }
     },
 
-    folders_and_topics: function(state) {
-      return state._folders;
+    treeitems: function(state) {
+      return state._treeitems;
     },
     folders: function(state, getters) {
-      const folders_only = JSON.parse(JSON.stringify(getters.folders_and_topics));
+      // use JSON to deepcopy
+      const folders_only = JSON.parse(JSON.stringify(getters.treeitems));
       function recurse(items) {
         // prune this list
         items = items.filter(function(item) { return "children" in item });
@@ -44,8 +45,8 @@ store.registerModule("topics", {
     },
 
     folder : function(state, getters) {
+      // given an id, returns the folder object
       return function(id) {
-
         function recurse(items) {
           for(const item of items) {
             if( "children" in item && item.id == id ) {
@@ -61,27 +62,46 @@ store.registerModule("topics", {
         return recurse(getters.folders);
       }
     },
-    open_folders: function(state) {
-      return state._open_folders;
-    },
-    
-    path2topic: function(state, getters) {
+    path : function(state, getters) {
+      // given an id, returns the list of folder objects that make up the path
       return function(id) {
         function recurse(items, path) {
           for(const item of items) {
-            if( item.id == id ) {
-              return path;
+            if( "children" in item && item.id == id ) {
+              return path.concat([item]);
             }
-            if(item.children) {
-              const lower = recurse(item.children, item.id);
+            if( item.children ) {
+              const lower = recurse(item.children, path.concat([item]));
               if(lower) { return lower; }
             }
           }
           return null;
         }
-        const path = recurse(getters.folders_and_topics, "");
-        if(path) { return path }
-        return null;
+        return recurse(getters.folders, []);
+      }
+    },
+
+    open_folders: function(state) {
+      return state._open_folders;
+    },
+    
+    folder_of: function(state, getters) {
+      // given the id of a topic, returns the the folder it is stored in
+      return function(id) {
+        function recurse(items, folder) {
+          for(const item of items) {
+            if( item.id == id ) {
+              return folder;
+            }
+            if(item.children) {
+              const lower = recurse(item.children, item);
+              // only return if not null, to continue searching other children
+              if(lower) { return lower; }
+            }
+          }
+          return null;
+        }
+        return recurse(getters.treeitems, null);
       }
     },
 
@@ -96,13 +116,13 @@ store.registerModule("topics", {
       }
     },
 
-    selected_items2 : function(state, getters) {
-      return state._selected_items;
+    selected_treeitems : function(state, getters) {
+      return state._selected_treeitems;
     },
 
     selected_topics: function(state, getters) {
       // expands the list of selected topics to include their folder
-      return state._selected_items
+      return state._selected_treeitems
         .filter(function(item) { return item && !("children" in item )})
         .map(function(topic){
           return {
@@ -111,7 +131,7 @@ store.registerModule("topics", {
             question: topic.question,
             tags    : topic.tags || [],
             items   : topic.items,
-            folder  : getters.path2topic(topic._id)
+            folder  : getters.folder_of(topic._id)
           }
         });
     },
@@ -119,7 +139,7 @@ store.registerModule("topics", {
     selected_hash: function(state, getters) {
       return getters.selected_topics.map(function(topic){ return topic._id; }).join(";");
     },
-		selected_items: function(state, getters) {
+		all_selected_items: function(state, getters) {
       // return flat list of all items (an item is a question/answer pair)
       // along with their parent-topic
       // this is needed because multiple topics can be selected, resulting in
@@ -145,7 +165,7 @@ store.registerModule("topics", {
     shuffled : function(state, getters) {
       state._count; // forces recompute
       // spread it to avoid selected_items to be sorted
-      return [...getters.selected_items].sort(() => Math.random() - 0.5);
+      return [...getters.all_selected_items].sort(() => Math.random() - 0.5);
     },
     current_question(state) {
       if(state._quiz[0]) { return state._quiz[0]}
@@ -163,7 +183,7 @@ store.registerModule("topics", {
           url: "/api/folders",
           dataType: "json",
           success: function(result) {
-            context.commit("folders", result);
+            context.commit("treeitems", result);
           },
           error: function(result) {
             store.dispatch(
@@ -182,8 +202,8 @@ store.registerModule("topics", {
         contentType: "application/json",
         dataType: "json",
         data: JSON.stringify({ name: folder.name }),
-        success: function(folders) {
-          context.commit("folders", folders);
+        success: function(treeitems) {
+          context.commit("treeitems", treeitems);
         },
         error: function(result) {
           store.dispatch(
@@ -200,8 +220,8 @@ store.registerModule("topics", {
         url: `/api/folders/${folder}`,
         contentType: "application/json",
         dataType: "json",
-        success: function(folders) {
-          context.commit("folders", folders);
+        success: function(treeitems) {
+          context.commit("treeitems", treeitems);
         },
         error: function(result) {
           store.dispatch(
@@ -240,7 +260,6 @@ store.registerModule("topics", {
       }
     },
     update_topic: function(context, updating) {
-      console.log("updating", updating);
       $.ajax({
         type: "PATCH",
         url: "/api/topics/" + updating.topic._id,
@@ -249,7 +268,7 @@ store.registerModule("topics", {
         data: JSON.stringify(updating.update),
         success: function(result) {
           context.commit("updated_topic", result.topic);
-          context.commit("folders",       result.folders);
+          context.commit("treeitems",     result.treeitems);
         },
         error: function(result) {
           store.dispatch(
@@ -291,7 +310,7 @@ store.registerModule("topics", {
         url: "/api/topics/" + topic._id,
         success: function(result) {
           context.commit("removed_topic", topic);
-          context.commit("folders",       result.folders);
+          context.commit("treeitems",     result.treeitems);
           context.commit("new_feed",      result.feed);
         },
         error: function(result) {
@@ -379,29 +398,9 @@ store.registerModule("topics", {
       state._question_types.push(new_question);
     },
     
-    folders: function(state, new_folders) {
-      // import a new set of folders, including leafs with a topic id
-      Vue.set(state, "_folders", new_folders);
-    },
-    new_folder: function(state, new_folder) {
-      // create a new folder below new_folder.parent, generating id as the
-      // path to it, concatenating new_folder.name to its parents' names
-      function recurse(folders, path) {
-        for(const folder of folders) {
-          if(folder.id == new_folder.parent) {
-            folder.children.push({
-              id: path.concat(folder.name).concat(new_folder.name).join("/"),
-              name: new_folder.name,
-              children: []
-            })
-            return;
-          }
-          if(folder.children) {
-            recurse(folder.children, path.concat(folder.name));
-          }
-        }
-      }
-      recurse(state._folders, []);
+    treeitems: function(state, new_items) {
+      // import a new set of treeitems, including leafs with a topic id
+      Vue.set(state, "_treeitems", new_items);
     },
     open_folders: function(state, selection) {
       Vue.set(state, "_open_folders", selection);
@@ -420,7 +419,7 @@ store.registerModule("topics", {
     },
 
     selected_items: function(state, selection) {
-      Vue.set(state, "_selected_items", selection);      
+      Vue.set(state, "_selected_treeitems", selection);      
       // update hash to reflect current state
       // only valid topics
       window.location.hash = selection
@@ -443,7 +442,7 @@ store.registerModule("topics", {
         return topic;
       });
       Vue.set(state, "_topics", new_topics);
-      state._selected_items = state._selected_items.map(function(selected){
+      state._selected_treeitems = state._selected_treeitems.map(function(selected){
         if(selected._id == updated._id) {
           return new_topic;
         }
@@ -456,7 +455,7 @@ store.registerModule("topics", {
         return topic._id != removed._id;
       });
 			// filter from selected topics
-			state._selected_items = state._selected_items.filter(function(topic){
+			state._selected_treeitems = state._selected_treeitems.filter(function(topic){
 				return topic._id != removed._id;
 			});
       // TODO: clean up window.hash
@@ -493,290 +492,6 @@ store.registerModule("topics", {
     },
     mark_incorrect: function(state) {
       state._quiz.push(state._quiz.shift())
-    }
-  }
-});
-
-Vue.component("FolderSelector", {
-  props: [ "value" ],
-  template: `
-<div>
-
-  <v-text-field label="Folder" :value="selected" :readonly="true"
-                append-icon="folder" @click:append="select_folder"/>
-  
-  <!-- selection dialog -->
-
-  <SimpleDialog :model="select_folder_dialog"
-                v-if="select_folder_dialog"
-                title="Selecteer..."
-                submit_label="OK"
-                cancel_label="Annuleer"
-                @cancel="active = [value]; select_folder_dialog = false;"
-                @submit="$emit('change', selected); select_folder_dialog = false;">
-
-    <v-toolbar dense flat>
-  
-      <v-spacer/>
-
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn float icon @click="show_create_folder_dialog" v-on="on"><v-icon>create_new_folder</v-icon></v-btn>
-        </template>
-        <span>maak een nieuwe folder</span>
-      </v-tooltip>
-
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn float icon @click="delete_folder" :disabled="active.length == 0" v-on="on"><v-icon color="red">delete</v-icon></v-btn>
-        </template>
-        <span>verwijder geselecteerde folder</span>
-      </v-tooltip>
-
-    </v-toolbar>
-
-
-    <v-card class="mx-auto" max-width="500">
-      <v-card-text>
-
-        <v-treeview
-          :items="items"
-          :open.sync="open"
-          activatable
-          :active.sync="active"
-        >
-          <template v-slot:prepend="{ item }">
-            <v-icon v-if="item.children">folder</v-icon>
-          </template>
-        </v-treeview>
-      </v-card-text>
-    </v-card>
- 
-  </SimpleDialog>
-  
-  <!-- CREATE FOLDER DIALOG -->
-  
-  <SimpleDialog :model="create_folder_dialog"
-                title="Maak een nieuw folder..."
-                submit_label="Creëer..."
-                cancel_label="Annuleer"
-                :invalid="new_folder_name == null"
-                @cancel="new_folder_name = null; create_folder_dialog = false;"
-                @submit="create_folder_dialog = false; add_folder();">
-
-    <span v-if="selected">
-      Deze nieuwe folder zal worden aangemaakt onder<br><tt>{{ selected }}</tt>
-    </span>
-    <v-text-field label="Naam"
-                  v-model="new_folder_name"
-                  autofocus/>
-
-  </SimpleDialog>
-
-</div>
-`,
-  data: function() {
-    return {
-      select_folder_dialog: false,
-      create_folder_dialog: false,
-      active : [],
-      search: null,
-      caseSensitive: false,
-      new_folder_name: null
-    }
-  },
-  methods: {
-    select_folder: function() {
-      this.select_folder_dialog = true;
-    },
-    show_create_folder_dialog: function() {
-      this.new_folder_name = "";
-      this.create_folder_dialog = true;
-    },
-    add_folder: function() {
-      store.dispatch("create_folder", { path: this.active, name: this.new_folder_name });
-    },
-    delete_folder: function() {
-      store.dispatch("delete_folder", this.active);      
-    }
-  },
-  computed: {
-    open : {
-      get : function() {
-        return store.getters.open_folders;
-      },
-      set: function(selection) {
-        store.commit("open_folders", selection);
-      }
-    },
-    items: function() {
-      return store.getters.folders;
-    },
-    selected: function() {
-      return this.active.length > 0 ? this.active[0] : this.value;
-    }
-  }
-});
-
-Vue.component("TopicSelector", {
-  props: {
-    multiple: Boolean,
-    tags: Boolean
-  },
-  template: `
-<div v-if="topics.length > 0">
-
-  <v-badge left overlap :value="current.length > 0">
-    <template v-slot:badge v-if="current.length > 1">
-      <span>{{ current.length }}</span>
-    </template>
-    <v-chip @click="show_tree">
-      <span v-if="current.length==1">{{ current[0] }}</span>
-      <v-avatar><v-icon right>folder</v-icon></v-avatar>
-    </v-chip>
-  </v-badge>
-
-  <!-- EDIT TOPIC -->
-
-  <SimpleDialog :model="tree_dialog"
-                title="Selecteer..."
-                cancel_label="OK"
-                @cancel="tree_dialog = false;">
-
-    <v-card class="mx-auto" max-width="500">
-      <v-card-text>
-        <v-treeview
-          v-model="selected"
-          :items="items"
-          :open.sync="open"
-          :selectable="multiple"
-          activatable
-          :active.sync="activated"
-          open-on-click
-        >
-          <template v-slot:prepend="{ item }">
-            <v-icon v-if="item.children">folder</v-icon>
-          </template>
-        </v-treeview>
-      </v-card-text>
-    </v-card>
-
-  </SimpleDialog>
-</div>
-`,
-  data: function() {
-    return {
-      tree_dialog: false,
-      active     : [],
-      selection  : []
-    }
-  },
-  methods: {
-    show_tree: function() {
-      this.tree_dialog = true;
-    }
-  },
-  computed: {
-    topics: function() {
-      return store.getters.topics.map(function(topic) {
-        return {
-          id  : topic._id,
-          name: topic.name
-        }
-      }).filter(function(topic) {
-          if("tags" in topic) {
-            return !topic.tags.includes("archived");
-          }
-          return true;
-        })
-        .sort(function(a, b) {
-          const nameA = a.name.toUpperCase();
-          const nameB = b.name.toUpperCase();
-          if (nameA < nameB) {
-            return -1;
-          }
-          if (nameA > nameB) {
-            return 1;
-          }
-          return 0;
-        });
-    },
-    items: function() {
-      // make dict of topics, to track which are in the tree already,
-      // to be able to add un-foldered ones later
-      var topics = Object.fromEntries(this.topics.map(function(topic) {
-        return [ topic.id, topic.name ];
-      }));
-
-      function recurse(tree) {
-        for(const item of tree) {
-          if(item.children) {
-            recurse(item.children);
-          } else {
-            if(item.id in topics) {
-              delete topics[item.id]
-            }
-          }
-        }
-      }
-      const folders = [...store.getters.folders_and_topics];
-      recurse(folders);
-
-      // add remaining "unfoldered" topics
-      for(const [key, value] of Object.entries(topics)) {
-        folders.push({
-          id  : key,
-          name: value
-        });
-      }
-      return folders;
-    },
-    current : function() {
-      return store.getters.selected_topics.map(function(item) { return item._id }); 
-    },
-    open : {
-      get : function() {
-        return store.getters.open_folders;
-      },
-      set: function(selection) {
-        store.commit("open_folders", selection);
-      }
-    },
-    selected : {
-      get: function() {
-        if(this.multiple) {
-          return store.getters.selected_items2.map(function(item) { return "children" in item ? item.id : item._id });
-        }
-        return this.selection;
-      },
-      set: function(selection) {
-        if(this.multiple) {
-          // in multiple selection mode, keep activated items local
-          store.commit("selected_items", selection.map(function(key){ return store.getters.item(key)}));
-          return;
-        }
-        // in single selection mode, the active one is the selected one
-        this.selection = selection;          
-      }
-    },
-    activated: {
-      get: function() {
-        if(this.multiple) {
-          // in multiple selection mode, keep activated items local
-          return this.active;
-        }
-        // in single selection mode, the active one is the selected one
-        return store.getters.selected_items2.map(function(item) { return "children" in item ? item.id : item._id });
-      },
-      set: function(selection) {
-        if(this.multiple) {
-          // in multiple selection mode, keep activated items local
-          this.active = selection;          
-          return;
-        }
-        // in single selection mode, the active one is the selected one
-        store.commit("selected_items", selection.map(function(key){ return store.getters.item(key)}));
-      }
     }
   }
 });

@@ -10,16 +10,16 @@ def test_topic_with_provided_id():
   }
 
 def test_topic_with_default_id():
-  topic = Topic("some topic")
+  topic = Topic("some String TESTING topic")
   assert topic.as_dict() == {
-    "id"   : "some topic",
-    "name" : "some topic"
+    "id"   : "some-string-testing-topic",
+    "name" : "some String TESTING topic"
   }
 
 def test_folder_with_provided_id():
-  folder = Folder("some folder", id="test folder")
+  folder = Folder("some folder", id="TEST folder")
   assert folder.as_dict() == {
-    "id"       : "test folder",
+    "id"       : "TEST folder",
     "name"     : "some folder",
     "children" : []
   }
@@ -46,31 +46,31 @@ def test_building_extended_tree_structure():
     "name" : "root",
     "children" : [
       {
-        "id" : "root/folder 1",
+        "id" : "root/folder-1",
         "name" : "folder 1",
         "children" : [
           {
-            "id" : "topic 1",
+            "id" : "topic-1",
             "name" : "topic 1"
           }
         ]
       },
       {
-        "id" : "root/folder 2",
+        "id" : "root/folder-2",
         "name" : "folder 2",
         "children" : [
           {
-            "id" : "topic 2",
+            "id" : "topic-2",
             "name" : "topic 2"
           }
         ]
       },
       {
-        "id" : "root/folder 3",
+        "id" : "root/folder-3",
         "name" : "folder 3",
         "children" : [
           {
-            "id" : "topic 3",
+            "id" : "topic-3",
             "name" : "topic 3"
           }
         ]
@@ -87,8 +87,8 @@ def test_finding_item_by_id_in_extended_tree_structure():
   folder2.add(Topic("topic 2"))
   folder3.add(Topic("topic 3"))
 
-  assert root["topic 1"] is topic1
-  assert root["root/folder 3"] is folder3
+  assert root["topic-1"] is topic1
+  assert root["root/folder-3"] is folder3
   try:
     root["blah"]
     assert False
@@ -123,31 +123,31 @@ dicts = [
     "name" : "root",
     "children" : [
       {
-        "id" : "root/folder 1",
+        "id" : "root/folder-1",
         "name" : "folder 1",
         "children" : [
           {
-            "id" : "topic 1",
+            "id" : "topic-1",
             "name" : "topic 1"
           }
         ]
       },
       {
-        "id" : "root/folder 2",
+        "id" : "root/folder-2",
         "name" : "folder 2",
         "children" : [
           {
-            "id" : "topic 2",
+            "id" : "topic-2",
             "name" : "topic 2"
           }
         ]
       },
       {
-        "id" : "root/folder 3",
+        "id" : "root/folder-3",
         "name" : "folder 3",
         "children" : [
           {
-            "id" : "topic 3",
+            "id" : "topic-3",
             "name" : "topic 3"
           }
         ]
@@ -155,7 +155,7 @@ dicts = [
     ]
   },
   {
-    "id"   : "folder x",
+    "id"   : "folder-x",
     "name" : "folder x"
   }
 ]
@@ -170,19 +170,19 @@ def test_loading_extended_tree_structure_from_dicts():
 
 def test_accessing_items_from_treeitems():
   items = TreeItems.from_dicts(dicts)
-  assert isinstance(items["topic 3"], Topic)
-  assert items["topic 3"].id   == "topic 3"
-  assert items["topic 3"].name == "topic 3"
+  assert isinstance(items["topic-3"], Topic)
+  assert items["topic-3"].id   == "topic-3"
+  assert items["topic-3"].name == "topic 3"
 
-  assert isinstance(items["folder x"], Topic)
-  assert items["folder x"].id   == "folder x"
-  assert items["folder x"].name == "folder x"
+  assert isinstance(items["folder-x"], Topic)
+  assert items["folder-x"].id   == "folder-x"
+  assert items["folder-x"].name == "folder x"
 
 def test_removing_item_by_id_from_treeitems():
   items = TreeItems.from_dicts(dicts)
-  items.remove("folder x")
-  items.remove("root/folder 2")
-  items.remove("topic 3")
+  items.remove("folder-x")
+  items.remove("root/folder-2")
+  items.remove("topic-3")
   
   try:
     items.remove("blah")
@@ -197,17 +197,17 @@ def test_removing_item_by_id_from_treeitems():
         "name" : "root",
         "children" : [
           {
-            "id" : "root/folder 1",
+            "id" : "root/folder-1",
             "name" : "folder 1",
             "children" : [
               {
-                "id" : "topic 1",
+                "id" : "topic-1",
                 "name" : "topic 1"
               }
             ]
           },
           {
-            "id" : "root/folder 3",
+            "id" : "root/folder-3",
             "name" : "folder 3",
             "children" : []
           }

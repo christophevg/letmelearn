@@ -53,6 +53,8 @@ for component in [
   "ProtectedPage",
   "FeedStore",
   "TopicsStore",
+  "TopicSelector",
+  "FolderSelector",
   "TextDiff",
   "SimpleDialog",
   "MultiTextField",

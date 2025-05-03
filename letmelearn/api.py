@@ -1,7 +1,5 @@
 import logging
 
-import re
-
 from flask_restful import Resource
 from flask_login import current_user
 from flask import abort
@@ -13,7 +11,7 @@ from datetime import datetime
 from letmelearn.web       import server
 from letmelearn.data      import db
 from letmelearn.auth      import authenticated
-from letmelearn.treeitems import TreeItems, Folder
+from letmelearn.treeitems import TreeItems, Folder, Topic, idfy
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +75,7 @@ class Topics(Resource):
     name     = server.request.json["name"]
     question = server.request.json["question"]
     items    = server.request.json.get("items", [])
-    id = re.sub(r"[^a-zA-Z0-9 ]", "", name.lower()).replace(" ", "-")
+    id       = idfy(name)
     new_topic = {
       "_id"      : id,
       "user"     : current_user.email,
@@ -124,17 +122,24 @@ class TopicResource(Resource):
     if folder:
       # (re)move
       try:
-        parent = tree[folder]
-        logger.info(f"{folder} -> {parent}")
-        parent.add(tree.remove(id))
+        # first find parent
+        parent = tree[folder["id"]]
+        # then first remove
+        try:
+          topic = tree.remove(id)
+        except KeyError:
+          # topic might not yet be in the tree
+          topic = Topic(updated_topic["name"])
+        # then add to new parent
+        parent.add(topic)
       except KeyError:
         # we didn't find this folder
-        logger.warn(f"couldn't find item '{id}'")
+        logger.warn(f"couldn't find new folder '{folder}'")
         abort(404)
   
     return {
-      "topic"   : updated_topic,
-      "folders" : Folders._set(tree.as_dicts())
+      "topic"     : updated_topic,
+      "treeitems" : Folders._set(tree.as_dicts())
     }
 
   @authenticated
@@ -159,7 +164,7 @@ class TopicResource(Resource):
 
     return {
       "topic"   : id,
-      "folders" : Folders._set(tree.as_dicts()),
+      "treeitems" : Folders._set(tree.as_dicts()),
       "feed"    : Feed._get()
     }
 

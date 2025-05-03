@@ -259,7 +259,7 @@ var Topics = {
     
     // track changes to the selected topic
     this.unsubscribe = store.subscribe((mutation, state) => {
-      if (mutation.type === "updated_topic" || mutation.type == "selected_items") {
+      if (mutation.type === "updated_topic" || mutation.type == "selected_items" || mutation.type == "treeitems") {
         this.prepare_topic_for_editing();
       }
     });
@@ -316,7 +316,8 @@ var Topics = {
       if(JSON.stringify(this.edited_topic.question.labels) != JSON.stringify(this.selected.question.labels)) { return true; }
       if(JSON.stringify(this.edited_topic.question.props) != JSON.stringify(this.selected.question.props)) { return true; }
       if(JSON.stringify(this.tags) != JSON.stringify(this.selected.tags)) { return true; }
-      if(this.edited_folder != store.getters.path2topic(this.selected._id)) { return true; }
+      // FIXME: should check on .id, except when null (decide: null or a root?)
+      if(this.edited_folder != store.getters.folder_of(this.selected._id)) { return true; }
       return false;
     }
   },
@@ -389,9 +390,9 @@ var Topics = {
         this.tags = []; // default to empty list
       }
       // folder
-      this.current_folder = store.getters.path2topic(this.selected._id)
+      this.current_folder = store.getters.folder_of(this.selected._id)
       this.edited_folder  = this.current_folder
-      
+
       this.edited_topic.prepared = true;
     },
     update_topic: function() {
