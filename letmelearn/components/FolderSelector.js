@@ -1,8 +1,14 @@
 Vue.component("FolderSelector", {
   props: [ "value" ],
+  watch: { 
+    value: function(newVal, oldVal) {
+      // reset active selection
+      this.active = [];
+    }
+  },
   template: `
 <div>
-
+  
   <v-text-field label="Folder" :value="path" :readonly="true"
                 append-icon="folder"
                 @click="select_folder"

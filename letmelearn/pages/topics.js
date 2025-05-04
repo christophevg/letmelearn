@@ -124,7 +124,7 @@ var Topics = {
 
             <v-combobox label="Tags laten toe om de topic te identificeren. Enter/return maakt van je tekst een tag." v-model="tags" chips deletable-chips multiple></v-combobox>
 
-            <FolderSelector :value="current_folder" @change="change_folder"/>
+            <FolderSelector :value="edited_folder" @change="change_folder"/>
 
           </div>
 
@@ -321,6 +321,7 @@ var Topics = {
       if(this.edited_folder == null) {
         if(current_folder != null) { return true; }
       } else {
+        if(current_folder == null ) { return true; }
         if( this.edited_folder.id != current_folder.id  ) { return true; }
       }
       return false;
@@ -397,7 +398,6 @@ var Topics = {
       // folder
       this.current_folder = store.getters.folder_of(this.selected._id)
       this.edited_folder  = this.current_folder
-
       this.edited_topic.prepared = true;
     },
     update_topic: function() {
