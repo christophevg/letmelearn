@@ -4,7 +4,9 @@ Vue.component("FolderSelector", {
 <div>
 
   <v-text-field label="Folder" :value="path" :readonly="true"
-                append-icon="folder" @click:append="select_folder"/>
+                append-icon="folder"
+                @click="select_folder"
+                @click:append="select_folder"/>
   
   <!-- selection dialog -->
 
@@ -65,11 +67,10 @@ Vue.component("FolderSelector", {
                 @submit="create_folder_dialog = false; add_folder();">
 
     <span v-if="selected">
-      Deze nieuwe folder zal worden aangemaakt onder<br><tt>{{ selected.name }}</tt>
+      Deze nieuwe folder zal worden aangemaakt in<br>
+      <tt>{{ selected.name }}</tt>
     </span>
-    <v-text-field label="Naam"
-                  v-model="new_folder_name"
-                  autofocus/>
+    <v-text-field label="Naam" v-model="new_folder_name" autofocus  v-if="create_folder_dialog"/>
 
   </SimpleDialog>
 
@@ -79,7 +80,7 @@ Vue.component("FolderSelector", {
     return {
       select_folder_dialog: false,
       create_folder_dialog: false,
-      active : [],
+      activated : [],
       search: null,
       caseSensitive: false,
       new_folder_name: null
@@ -101,7 +102,19 @@ Vue.component("FolderSelector", {
     }
   },
   computed: {
+    active : {
+      // active is a list of id's that are active (visually selected), only 1
+      get : function() {
+        // return activated item, else return provided value
+        return this.activated.length > 0 ? this.activated
+             : this.value ? [ this.value.id ] : [];
+      },
+      set : function(selection) {
+        this.activated = selection;
+      }
+    },
     open : {
+      // redirect open folders to store to sync with other treeviews
       get : function() {
         return store.getters.open_folders;
       },
@@ -113,18 +126,15 @@ Vue.component("FolderSelector", {
       return store.getters.folders;
     },
     selected: function() {
-      var folder_id = null;
-      if(this.active.length > 0) {
-        folder_id = this.active[0];
-      } else if(this.value) {
-        folder_id = this.value.id;
-      }
-      return store.getters.folder(folder_id);
+      // transforms active id into folder object
+      return store.getters.folder(this.active[0]);
     },
     path: function() {
+      // returns string representation of the folders up to the selected item
+      // Name / Name / Name ...
       if(! this.selected) { return ""; }
       return store.getters.path(this.selected.id)
-        .map(function(topic) { return topic.name; })
+        .map(function(folder) { return folder.name; })
         .join("/");
     }
   }
