@@ -12,27 +12,15 @@ store.registerModule("feed", {
   actions: {
     load_feed: function(context) {
       if(context.state.feed.length < 1) {
-        $.ajax({
-          type: "GET",
-          url: "/api/feed",
-          success: function(result) {
-            context.commit("new_feed", result);
-          },
-          dataType: "json"
+        api( "GET", "feed", function(result) {
+          context.commit("new_feed", result);
         });
       }
     },
     add_feed_item: function(context, item) {
-      $.ajax({
-        type: "POST",
-        url: "/api/feed",
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify(item),
-        success: function(new_item) {
-          context.commit("new_feed_item", new_item);
-        }
-      });
+      api( "POST", "feed", function(new_item) {
+        context.commit("new_feed_item", new_item);
+      }, item);
     },
   },
   mutations: {

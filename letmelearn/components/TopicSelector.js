@@ -131,11 +131,11 @@ Vue.component("TopicSelector", {
       },
       set: function(selection) {
         if(this.multiple) {
-          // in multiple selection mode, keep activated items local
+          // keep multiple selected items in the store
           store.commit("selected_items", selection.map(function(key){ return store.getters.item(key)}));
           return;
         }
-        // in single selection mode, the active one is the selected one
+        // in single selection mode, the active one is the selected one, so keep selected items local
         this.selection = selection;          
       }
     },

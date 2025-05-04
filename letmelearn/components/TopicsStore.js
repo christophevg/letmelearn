@@ -178,57 +178,21 @@ store.registerModule("topics", {
     
     load_folders: function(context) {
       if(context.getters.folders.length < 1) {
-        $.ajax({
-          type: "GET",
-          url: "/api/folders",
-          dataType: "json",
-          success: function(result) {
-            context.commit("treeitems", result);
-          },
-          error: function(result) {
-            store.dispatch(
-              "raise_error",
-              "er ging iets mis, probeer het opnieuw: " + result.statusText
-            );
-          }
-        });
+        api("GET", "folders", function(treeitems) {
+          context.commit("treeitems", treeitems);
+        }, );
       }      
     },
     
     create_folder: function(context, folder) {
-      $.ajax({
-        type: "POST",
-        url: `/api/folders/${folder.path}`,
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify({ name: folder.name }),
-        success: function(treeitems) {
-          context.commit("treeitems", treeitems);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });
+      api( "POST",`folders/${folder.path}`, function(treeitems) {
+        context.commit("treeitems", treeitems);
+      }, { name: folder.name });
     },
 
     delete_folder: function(context, folder) {
-      $.ajax({
-        type: "DELETE",
-        url: `/api/folders/${folder}`,
-        contentType: "application/json",
-        dataType: "json",
-        success: function(treeitems) {
-          context.commit("treeitems", treeitems);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
+      api( "DELETE", `folders/${folder}`, function(treeitems) {
+        context.commit("treeitems", treeitems);
       });
     },
     
@@ -236,150 +200,66 @@ store.registerModule("topics", {
     
     load_topics: function(context) {
       if(context.getters.topics.length < 1) {
-        $.ajax({
-          type: "GET",
-          url: "/api/topics",
-          dataType: "json",
-          success: function(topics) {
-            context.commit("topics", topics);
-            // adopt hash for selection
-            if(window.location.hash) {
-              var topics = window.location.hash.substring(1).split(";")
-							  .map   (function(id)    { return store.getters.topic(id); })
-                .filter(function(topic) { return topic; });
-              context.commit("selected_items", topics);
-            }
-          },
-          error: function(result) {
-            store.dispatch(
-              "raise_error",
-              "er ging iets mis, probeer het opnieuw: " + result.statusText
-            );
+        api( "GET", "topics", function(topics) {
+          context.commit("topics", topics);
+          // adopt hash for selection
+          if(window.location.hash) {
+            var topics = window.location.hash.substring(1).split(";")
+						  .map   (function(id)    { return store.getters.topic(id); })
+              .filter(function(topic) { return topic; });
+            context.commit("selected_items", topics);
           }
         });
       }
     },
     update_topic: function(context, updating) {
-      $.ajax({
-        type: "PATCH",
-        url: "/api/topics/" + updating.topic._id,
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify(updating.update),
-        success: function(result) {
-          context.commit("updated_topic", result.topic);
-          context.commit("treeitems",     result.treeitems);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });
+      api( "PATCH", `topics/${updating.topic._id}`, function(result) {
+        context.commit("updated_topic", result.topic);
+        context.commit("treeitems",     result.treeitems);
+      }, updating.update);
     },
     create_topic: function(context, topic) {
-      $.ajax({
-        type: "POST",
-        url: "/api/topics",
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify({
-          name    : topic.name,
-          question: topic.question
-        }),
-        success: function(new_topic) {
-          context.commit("new_topic", new_topic);
-          store.dispatch("add_feed_item", {
-            "kind" : "new topic",
-            "topic" : new_topic["_id"]
-          });
-          if(topic.handler) { topic.handler(new_topic); }
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });
+      api( "POST", "topics", function(new_topic) {
+        context.commit("new_topic", new_topic);
+        store.dispatch("add_feed_item", {
+          "kind" : "new topic",
+          "topic" : new_topic["_id"]
+        });
+        if(topic.handler) { topic.handler(new_topic); }
+      },
+      {
+        name    : topic.name,
+        question: topic.question
+      })
     },
     remove_topic: function(context, topic) {
-      $.ajax({
-        type: "DELETE",
-        url: "/api/topics/" + topic._id,
-        success: function(result) {
-          context.commit("removed_topic", topic);
-          context.commit("treeitems",     result.treeitems);
-          context.commit("new_feed",      result.feed);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
+      api( "DELETE", `topics/${topic._id}`, function(result) {
+        context.commit("removed_topic", topic);
+        context.commit("treeitems",     result.treeitems);
+        context.commit("new_feed",      result.feed);
       });
     },
 
     // ITEM ACTIONS
 
     add_item: function(context, adding) {
-      $.ajax({
-        type: "POST",
-        url: "/api/topics/" + adding.topic._id + "/items",
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify(adding.item),
-        success: function(result) {
-          context.commit("added_item", adding);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });
+      api( "POST", `topics/${adding.topic._id}/items`, function(result) {
+        context.commit("added_item", adding);
+      }, adding.item);
     },
     update_item: function(context, updating) {
-      $.ajax({
-        type: "PATCH",
-        url: "/api/topics/" + updating.topic._id + "/items",
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify({
-          original: updating["original"],
-          update: updating["update"]
-        }),
-        success: function(result) {
-          context.commit("updated_item", updating);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });      
+      api( "PATCH", `topics/${updating.topic._id}/items`, function(result) {
+        context.commit("updated_item", updating);
+      },
+      {
+        original: updating["original"],
+        update: updating["update"]
+      });
     },
     delete_item: function(context, removing) {
-      $.ajax({
-        type: "DELETE",
-        url: "/api/topics/" + removing.topic._id + "/items",
-        contentType: "application/json",
-        dataType: "json",
-        data: JSON.stringify(removing.removal),
-        success: function(result) {
-          context.commit("removed_item", removing);
-        },
-        error: function(result) {
-          store.dispatch(
-            "raise_error",
-            "er ging iets mis, probeer het opnieuw: " + result.statusText
-          );
-        }
-      });      
+      api( "DELETE", `topics/${removing.topic._id}/items`, function(result) {
+        context.commit("removed_item", removing);
+      }, removing.removal);
     },
     
     // QUIZ ACTIONS

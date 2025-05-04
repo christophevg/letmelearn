@@ -11,7 +11,7 @@
 
 - [ ] add testing ;-)
 - [ ] generic error catch-all
-  - [ ] all API calls
+  - [x] all API calls
   - [ ] start up
 - [ ] generic error reporting
 - [ ] on db connection failure
