@@ -316,8 +316,13 @@ var Topics = {
       if(JSON.stringify(this.edited_topic.question.labels) != JSON.stringify(this.selected.question.labels)) { return true; }
       if(JSON.stringify(this.edited_topic.question.props) != JSON.stringify(this.selected.question.props)) { return true; }
       if(JSON.stringify(this.tags) != JSON.stringify(this.selected.tags)) { return true; }
-      // FIXME: should check on .id, except when null (decide: null or a root?)
-      if(this.edited_folder != store.getters.folder_of(this.selected._id)) { return true; }
+      // FIXME: use a virtual root folder, in stead of using null
+      const current_folder = store.getters.folder_of(this.selected._id);
+      if(this.edited_folder == null) {
+        if(current_folder != null) { return true; }
+      } else {
+        if( this.edited_folder.id != current_folder.id  ) { return true; }
+      }
       return false;
     }
   },
