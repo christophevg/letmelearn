@@ -23,6 +23,7 @@ from oatk import OAuthToolkit
 logger = logging.getLogger(__name__)
 
 login_manager = LoginManager()
+login_manager.session_protection = "strong"
 login_manager.init_app(server)
 
 class User(UserMixin):
@@ -124,7 +125,7 @@ class Session(Resource):
       logger.warn(f"unknown user: {claims}")
       abort(403)
     user.update(**claims)
-    login_user(user)
+    login_user(user, remember=True)
     return current_user.as_json
 
   @authenticated # flask login session required to get the current_user

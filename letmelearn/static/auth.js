@@ -68,4 +68,4 @@ store.registerModule("auth", {
   }
 });
 
-store.dispatch("setup_session");
+$(document).ready(function() { store.dispatch("setup_session"); });
