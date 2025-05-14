@@ -22,6 +22,16 @@
   window.console["enable_logging"]  = function() { logging = true;  }
   window.console["disable_logging"] = function() { logging = false; }
 
+  loggers.info(
+`%cWelkom bij...
+ _         _                      _                          
+| |    ___| |_   _ __ ___   ___  | |    ___  __ _ _ __ _ __  
+| |   / _ \\ __| | '_ \` _ \\ / _ \\ | |   / _ \\/ _\` | '__| '_ \\ 
+| |__|  __/ |_  | | | | | |  __/ | |__|  __/ (_| | |  | | | |
+|_____\\___|\\__| |_| |_| |_|\\___| |_____\\___|\\__,_|_|  |_| |_|`,
+    `font-family: monospace`
+  );
+
   loggers.warn("Logging is disabled. Enable using `console.enable_logging`.");
   
 })();
