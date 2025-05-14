@@ -129,7 +129,7 @@ class TopicResource(Resource):
           topic = tree.remove(id)
         except KeyError:
           # topic might not yet be in the tree
-          topic = Topic(updated_topic["name"])
+          topic = Topic(updated_topic["name"], id=id)
         # then add to new parent
         parent.add(topic)
       except KeyError:
