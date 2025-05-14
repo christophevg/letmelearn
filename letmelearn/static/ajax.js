@@ -8,7 +8,7 @@ function api(method, endpoint, success, data) {
     error: function(result) {
       store.dispatch(
         "raise_error",
-        "er ging iets mis, probeer het opnieuw: " + result.statusText
+        "Er ging iets mis, probeer het opnieuw: " + result.responseJSON.message
       );
     }
   };
