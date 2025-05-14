@@ -27,11 +27,15 @@ login_manager.session_protection = "strong"
 login_manager.init_app(server)
 
 class User(UserMixin):
-  def __init__(self, email, name=None, picture=None):
-    self.email   = email
-    self.name    = name
-    self.picture = picture
-    
+  def __init__(self, email, name=None, picture=None, identities=None, current=None):
+    self.email       = email
+    self.name        = name
+    self.picture     = picture
+    if identities is None:
+      identities = []
+    self._identities = identities
+    self._current    = current
+
   def __str__(self):
     return self.email
 
@@ -39,11 +43,39 @@ class User(UserMixin):
     return self.__str__()
 
   @property
+  def identities(self):
+    ids = []
+    for email in self._identities:
+      identity = User.find(email)
+      if identity:
+        ids.append(identity)
+    return ids
+
+  @property
+  def identity(self):
+    if not self._current:
+      return self
+    identity = User.find(self._current)
+    if not identity:
+      return self
+    return identity
+
   def as_json(self):
+    info = {
+      "email"      : self.email,
+      "name"       : self.name,
+      "picture"    : self.picture,
+      "identities" : [ identity.as_identity_json() for identity in self.identities ]
+    }
+    current = self.identity
+    info["current"] = current.email if current else None
+    return info
+
+  def as_identity_json(self):
     return {
-      "email"   : self.email,
-      "name"    : self.name,
-      "picture" : self.picture
+      "email"      : self.email,
+      "name"       : self.name,
+      "picture"    : self.picture
     }
 
   @classmethod
@@ -57,21 +89,27 @@ class User(UserMixin):
     })
     return clazz(email, name, picture)
 
-  def update(self, email=None, name=None, picture=None, **kwargs):
-    self.name    = name
-    self.picture = picture
-    db.users.update_one({
-      "_id" : self.email
-    },
-    {
-      "$set" : {
-        "name"    : self.name,
-        "picture" : self.picture
-      }
-    })
+  def update(self, email=None, name=None, picture=None, current=None, **kwargs):
+    if email is None:
+      raise ValueError("missing email address")
+    changes = {}
+    if name and self.name != name:
+      self.name = name
+      changes["name"] = name
+    if picture and self.picture != picture:
+      self.picture = picture
+      changes["picture"] = picture
+    if current and self._current != current:
+      if current == current_user.email:
+        current = None
+      self._current = current
+      changes["current"] = current
+    db.users.update_one({ "_id" : self.email }, { "$set" : changes })
 
   @classmethod
   def find(clazz, email):
+    if not email:
+      return None
     info = db.users.find_one({"_id" : email})
     if info:
       email = info.pop("_id")
@@ -126,15 +164,24 @@ class Session(Resource):
       abort(403)
     user.update(**claims)
     login_user(user, remember=True)
-    return current_user.as_json
+    return current_user.as_json()
 
   @authenticated # flask login session required to get the current_user
   def get(self):
-    return current_user.as_json
+    return current_user.as_json()
 
   @authenticated # flask login session required to delete/logout session
   def delete(self):
     logout_user()
     return True
+
+  @authenticated # flask login session required to put session = change identity
+  def put(self):
+    identity = server.request.json["identity"]
+    if identity not in current_user._identities and identity != current_user.email:
+      raise ValueError(f"invalid identity: {identity} not in {current_user._identities}")
+    logger.info(f"changing current identity: {identity}")
+    current_user.update(email=current_user.email, current=identity)
+    return current_user.as_json()
 
 server.api.add_resource(Session, "/api/session")

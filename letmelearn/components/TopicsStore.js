@@ -177,11 +177,11 @@ store.registerModule("topics", {
     // FOLDER ACTIONS
     
     load_folders: function(context) {
-      if(context.getters.folders.length < 1) {
-        api("GET", "folders", function(treeitems) {
-          context.commit("treeitems", treeitems);
-        }, );
-      }      
+      console.debug("store.actions.load_folders");
+      api("GET", "folders", function(treeitems) {
+        console.debug("store.actions.load_folders", "success", treeitems);
+        context.commit("treeitems", treeitems);
+      });
     },
     
     create_folder: function(context, folder) {
@@ -199,18 +199,18 @@ store.registerModule("topics", {
     // TOPIC ACTIONS
     
     load_topics: function(context) {
-      if(context.getters.topics.length < 1) {
-        api( "GET", "topics", function(topics) {
-          context.commit("topics", topics);
-          // adopt hash for selection
-          if(window.location.hash) {
-            var topics = window.location.hash.substring(1).split(";")
-						  .map   (function(id)    { return store.getters.topic(id); })
-              .filter(function(topic) { return topic; });
-            context.commit("selected_items", topics);
-          }
-        });
-      }
+      console.debug("store.actions.load_topics");
+      api( "GET", "topics", function(topics) {
+        console.debug("store.actions.load_topics", "success", topics);
+        context.commit("topics", topics);
+        // adopt hash for selection
+        if(window.location.hash) {
+          var topics = window.location.hash.substring(1).split(";")
+					  .map   (function(id)    { return store.getters.topic(id); })
+            .filter(function(topic) { return topic; });
+          context.commit("selected_items", topics);
+        }
+      });
     },
     update_topic: function(context, updating) {
       api( "PATCH", `topics/${updating.topic._id}`, function(result) {
@@ -280,6 +280,7 @@ store.registerModule("topics", {
     
     treeitems: function(state, new_items) {
       // import a new set of treeitems, including leafs with a topic id
+      console.debug("store.mutations.treeitems", new_items);
       Vue.set(state, "_treeitems", new_items);
     },
     open_folders: function(state, selection) {
@@ -288,6 +289,7 @@ store.registerModule("topics", {
     
     topics: function(state, new_topics) {
       // import a new set of topics, adding default tags if needed
+      console.debug("store.mutations.topics", new_topics);
       Vue.set(state, "_topics", new_topics.map(function(topic){
         if(!topic.tags) { topic.tags = []; }
         return topic;

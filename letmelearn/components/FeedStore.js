@@ -11,11 +11,11 @@ store.registerModule("feed", {
   },
   actions: {
     load_feed: function(context) {
-      if(context.state.feed.length < 1) {
-        api( "GET", "feed", function(result) {
-          context.commit("new_feed", result);
-        });
-      }
+      console.debug("store.actions.load_feed");
+      api( "GET", "feed", function(feed) {
+        console.debug("store.actions.load_feed", feed);
+        context.commit("new_feed", feed);
+      });
     },
     add_feed_item: function(context, item) {
       api( "POST", "feed", function(new_item) {

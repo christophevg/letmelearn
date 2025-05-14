@@ -37,12 +37,10 @@ store.registerModule("auth", {
       $.ajax({
         type: "GET",
         url: "/api/session",
-        success: function(result) {
+        success: function(session) {
           console.debug("store.actions.get_session", "success");
-          context.commit("session", result);
-          store.dispatch("load_topics");
-          store.dispatch("load_folders");
-          store.dispatch("load_feed");
+          context.commit("session", session);
+          store.dispatch("load_user_data");
         },
         error: on_error,
         dataType: "json"
@@ -53,9 +51,7 @@ store.registerModule("auth", {
       oatk.http.postJSON("/api/session", {}, function(result) {
         console.debug("store.actions.create_session", "success");
         context.commit("session", result);
-        store.dispatch("load_topics");
-        store.dispatch("load_folders");
-        store.dispatch("load_feed");
+        store.dispatch("load_user_data");
       }, function(result) {
         console.warn("store.actions.create_session", "login using access token produced error:", result);
         oatk.logout();
@@ -71,6 +67,19 @@ store.registerModule("auth", {
           console.debug("store.actions.drop_session", "success");
         }
       });
+    },
+    select_identity: function(context, identity) {
+      console.debug("store.actions.select_identity", identity);
+      api("PUT", "session", function(session) {
+        console.debug("store.actions.select_identity", "success");
+        context.commit("session", session);
+        store.dispatch("load_user_data");
+      }, { identity: identity.email } );
+    },
+    load_user_data: function(context) {
+      store.dispatch("load_topics");
+      store.dispatch("load_folders");
+      store.dispatch("load_feed");      
     }
   },
   mutations: {

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Folders(Resource):
   @staticmethod
   def _get():
-    items = db.folders.find_one({ "_id": current_user.email })
+    items = db.folders.find_one({ "_id": current_user.identity.email })
     if items and "items" in items:
       return items["items"]
     return []
@@ -27,7 +27,7 @@ class Folders(Resource):
   @staticmethod
   def _set(items):
     return db.folders.find_one_and_replace(
-      { "_id"   : current_user.email },
+      { "_id"   : current_user.identity.email },
       { "items" : items },
       upsert=True,
       return_document=ReturnDocument.AFTER
@@ -69,7 +69,10 @@ server.api.add_resource(Folders, "/api/folders/<path:path>", endpoint="api-folde
 class Topics(Resource):
   @authenticated
   def get(self):    
-    return list(db.topics.find({ "user": current_user.email }, { "user": False }))
+    return list(db.topics.find(
+      { "user": current_user.identity.email },
+      { "user": False }
+    ))
 
   @authenticated
   def post(self):
@@ -79,7 +82,7 @@ class Topics(Resource):
     id       = idfy(name)
     new_topic = {
       "_id"      : id,
-      "user"     : current_user.email,
+      "user"     : current_user.identity.email,
       "name"     : name,
       "question" : question,
       "items"    : items
@@ -97,7 +100,7 @@ class TopicResource(Resource):
   def get(self, id):    
     return db.topics.find_one({
       "_id": id,
-      "user": current_user.email
+      "user": current_user.identity.email
     })
 
   @authenticated
@@ -113,7 +116,7 @@ class TopicResource(Resource):
     updated_topic = db.topics.find_one_and_update(
       {
         "_id"  : id,
-        "user" : current_user.email
+        "user" : current_user.identity.email
       },
       {
         "$set" : update
@@ -151,7 +154,7 @@ class TopicResource(Resource):
     # delete the topic
     db.topics.delete_one({
       "_id": id,
-      "user": current_user.email
+      "user": current_user.identity.email
     })
 
     # remove it from the folders structure
@@ -180,7 +183,7 @@ class Items(Resource):
     return db.topics.find_one_and_update(
       {
         "_id"  : id,
-        "user" : current_user.email
+        "user" : current_user.identity.email
       },
       {
         "$push" : { "items" : server.request.json }
@@ -191,7 +194,7 @@ class Items(Resource):
     return db.topics.find_one_and_update(
       {
         "_id"   : id,
-        "user"  : current_user.email,
+        "user"  : current_user.identity.email,
         "items" : server.request.json["original"]
       },
       {
@@ -203,7 +206,7 @@ class Items(Resource):
   @authenticated
   def delete(self, id):
     return db.topics.find_one_and_update(
-      { "_id" : id, "user" : current_user.email },
+      { "_id" : id, "user" : current_user.identity.email },
       { "$pull" : { "items" : server.request.json }}
     )
 
@@ -215,7 +218,7 @@ class Feed(Resource):
     return list(db.feed.aggregate([
       {
         "$match" : {
-          "user": current_user.email,
+          "user": current_user.identity.email,
           "$or" : [
             { "asked" : { "$exists": False } },
             { "asked" : { "$gt" : 0        } }
@@ -253,13 +256,13 @@ class Feed(Resource):
   @authenticated
   def post(self):
     new_item = server.request.json
-    new_item["user"] = [ current_user.email ]
+    new_item["user"] = [ current_user.identity.email ]
     new_item["when"] = datetime.now().isoformat()
 
     db.feed.insert_one(new_item)
     new_item.pop("_id")
     
-    new_item["user" ] = [ current_user.as_json ]
+    new_item["user" ] = [ current_user.identity.as_json() ]
     return new_item
 
 server.api.add_resource(Feed, "/api/feed", endpoint="api-feed")

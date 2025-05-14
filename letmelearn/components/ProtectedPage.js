@@ -63,7 +63,21 @@ Vue.component("ProtectedPage", {
 
     <v-toolbar flat fixed height="64px" style="padding-top:64px">
       <v-toolbar-title>
-        <v-avatar>
+
+        <v-menu bottom right v-model="show_identities">
+          <v-list>
+            <v-list-tile avatar v-for="(identity, i) in identities" :key="i" @click="select_identity(identity)">
+              <v-list-tile-avatar>
+                <img :src="identity.picture" :alt="identity.name" referrerpolicy="no-referrer">
+              </v-list-tile-avatar>
+              <v-list-tile-content>
+                <v-list-tile-title>{{ identity.name }}</v-list-tile-title>
+              </v-list-tile-content>
+            </v-list-tile>
+          </v-list>
+        </v-menu>
+
+        <v-avatar @click="show_identities=true">
           <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
         </v-avatar>
         Hi {{ session.name }}! 👋
@@ -151,6 +165,13 @@ Vue.component("ProtectedPage", {
     session : function() {
       return store.state.auth.session;
     },
+    identities: function() {
+      const identities = [...this.session["identities"]];
+      if(identities) {
+        identities.push(this.session);
+      }
+      return identities;
+    },
     content_style: function() {
       return "padding-top: " + this.content_top_margin + "px";
     },
@@ -164,6 +185,14 @@ Vue.component("ProtectedPage", {
       if(confirm("Logging out... Are you sure?")) {
         store.dispatch("logout");
       }
+    },
+    select_identity: function(identity) {
+      store.dispatch("select_identity", identity);
+    }
+  },
+  data: function() {
+    return {
+      show_identities: false
     }
   }
 });
