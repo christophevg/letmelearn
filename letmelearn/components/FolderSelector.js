@@ -9,10 +9,10 @@ Vue.component("FolderSelector", {
   template: `
 <div>
   
-  <v-text-field label="Folder" :value="path" :readonly="true"
-                append-icon="folder"
+  <v-text-field placeholder="Selecteer een folder" :value="path" :readonly="true"
+                prepend-icon="folder"
                 @click="select_folder"
-                @click:append="select_folder"/>
+                @click:prepend="select_folder"/>
   
   <!-- selection dialog -->
 
