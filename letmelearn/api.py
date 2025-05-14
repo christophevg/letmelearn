@@ -4,6 +4,7 @@ from flask_restful import Resource
 from flask_login import current_user
 from flask import abort
 
+import pymongo
 from pymongo.collection import ReturnDocument
 
 from datetime import datetime
@@ -83,7 +84,10 @@ class Topics(Resource):
       "question" : question,
       "items"    : items
     }
-    db.topics.insert_one(new_topic)
+    try:
+      db.topics.insert_one(new_topic)
+    except pymongo.errors.DuplicateKeyError:
+      abort(500, "Deze naam is eerder al eens gebruikt. Kies een andere en wijzig achteraf.")
     return new_topic
 
 server.api.add_resource(Topics, "/api/topics", endpoint="api-topics")
