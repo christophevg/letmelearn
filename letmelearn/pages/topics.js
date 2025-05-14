@@ -355,7 +355,7 @@ var Topics = {
       this.new_topic.question = config;
       // tags
       // copy pre-existing tags
-      if(this.selected.tags) {
+      if(this.selected && this.selected.tags) {
         this.tags = [...this.selected.tags];
       } else {
         this.tags = []; // default to empty list
