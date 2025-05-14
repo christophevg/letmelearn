@@ -99,7 +99,8 @@ Vue.component("TopicSelector", {
           }
         }
       }
-      const treeitems = [...store.getters.treeitems];
+      
+      const treeitems = JSON.parse(JSON.stringify(store.getters.treeitems));
       recurse(treeitems);
 
       // add remaining "unfoldered" topics
