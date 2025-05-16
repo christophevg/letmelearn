@@ -255,14 +255,25 @@ class Feed(Resource):
 
   @authenticated
   def post(self):
-    new_item = server.request.json
-    new_item["user"] = [ current_user.identity.email ]
+    # create feed item to insert
+    allowed = [
+      "kind", "topic", "topics",
+      "questions", "asked", "attempts", "correct",
+      "elapsed"
+    ]
+    new_item = {
+      prop : server.request.json[prop]
+      for prop in allowed
+      if prop in server.request.json
+    }
+    # add user and timestamp
+    new_item["user"] = [ current_user.identity.email ] # by ref in collection
     new_item["when"] = datetime.now().isoformat()
 
     db.feed.insert_one(new_item)
-    new_item.pop("_id")
+    new_item.pop("_id") # remove byref added _id
     
-    new_item["user" ] = [ current_user.identity.as_json() ]
+    new_item["user" ] = [ current_user.identity.as_json() ] # return by value
     return new_item
 
 server.api.add_resource(Feed, "/api/feed", endpoint="api-feed")
