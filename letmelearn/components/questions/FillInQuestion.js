@@ -371,21 +371,37 @@ Vue.component("FillInQuestionImporter", {
   },
   methods: {
     import_topic: function() {
-      var items = this.data.split("\n").map(function(item){
-        var parts = item.split("\t");
-        return {
-          question : parts[0].trim(),
-          answer   : parts[1].split("|").map(function(opt) { return opt.trim(); })
+      var lines = this.data.split("\n");
+      var items = [], count = 0, errors = 0;
+      for(const line of lines) {
+        count++;
+        var parts = line.split("\t");
+        if(parts.length != 2) {
+          errors++;
+          app.$notify({
+            group: "notifications",
+            title: "Whoops...",
+            text:  `lijn ${count}:<br>\n${line.replaceAll("\t","⇥")}<br>\nformat: ...<b>\\t</b>...`,
+            type:  "error",
+            duration: 10000
+          });
+        } else {
+          items.push({
+            question : parts[0].trim(),
+            answer   : parts[1].split("|").map(function(opt) { return opt.trim(); })
+          });
         }
-      });
-      store.dispatch("update_topic", {
-        topic: this.topic,
-        update: {
-          items: items
-        }
-      });
-      this.data = "";
-      this.$emit("import_success");
+      }
+      if(errors == 0) {
+        store.dispatch("update_topic", {
+          topic: this.topic,
+          update: {
+            items: items
+          }
+        });
+        this.data = "";
+        this.$emit("import_success");
+      }
     }
   },
   data: function() {
