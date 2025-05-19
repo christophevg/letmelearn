@@ -1,7 +1,9 @@
 (function() {
   if(! window.console ) { window.console = {} }
 
-  var loggers = {}, logging = false;
+  var loggers = {},
+      logging = location.hostname === "localhost"
+             || location.hostname === "127.0.0.1";
 
   // keep copy of original loggers
   for(let logger of ["log", "info", "debug", "warn" ]) {
@@ -32,6 +34,8 @@
     `font-family: monospace`
   );
 
-  loggers.warn("Logging is disabled. Enable using `console.enable_logging`.");
+  if(!logging) {
+    loggers.warn("Logging is disabled. Enable using `console.enable_logging`.");
+  }
   
 })();
