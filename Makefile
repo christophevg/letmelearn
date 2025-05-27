@@ -3,12 +3,6 @@ all: run
 run:
 	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
 
-requirements.txt:
-	@cat $@ | cut -d"=" -f1 | xargs pip uninstall -y
-	pip install -U pip
-	pip install -r requirements.base.txt
-	pip freeze > $@
-
 .PHONY: requirements.txt
 
 DB?=letmelearn
@@ -61,6 +55,10 @@ PROJECT=$(shell basename $(CURDIR))
 TEST_ENVS=$(addprefix $(PROJECT)-test-,$(PYTHON_VERSIONS))
 
 install: install-env-test
+	@cat $@ | cut -d"=" -f1 | xargs pip uninstall -y
+	pip install -U pip
+	pip install -r requirements.txt
+
 install-env-test: $(TEST_ENVS)
 $(PROJECT)-test-%:
 	@echo "👷‍♂️ $(BLUE)creating virtual test environment $@$(NC)"
