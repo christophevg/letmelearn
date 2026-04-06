@@ -308,13 +308,8 @@ Vue.component("AdvalvasFeed", {
 
 var Home = {
   template : `
-<ProtectedPage>
+<ProtectedPage icon="dashboard" title="Ad Valvas">
   
-  <template v-slot:subheader>
-    <h1 align="center"><v-icon>dashboard</v-icon> Ad Valvas</h1>
-    <v-spacer/>
-  </template>
-
   <v-layout row wrap>
     <v-flex sm12 md6 v-if="feed.length">
       <AdvalvasFeed :feed="feed"/>

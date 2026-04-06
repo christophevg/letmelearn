@@ -1,14 +1,11 @@
 var Train = {
   template: `
-<ProtectedPage>
+<ProtectedPage title="Trainen" icon="fitness_center">
   
   <!-- toolbar -->
   
   <template v-slot:subheader>
   
-    <h1 align="center"><v-icon>fitness_center</v-icon> Trainen</h1>
-    <v-spacer/>
-    
     <TopicSelector @change="change_topic" multiple tags/>
   
     <v-btn flat icon @click="start" :disabled="!selected || playing" class="small-button">

@@ -1,17 +1,14 @@
 var Topics = {
   template: `
-<ProtectedPage>
+<ProtectedPage title="topics" icon="edit">
 
   <!-- toolbars -->
 
   <template v-slot:subheader>
 
-    <h1 align="center"><v-icon>edit</v-icon> Onderwerpen</h1>
-    <v-spacer/>
-    
     <TopicSelector/>
 
-    <v-btn flat icon @click="show_create_topic_dialog" class="ma-0">
+    <v-btn flat icon @click="show_create_topic_dialog" class="ma-0" v-if="!show_in_menu">
       <v-icon>add</v-icon>
     </v-btn>
 
@@ -25,13 +22,18 @@ var Topics = {
 
     <v-menu bottom left v-if="show_in_menu">
       <template v-slot:activator="{ on }">
-        <v-btn flat icon v-on="on">
+        <v-spacer/>
+        <v-btn flat icon v-on="on" right>
           <v-icon>more_vert</v-icon>
         </v-btn>
       </template>
 
       <v-list>
         <v-list-tile>
+  
+          <v-btn flat icon @click="show_create_topic_dialog" class="ma-0">
+            <v-icon>add</v-icon>
+          </v-btn>
 
           <v-btn flat icon @click="archive_topic" :disabled="!selected" class="ma-0">
             <v-icon>archive</v-icon>

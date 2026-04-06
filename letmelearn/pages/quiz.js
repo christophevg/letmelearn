@@ -1,26 +1,23 @@
 var Quiz = {
   template: `
-<ProtectedPage>
+<ProtectedPage title="Quiz" icon="question_answer">
   
   <!-- toolbar -->
   
   <template v-slot:subheader>
 
-    <h1 align="center"><v-icon>question_answer</v-icon> Quiz</h1>
-    <v-spacer/>
-      
     <TopicSelector @change="change_topic" multiple tags/>
   
-    <v-btn flat icon @click="start" :disabled="!selected || playing" class="small-button">
+    <v-btn flat icon @click="start" :disabled="!selected" class="small-button" v-if="!playing">
       <v-icon>play_arrow</v-icon>
     </v-btn>
- 
+
+    <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0" v-else>
+      <v-icon>stop</v-icon>
+    </v-btn>
+
     <v-btn flat icon  @click="toggle_timing" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
       <v-icon>{{ timing_icon }}</v-icon>
-    </v-btn>
- 
-    <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0">
-      <v-icon>stop</v-icon>
     </v-btn>
  
     <v-btn flat icon @click="reset" :disabled="!playing" class="ma-0" v-if="!show_in_menu">
@@ -35,13 +32,11 @@ var Quiz = {
       <v-icon>{{ style_icon }}</v-icon>
     </v-btn>
 
+    <v-spacer/>
+
     <v-menu bottom left v-if="show_in_menu">
       <template v-slot:activator="{ on }">
-        <v-btn
-          flat
-          icon
-          v-on="on"
-        >
+        <v-btn flat icon v-on="on">
           <v-icon>more_vert</v-icon>
         </v-btn>
       </template>
