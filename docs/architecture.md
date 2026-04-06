@@ -36,6 +36,8 @@ A Vue.js SPA/PWA for learning definitions and words, built on Flask + MongoDB.
 | `auth.py` | OAuth (Google), Flask-Login session, `User` class, `@authenticated` decorator |
 | `data.py` | MongoDB connection, schema migrations |
 | `treeitems.py` | `Folder`/`Topic` dataclasses for hierarchical topic organization |
+| `sessions.py` | Session tracking: `/api/sessions` for quiz/training session lifecycle |
+| `stats.py` | Statistics: `/api/stats/streak` and `/api/stats/weekly` for gamification |
 | `pages/__init__.py` | Registers page routes: `/`, `/topics`, `/quiz`, `/training`, `/about` |
 
 ---
@@ -59,6 +61,9 @@ A Vue.js SPA/PWA for learning definitions and words, built on Flask + MongoDB.
 | `ProtectedPage.js` | Auth guard - shows login if unauthenticated |
 | `TopicsStore.js` | Vuex module for topics/folders state |
 | `FeedStore.js` | Vuex module for activity feed |
+| `SessionsStore.js` | Vuex module for session lifecycle state |
+| `StatsStore.js` | Vuex module for statistics state |
+| `StatsCards.js` | Statistics display cards (streak, activity, accuracy, time) |
 | `TopicSelector.js` | Tree-based topic/folder picker |
 | `FolderSelector.js` | Folder selection dialog |
 | `Timer.js` | Quiz timer component |
@@ -154,8 +159,10 @@ TreeItem (base class)
    └─> api.py returns topics from MongoDB
 
 4. User starts quiz
-   └─> Quiz.js creates quiz from selected items
-   └─> Vuex topics module: commit("create_quiz")
+   └─> Quiz.js: store.dispatch("startSession", { kind: "quiz", topics: [...] })
+   └─> SessionsStore.js: POST /api/sessions
+   └─> sessions.py creates session document, returns session_id
+   └─> Quiz.js: store.dispatch("create_quiz")
    └─> Items shuffled into _quiz state
 
 5. User answers question
@@ -164,9 +171,13 @@ TreeItem (base class)
    └─> Quiz.js updates score, commits "mark_correct" or "mark_incorrect"
 
 6. Quiz complete
+   └─> Quiz.js: store.dispatch("stopSession", { status: "completed", ... })
+   └─> SessionsStore.js: PATCH /api/sessions/<id>
+   └─> sessions.py computes elapsed time, updates document
    └─> Result saved: store.dispatch("add_feed_item")
    └─> POST /api/feed with quiz result
-   └─> Feed._get() returns updated feed
+   └─> Stats refreshed: store.dispatch("refreshAfterQuiz")
+   └─> GET /api/stats/streak and /api/stats/weekly
 ```
 
 ---
@@ -182,6 +193,88 @@ TreeItem (base class)
 | `/api/topics/<id>/items` | POST, PATCH, DELETE | Manage items within a topic |
 | `/api/feed` | GET, POST | Activity feed (quiz/training results) |
 | `/api/session` | GET, POST, PUT, DELETE | Session management (login/logout) |
+| `/api/sessions` | POST | Start a new quiz/training session |
+| `/api/sessions/<id>` | PATCH | Stop and finalize a session |
+| `/api/sessions/current` | GET | Get current active session (if any) |
+| `/api/stats/streak` | GET | Get current streak and today's time |
+| `/api/stats/weekly` | GET | Get weekly statistics |
+
+---
+
+## Session Tracking
+
+Sessions track user activity during quizzes and training:
+
+### Session Lifecycle
+
+```
+1. User starts quiz/training
+   └─> POST /api/sessions { kind: "quiz"|"training", topics: [...] }
+   └─> Returns: { session_id, started_at, status: "active" }
+
+2. Session stored in MongoDB with status="active"
+
+3. User completes/abandons quiz
+   └─> PATCH /api/sessions/<id> {
+         status: "completed"|"abandoned",
+         questions, asked, attempts, correct
+       }
+   └─> Elapsed time calculated server-side
+
+4. Stats updated from completed sessions
+```
+
+### Session Document
+
+```json
+{
+  "_id": "session-id",
+  "user": "email@example.com",
+  "kind": "quiz",
+  "topics": ["topic-id-1", "topic-id-2"],
+  "status": "completed",
+  "started_at": "2026-04-06T14:00:00Z",
+  "stopped_at": "2026-04-06T14:15:00Z",
+  "elapsed": 900,
+  "questions": 10,
+  "asked": 10,
+  "attempts": 12,
+  "correct": 8
+}
+```
+
+### Edge Cases
+
+- **Concurrent sessions**: Starting a new session auto-stops any active session
+- **Browser close**: `beforeunload` handler stops session as "abandoned"
+- **Page refresh**: `checkCurrentSession` resumes tracking active session
+- **Server timeout**: Sessions older than 5 minutes treated as abandoned
+
+---
+
+## Statistics & Gamification
+
+### Streak System
+
+- A **streak day** requires 15+ minutes of quiz time
+- Streak counts consecutive days from today backwards
+- Risk levels indicate how close today's time is to 15-minute goal:
+  - `none`: Already reached 15+ minutes today
+  - `low`: 10-14 minutes today
+  - `medium`: 5-9 minutes today
+  - `high`: 0-4 minutes today
+
+### Weekly Statistics
+
+- Calendar week (Monday-Sunday) aggregation
+- Includes: quizzes count, correct/attempts ratio, total time
+- Accuracy = correct / attempts × 100
+
+### Timezone Handling
+
+- All times stored in MongoDB as UTC
+- Statistics computed using Belgium timezone (Europe/Brussels)
+- Weekly boundaries: Monday 00:00 - Sunday 23:59 Belgium time
 
 ---
 

@@ -67,7 +67,7 @@
   - Fix ObjectId type mismatches in database queries
   - Acceptance: All 32 tests pass
 
-- [ ] Update documentation
+- [x] Update documentation
   - Update `docs/architecture.md` with new endpoints
   - Add usage examples for session API
   - Document timezone assumptions
