@@ -7,7 +7,7 @@ Provides RESTful endpoints for:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from flask_restful import Resource
@@ -166,7 +166,7 @@ class StatsWeekly(Resource):
         monday = now_belgium - timedelta(days=now_belgium.weekday())
         monday_start = monday.replace(hour=0, minute=0, second=0, microsecond=0)
         # Convert to UTC for MongoDB query
-        monday_utc = monday_start.astimezone(ZoneInfo("UTC"))
+        monday_utc = monday_start.astimezone(timezone.utc)
 
         pipeline = [
             {"$match": {
