@@ -269,16 +269,16 @@ Vue.component("AdvalvasFeed", {
     <span v-else>📢 Following</span>
   </h2>
 
-  <v-chip-group v-model="internalMode" mandatory style="margin-top: 8px;">
-    <v-chip value="my" outlined small>
+  <v-btn-toggle v-model="internalMode" mandatory style="margin-top: 8px;">
+    <v-btn flat value="my">
       <v-icon left small>person</v-icon>
       My Activity
-    </v-chip>
-    <v-chip value="following" outlined small :disabled="followingCount === 0">
+    </v-btn>
+    <v-btn flat value="following" :disabled="followingCount === 0">
       <v-icon left small>people</v-icon>
       Following ({{ followingCount }})
-    </v-chip>
-  </v-chip-group>
+    </v-btn>
+  </v-btn-toggle>
 
   <br>
 
