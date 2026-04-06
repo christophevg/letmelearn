@@ -90,7 +90,7 @@ Vue.component("ProtectedPage", {
       <v-spacer/>
 
       <template v-if="title && icon && !show_extended">
-        <h1 align="center" style="white-space: nowrap; border:1px solid red;"><v-icon>{{ icon }}</v-icon>&nbsp;{{ title }}</h1>
+        <h1 align="center" style="white-space: nowrap;"><v-icon>{{ icon }}</v-icon>&nbsp;{{ title }}</h1>
         <v-spacer/>
       </template>
 
