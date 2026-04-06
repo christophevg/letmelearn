@@ -1,0 +1,1005 @@
+openapi: 3.0.3
+info:
+  title: Let Me Learn API
+  description: |
+    REST API for the Let Me Learn application - a quiz and flashcard learning platform.
+
+    ## Authentication
+
+    All endpoints require authentication via Flask-Login session cookie.
+    Use `/api/session` to create a session via OAuth.
+
+    ## Error Handling
+
+    All endpoints follow consistent error responses:
+    - 401 Unauthorized: Missing or invalid session
+    - 403 Forbidden: Valid session but insufficient permissions
+    - 404 Not Found: Resource does not exist
+    - 422 Unprocessable Entity: Validation error
+    - 500 Internal Server Error: Server-side error
+
+  version: 1.2.0
+  contact:
+    name: Christophe VG
+    url: https://christophe.vg
+
+servers:
+  - url: /api
+    description: Relative to server root
+
+tags:
+  - name: sessions
+    description: Quiz and training session tracking
+  - name: stats
+    description: Gamification statistics
+  - name: folders
+    description: Folder tree management
+  - name: topics
+    description: Topic CRUD operations
+  - name: feed
+    description: Activity feed
+  - name: auth
+    description: Authentication session management
+
+paths:
+  # ============================================
+  # Sessions (New - Session Tracking)
+  # ============================================
+
+  /sessions:
+    post:
+      tags:
+        - sessions
+      summary: Create a new quiz or training session
+      description: |
+        Creates a new session record with status "active".
+
+        **Behavior:**
+        - If user has an active session, that session is auto-stopped and marked as "abandoned"
+        - Returns new session ID for client to reference in subsequent update
+        - Server computes elapsed time on completion, not on creation
+
+        **State Management:**
+        - New sessions start with status "active"
+        - Use PATCH to transition to "completed" or "abandoned"
+
+      operationId: createSession
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreateRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCreateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/{session_id}:
+    parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Session ID returned from POST /sessions
+
+    patch:
+      tags:
+        - sessions
+      summary: Update session (stop and record results)
+      description: |
+        Updates a session, typically to stop it and record quiz results.
+
+        **State Transitions:**
+        - Active sessions can be transitioned to "completed" or "abandoned"
+        - Computes elapsed time from server-side start timestamp
+        - Creates feed item for completed sessions
+        - Idempotent - can be called multiple times safely
+
+      operationId: updateSession
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUpdateRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionUpdateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Invalid state transition or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sessions/current:
+    get:
+      tags:
+        - sessions
+      summary: Get current active session
+      description: |
+        Returns the currently active session for the user, if any.
+
+        A session is considered active if it has status "active".
+        Used by client to check if there's an ongoing session on page load.
+
+      operationId: getCurrentSession
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Current session (or null if none active)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Session'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Stats (New - Gamification)
+  # ============================================
+
+  /stats/streak:
+    get:
+      tags:
+        - stats
+      summary: Get current streak information
+      description: |
+        Returns streak data for gamification display.
+
+        **Streak Rules:**
+        - A streak day is a calendar day (Belgium/Europe timezone) with 15+ minutes of quiz time
+        - Streak counts consecutive days from today backwards
+        - Streak breaks if a day is missed
+
+        **Risk Indicator:**
+        - `streak_risk` is true when today's time is less than 15 minutes
+        - Risk level is proportional: 0-5 min = high risk, 5-10 min = medium, 10-15 min = low
+
+      operationId: getStreak
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Streak information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /stats/weekly:
+    get:
+      tags:
+        - stats
+      summary: Get weekly statistics
+      description: |
+        Returns statistics for the current calendar week (Monday-Sunday).
+
+        **Week Definition:**
+        - Calendar week: Monday 00:00 to Sunday 23:59 (Belgium/Europe timezone)
+        - Includes all completed quiz sessions (not training)
+
+      operationId: getWeeklyStats
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Weekly statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Folders (Existing)
+  # ============================================
+
+  /folders:
+    get:
+      tags:
+        - folders
+      summary: Get folder tree structure
+      operationId: getFolders
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Folder tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreeItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /folders/{path}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Folder path (slash-separated)
+    post:
+      tags:
+        - folders
+      summary: Create a new folder at path
+      operationId: createFolder
+      security:
+        - cookie: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: New folder name
+      responses:
+        '200':
+          description: Updated folder tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreeItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Parent folder not found
+    delete:
+      tags:
+        - folders
+      summary: Delete folder at path
+      operationId: deleteFolder
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Updated folder tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreeItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Folder not found
+
+  # ============================================
+  # Topics (Existing)
+  # ============================================
+
+  /topics:
+    get:
+      tags:
+        - topics
+      summary: List all topics for current user
+      operationId: listTopics
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: List of topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - topics
+      summary: Create a new topic
+      operationId: createTopic
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicCreate'
+      responses:
+        '200':
+          description: Created topic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: Duplicate name or other error
+
+  /topics/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Topic ID
+    get:
+      tags:
+        - topics
+      summary: Get a single topic
+      operationId: getTopic
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Topic details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Topic not found
+    patch:
+      tags:
+        - topics
+      summary: Update a topic
+      operationId: updateTopic
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicUpdate'
+      responses:
+        '200':
+          description: Updated topic and folder tree
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topic:
+                    $ref: '#/components/schemas/Topic'
+                  treeitems:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TreeItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Topic or folder not found
+    delete:
+      tags:
+        - topics
+      summary: Delete a topic
+      operationId: deleteTopic
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Deleted topic with updated references
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topic:
+                    type: string
+                    description: Deleted topic ID
+                  treeitems:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TreeItem'
+                  feed:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeedItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Feed (Existing)
+  # ============================================
+
+  /feed:
+    get:
+      tags:
+        - feed
+      summary: Get activity feed
+      description: Returns last 10 feed items for current user
+      operationId: getFeed
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeedItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - feed
+      summary: Add feed item (legacy)
+      description: |
+        Direct feed item creation.
+
+        **Note:** For quiz sessions, prefer using the sessions API which handles
+        both session tracking and feed item creation.
+      operationId: addFeedItem
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedItemCreate'
+      responses:
+        '200':
+          description: Created feed item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Session/Auth (Existing)
+  # ============================================
+
+  /session:
+    get:
+      tags:
+        - auth
+      summary: Get current user session
+      operationId: getSession
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - auth
+      summary: Create session via OAuth
+      description: Validates OAuth token and creates Flask-Login session
+      operationId: createAuthSession
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          description: Invalid or expired token
+    delete:
+      tags:
+        - auth
+      summary: Logout
+      operationId: deleteAuthSession
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: boolean
+    put:
+      tags:
+        - auth
+      summary: Switch identity
+      description: Change current identity for users with multiple accounts
+      operationId: switchIdentity
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identity
+              properties:
+                identity:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Identity switched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+components:
+  # ============================================
+  # Security Schemes
+  # ============================================
+
+  securitySchemes:
+    cookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Flask-Login session cookie
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OAuth access token (Google)
+
+  # ============================================
+  # Common Responses
+  # ============================================
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  # ============================================
+  # Schemas
+  # ============================================
+
+  schemas:
+    # ---- Error ----
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: integer
+          description: HTTP status code
+
+    # ---- Session Tracking (New) ----
+
+    SessionCreateRequest:
+      type: object
+      required:
+        - kind
+        - topics
+      properties:
+        kind:
+          type: string
+          enum:
+            - quiz
+            - training
+          description: Session type
+        topics:
+          type: array
+          items:
+            type: string
+          description: Topic IDs included in this session
+          minItems: 1
+
+    SessionCreateResponse:
+      type: object
+      required:
+        - session_id
+        - started_at
+        - status
+      properties:
+        session_id:
+          type: string
+          description: Unique session identifier
+        started_at:
+          type: string
+          format: date-time
+          description: Server timestamp when session started
+        status:
+          type: string
+          enum:
+            - active
+          description: Session status (always "active" for new sessions)
+
+    SessionUpdateRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - completed
+            - abandoned
+          description: New session status
+        questions:
+          type: integer
+          minimum: 0
+          description: Total questions in session
+        asked:
+          type: integer
+          minimum: 0
+          description: Questions actually asked
+        attempts:
+          type: integer
+          minimum: 0
+          description: Total answer attempts
+        correct:
+          type: integer
+          minimum: 0
+          description: Correctly answered questions
+
+    SessionUpdateResponse:
+      type: object
+      required:
+        - session_id
+        - elapsed
+        - status
+      properties:
+        session_id:
+          type: string
+          description: Session ID
+        elapsed:
+          type: integer
+          minimum: 0
+          description: Elapsed time in seconds (server-computed)
+        status:
+          type: string
+          enum:
+            - completed
+            - abandoned
+          description: Final session status
+
+    Session:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Session ID
+        user:
+          type: string
+          format: email
+          description: User email
+        kind:
+          type: string
+          enum:
+            - quiz
+            - training
+        topics:
+          type: array
+          items:
+            type: string
+        questions:
+          type: integer
+        asked:
+          type: integer
+        attempts:
+          type: integer
+        correct:
+          type: integer
+        elapsed:
+          type: integer
+          description: Seconds spent
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - abandoned
+            - expired
+        started_at:
+          type: string
+          format: date-time
+        stopped_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ---- Stats (New) ----
+
+    StreakStats:
+      type: object
+      required:
+        - streak
+        - today_minutes
+        - streak_risk
+        - risk_level
+      properties:
+        streak:
+          type: integer
+          minimum: 0
+          description: Current streak (consecutive days with 15+ min quiz time)
+        today_minutes:
+          type: integer
+          minimum: 0
+          description: Minutes spent in quiz mode today
+        streak_risk:
+          type: boolean
+          description: True if today's time is less than 15 minutes
+        risk_level:
+          type: string
+          enum:
+            - none
+            - low
+            - medium
+            - high
+          description: Risk level indicator (proportional warning)
+
+    WeeklyStats:
+      type: object
+      required:
+        - quizzes
+        - correct
+        - attempts
+        - accuracy
+        - time_minutes
+      properties:
+        quizzes:
+          type: integer
+          minimum: 0
+          description: Number of completed quizzes this week
+        correct:
+          type: integer
+          minimum: 0
+          description: Correct answers this week
+        attempts:
+          type: integer
+          minimum: 0
+          description: Total attempts this week
+        accuracy:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Accuracy percentage (correct / attempts * 100)
+        time_minutes:
+          type: integer
+          minimum: 0
+          description: Total time spent in quiz mode this week (minutes)
+
+    # ---- Folders & Topics (Existing) ----
+
+    TreeItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeItem'
+
+    Topic:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        question:
+          type: object
+          properties:
+            type:
+              type: string
+            labels:
+              type: object
+              properties:
+                left:
+                  type: string
+                right:
+                  type: string
+        tags:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              left:
+                type: array
+                items:
+                  type: string
+              right:
+                type: array
+                items:
+                  type: string
+
+    TopicCreate:
+      type: object
+      required:
+        - name
+        - question
+      properties:
+        name:
+          type: string
+        question:
+          type: object
+          properties:
+            type:
+              type: string
+            labels:
+              type: object
+        items:
+          type: array
+          items:
+            type: object
+
+    TopicUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        question:
+          type: object
+        tags:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            type: object
+        folder:
+          type: object
+          properties:
+            id:
+              type: string
+
+    # ---- Feed (Existing) ----
+
+    FeedItem:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: Activity type (e.g., "quiz", "training", "new topic")
+        topic:
+          type: string
+          description: Single topic ID (legacy)
+        topics:
+          type: array
+          items:
+            type: string
+          description: Multiple topic IDs
+        questions:
+          type: integer
+        asked:
+          type: integer
+        attempts:
+          type: integer
+        correct:
+          type: integer
+        elapsed:
+          type: integer
+          description: Seconds
+        when:
+          type: string
+          description: ISO timestamp
+        user:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+
+    FeedItemCreate:
+      type: object
+      properties:
+        kind:
+          type: string
+        topic:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        questions:
+          type: integer
+        asked:
+          type: integer
+        attempts:
+          type: integer
+        correct:
+          type: integer
+        elapsed:
+          type: integer
+
+    # ---- User (Existing) ----
+
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        picture:
+          type: string
+          format: uri
+        identities:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+        current:
+          type: string
+          format: email
+          nullable: true
+
+    UserInfo:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        picture:
+          type: string
+          format: uri

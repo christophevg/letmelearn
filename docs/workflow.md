@@ -26,10 +26,11 @@ We use priorities to order work. Higher priority = do first.
 
 When asked to work on tasks:
 1. Propose items with highest priority first
-2. Get confirmation before starting work
-3. Mark items as in-progress when starting
-4. Mark items as completed when done
-5. Request review before moving to next item
+2. **Clarify requirements until 100% clear** - ask questions before starting
+3. Get confirmation before starting work
+4. Mark items as in-progress when starting
+5. Mark items as completed when done
+6. Request review before moving to next item
 
 ### TODO Structure
 

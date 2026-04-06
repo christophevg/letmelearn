@@ -38,3 +38,13 @@ if versions["topics"] < 2:
     upsert=True
   )
   logger.info("topics collection upgraded to version 2")
+
+# Create indexes for sessions collection
+# These are idempotent - safe to run on every startup
+db.sessions.create_index([("user", 1), ("started_at", -1)], name="user_sessions")
+db.sessions.create_index([("user", 1), ("status", 1)], name="user_active_session")
+db.sessions.create_index(
+  [("user", 1), ("kind", 1), ("status", 1), ("started_at", -1)],
+  name="user_quiz_sessions"
+)
+logger.info("sessions collection indexes verified")

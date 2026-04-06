@@ -68,6 +68,8 @@ server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
 
 import letmelearn.auth # noqa
 import letmelearn.api  # noqa
+import letmelearn.sessions # noqa
+import letmelearn.stats # noqa
 
 for script in [ "logging", "auth", "diff", "nl", "ajax" ]:
   server.register_external_script(f"/app/static/{script}.js")

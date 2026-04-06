@@ -1,14 +1,57 @@
 -include ~/.claude/Makefile
 
-run:
-	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
+# Project settings
+PROJECT := $(shell basename $(CURDIR))
+PYTHON_VERSION := 3.11.12
+MAIN_ENV := $(PROJECT)
+TEST_ENV := $(PROJECT)-test-$(PYTHON_VERSION)
 
-.PHONY: requirements.txt
-
+# Database settings
 DB?=letmelearn
 COLLECTION?=topics
 FILE?=${COLLECTION}
 
+# Run the application
+run:
+	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
+
+# Install main environment
+install:
+	@echo "👷‍♂️ Creating main environment $(MAIN_ENV)..."
+	pyenv virtualenv $(PYTHON_VERSION) $(MAIN_ENV) 2>/dev/null || true
+	pyenv local $(MAIN_ENV)
+	pip install -U pip
+	pip install -r requirements.txt
+	@echo "✅ Main environment ready"
+
+# Install test environment (requires main environment)
+install-test: install
+	@echo "👷‍♂️ Creating test environment $(TEST_ENV)..."
+	pyenv virtualenv $(PYTHON_VERSION) $(TEST_ENV) 2>/dev/null || true
+	~/.pyenv/versions/$(TEST_ENV)/bin/pip install -U pip
+	~/.pyenv/versions/$(TEST_ENV)/bin/pip install -r requirements-test.txt
+	~/.pyenv/versions/$(TEST_ENV)/bin/pip install -e .
+	@echo "✅ Test environment ready"
+	pyenv local $(MAIN_ENV)
+
+# Run tests using test environment
+test:
+	@echo "🧪 Running tests in $(TEST_ENV)..."
+	~/.pyenv/versions/$(TEST_ENV)/bin/pytest tests/ $(ARGS)
+	@echo "✅ Tests complete"
+
+# Run tests with coverage
+coverage:
+	@echo "🧪 Running tests with coverage in $(TEST_ENV)..."
+	~/.pyenv/versions/$(TEST_ENV)/bin/pytest --cov=letmelearn --cov-report=term-missing tests/ $(ARGS)
+	@echo "✅ Coverage complete"
+
+# Lint code
+lint:
+	ruff check --select=E9,F63,F7,F82 --target-version=py311 .
+	ruff check --target-version=py311 .
+
+# Database operations
 export-production:
 	@echo "⬅️  exporting from remote '${COLLECTION}'..."
 	@. ./.env.local; mongoexport --quiet --uri=$$URI --collection=${COLLECTION} --username=$$MONGO_USER --password=$$MONGO_PASS --db=${DB} --out=local/${FILE}.json
@@ -39,66 +82,16 @@ sync:
 		COLLECTION=$$col $(MAKE) sync-from-production; \
 	done
 
-# colors
-
+# Colors
 GREEN=\033[0;32m
 RED=\033[0;31m
 BLUE=\033[0;34m
 NC=\033[0m
 
-# test envs
+# Clean up environments
+clean:
+	@echo "🧹 Cleaning up test environment..."
+	-pyenv virtualenv-delete $(TEST_ENV) 2>/dev/null || true
+	@echo "✅ Clean complete"
 
-PYTHON_VERSIONS ?= 3.9.18 3.10.13 3.11.12 3.12.10
-RUFF_PYTHON_VERSION ?= py311
-
-PROJECT=$(shell basename $(CURDIR))
-TEST_ENVS=$(addprefix $(PROJECT)-test-,$(PYTHON_VERSIONS))
-
-install: install-env-test
-	@cat $@ | cut -d"=" -f1 | xargs pip uninstall -y
-	pip install -U pip
-	pip install -r requirements.txt
-
-install-env-test: $(TEST_ENVS)
-$(PROJECT)-test-%:
-	@echo "👷‍♂️ $(BLUE)creating virtual test environment $@$(NC)"
-	pyenv local --unset
-	-pyenv virtualenv $* $@ > /dev/null
-	pyenv local $@
-	pip install -U pip > /dev/null
-	pip install -U ruff tox > /dev/null
-
-uninstall: uninstall-envs
-uninstall-envs: uninstall-env-test
-uninstall-env-test: $(addprefix uninstall-env-test-,$(PYTHON_VERSIONS))
-$(addprefix uninstall-env-test-,$(PYTHON_VERSIONS)): uninstall-env-%:
-	@echo "👷‍♂️ $(RED)deleting virtual environment $(PROJECT)-$*$(NC)"
-	-pyenv virtualenv-delete $(PROJECT)-$*
-
-clean-env:
-	@echo "👷‍♂️ $(RED)deleting all packages from current environment$(NC)"
-	pip freeze | cut -d"@" -f1 | cut -d'=' -f1 | xargs pip uninstall -y > /dev/null
-
-# env switching
-
-env-%:
-	pyenv local $(PROJECT)-$*
-
-env:
-	pyenv local $(PROJECT)
-
-env-test:
-	@echo "👉 $(BLUE)activating virtual test environment $(TEST_ENVS)$(NC)"
-	pyenv local $(TEST_ENVS)
-
-# functional targets
-
-test: env-test lint
-	tox
-
-coverage: test
-	coverage report
-
-lint: env-test
-	ruff check --select=E9,F63,F7,F82 --target-version=$(RUFF_PYTHON_VERSION) .
-	ruff check --target-version=$(RUFF_PYTHON_VERSION) .
+.PHONY: install install-test test coverage lint clean
