@@ -13,69 +13,7 @@
 
 ## Backlog
 
-### Phase 4: Frontend - Components (prio:1)
-
-- [x] Create `StatsCards` Vue component
-  - Four stat cards: Streak, Activity, Accuracy, Time
-  - Responsive layout (4 columns on desktop, 2x2 on mobile)
-  - Risk level styling (colors based on risk_level)
-  - Loading skeleton states
-  - Acceptance: Cards display correctly on all screen sizes
-
-- [x] Integrate StatsCards into Advalvas page
-  - Add above feed section
-  - Load stats on page mount
-  - Refresh stats after quiz completion
-  - Acceptance: Stats display and update correctly
-
-### Phase 5: Frontend - Session Integration (prio:1)
-
-- [x] Integrate session tracking in quiz page
-  - Call startSession when quiz begins
-  - Call stopSession when quiz ends
-  - Handle page unload (beforeunload event)
-  - Handle session resume on page load
-  - Acceptance: Sessions tracked correctly through quiz lifecycle
-
-- [x] Integrate session tracking in training page
-  - Similar to quiz integration
-  - Training sessions marked with kind="training"
-  - Acceptance: Training sessions tracked correctly
-
-- [x] Handle edge cases for session tracking
-  - Browser tab close (beforeunload)
-  - Browser crash (server-side 5-min timeout)
-  - Network failure during stop (retry logic)
-  - Acceptance: Sessions not lost in edge cases
-
-### Phase 6: Testing & Documentation (prio:2)
-
-- [x] Write backend unit tests
-  - Test streak computation with various scenarios
-  - Test session lifecycle (start, stop, concurrent)
-  - Test timezone handling
-  - Acceptance: All tests pass, coverage > 80%
-
-- [x] Write backend integration tests
-  - Test API endpoints with authenticated requests
-  - Test stats aggregation
-  - Acceptance: All integration tests pass
-
-- [x] Fix OAuth mocking for tests
-  - Mock requests.get to prevent oatk network calls
-  - Disable Flask-Login session protection in tests
-  - Fix ObjectId type mismatches in database queries
-  - Acceptance: All 32 tests pass
-
-- [x] Update documentation
-  - Update `docs/architecture.md` with new endpoints
-  - Add usage examples for session API
-  - Document timezone assumptions
-  - Acceptance: Documentation reflects current implementation
-
----
-
-## Fix
+### Fix
 
 - [ ] fill In Question: text size according to width when xs (prio:0)
 
@@ -124,6 +62,21 @@
 ---
 
 ## Done
+
+- [x] Phase 6: Testing & Documentation
+  - [x] Write backend unit tests
+  - [x] Write backend integration tests
+  - [x] Fix OAuth mocking for tests
+  - [x] Update documentation
+
+- [x] Phase 5: Frontend - Session Integration
+  - [x] Integrate session tracking in quiz page
+  - [x] Integrate session tracking in training page
+  - [x] Handle edge cases for session tracking
+
+- [x] Phase 4: Frontend - Components
+  - [x] Create StatsCards Vue component
+  - [x] Integrate StatsCards into Advalvas page
 
 - [x] Phase 3: Frontend - Store Modules
   - [x] Create `sessions` Vuex module (SessionsStore.js)
