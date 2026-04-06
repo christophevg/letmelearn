@@ -53,6 +53,8 @@ for component in [
   "ProtectedPage",
   "FeedStore",
   "TopicsStore",
+  "SessionsStore",
+  "StatsStore",
   "TopicSelector",
   "FolderSelector",
   "TextDiff",
@@ -65,6 +67,11 @@ for component in [
 
 server.config["TEMPLATES_AUTO_RELOAD"] = True
 server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
+
+# Enable test page in development
+TEST_PAGE = os.environ.get("TEST_PAGE", "false").lower() == "true"
+if TEST_PAGE:
+  logger.info("🧪 Test page enabled")
 
 import letmelearn.auth # noqa
 import letmelearn.api  # noqa

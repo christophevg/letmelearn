@@ -13,63 +13,6 @@
 
 ## Backlog
 
-### Phase 1: Backend - Session Tracking (prio:1)
-
-- [ ] Create `sessions` MongoDB collection with indexes
-  - Index on `{ "user": 1, "started_at": -1 }`
-  - Index on `{ "user": 1, "status": 1 }`
-  - Index on `{ "user": 1, "kind": 1, "status": 1, "started_at": -1 }`
-  - Acceptance: All indexes created and verified
-
-- [ ] Implement `POST /api/sessions` endpoint (RESTful create)
-  - Check for active session and auto-stop if exists
-  - Create new session with status "active"
-  - Return 201 with session_id, started_at, and status
-  - Acceptance: Endpoint returns correct response, handles concurrent sessions
-
-- [ ] Implement `PATCH /api/sessions/{id}` endpoint (RESTful update)
-  - Validate session belongs to current user
-  - Accept status in request body ("completed" or "abandoned")
-  - Compute elapsed time from started_at
-  - Update session with quiz metrics
-  - Acceptance: Elapsed time computed correctly, session state transitions correctly
-
-- [ ] Implement `GET /api/sessions/current` endpoint
-  - Return active session for current user or null
-  - Acceptance: Returns session when active, null otherwise
-
-### Phase 2: Backend - Statistics (prio:1)
-
-- [ ] Implement streak computation logic
-  - Use Belgium/Europe timezone for day boundaries
-  - Aggregate quiz time per day
-  - Count consecutive days with 15+ min quiz time
-  - Acceptance: Streak computed correctly across timezone boundaries
-
-- [ ] Implement `GET /api/stats/streak` endpoint
-  - Return streak count, today's minutes, streak_risk, risk_level
-  - Handle risk level calculation (none/low/medium/high)
-  - Acceptance: Returns correct streak data, handles new users gracefully
-
-- [ ] Implement `GET /api/stats/weekly` endpoint
-  - Use calendar week (Mon-Sun) in Belgium timezone
-  - Aggregate quizzes, correct, attempts, accuracy, time_minutes
-  - Acceptance: Returns correct weekly stats, handles start of week correctly
-
-### Phase 3: Frontend - Store Modules (prio:1)
-
-- [ ] Create `sessions` Vuex module
-  - State: currentSessionId, sessionStartTime
-  - Actions: startSession, stopSession, checkCurrentSession
-  - Mutations: sessionStarted, sessionStopped, sessionResumed
-  - Acceptance: Module handles session lifecycle correctly
-
-- [ ] Create `stats` Vuex module
-  - State: streak, weekly, loading, error
-  - Actions: loadStats, refreshAfterQuiz
-  - Getters: streak, weekly, streakRisk, riskLevel
-  - Acceptance: Stats load and update correctly
-
 ### Phase 4: Frontend - Components (prio:1)
 
 - [ ] Create `StatsCards` Vue component
@@ -107,16 +50,22 @@
 
 ### Phase 6: Testing & Documentation (prio:2)
 
-- [ ] Write backend unit tests
+- [x] Write backend unit tests
   - Test streak computation with various scenarios
   - Test session lifecycle (start, stop, concurrent)
   - Test timezone handling
   - Acceptance: All tests pass, coverage > 80%
 
-- [ ] Write backend integration tests
+- [x] Write backend integration tests
   - Test API endpoints with authenticated requests
   - Test stats aggregation
   - Acceptance: All integration tests pass
+
+- [x] Fix OAuth mocking for tests
+  - Mock requests.get to prevent oatk network calls
+  - Disable Flask-Login session protection in tests
+  - Fix ObjectId type mismatches in database queries
+  - Acceptance: All 32 tests pass
 
 - [ ] Update documentation
   - Update `docs/architecture.md` with new endpoints
@@ -175,6 +124,22 @@
 ---
 
 ## Done
+
+- [x] Phase 3: Frontend - Store Modules
+  - [x] Create `sessions` Vuex module (SessionsStore.js)
+  - [x] Create `stats` Vuex module (StatsStore.js)
+  - [x] Register store modules in web.py
+
+- [x] Phase 1: Backend - Session Tracking
+  - [x] Create `sessions` MongoDB collection with indexes
+  - [x] Implement `POST /api/sessions` endpoint
+  - [x] Implement `PATCH /api/sessions/{id}` endpoint
+  - [x] Implement `GET /api/sessions/current` endpoint
+
+- [x] Phase 2: Backend - Statistics
+  - [x] Implement streak computation logic
+  - [x] Implement `GET /api/stats/streak` endpoint
+  - [x] Implement `GET /api/stats/weekly` endpoint
 
 - [x] clear dialogs on dismissal
   - [x] create topic

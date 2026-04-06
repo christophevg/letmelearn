@@ -1,6 +1,6 @@
 import os
 
-from letmelearn.web import server
+from letmelearn.web import server, TEST_PAGE
 
 for page, route in {
   "about"    : "/about",
@@ -10,3 +10,7 @@ for page, route in {
   "training" : "/training"
  }.items():
   server.register_component(f"{page}.js", os.path.dirname(__file__), route=route)
+
+# Conditionally include test page
+if TEST_PAGE:
+  server.register_component("tests.js", os.path.dirname(__file__), route="/tests")
