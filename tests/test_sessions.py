@@ -5,6 +5,7 @@ Tests for session tracking endpoints.
 import pytest
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from bson.objectid import ObjectId
 
 BELGIUM_TZ = ZoneInfo("Europe/Brussels")
 
@@ -31,7 +32,7 @@ class TestSessionsPost:
         )
 
         session_id = response.get_json()['session_id']
-        session = db.sessions.find_one({"_id": session_id})
+        session = db.sessions.find_one({"_id": ObjectId(session_id)})
 
         assert session is not None
         assert session['kind'] == 'quiz'
@@ -45,7 +46,7 @@ class TestSessionsPost:
         )
 
         session_id = response.get_json()['session_id']
-        session = db.sessions.find_one({"_id": session_id})
+        session = db.sessions.find_one({"_id": ObjectId(session_id)})
 
         assert session['kind'] == 'training'
 
@@ -63,7 +64,7 @@ class TestSessionsPost:
         )
 
         # First session should be abandoned
-        session1 = db.sessions.find_one({"_id": session1_id})
+        session1 = db.sessions.find_one({"_id": ObjectId(session1_id)})
         assert session1['status'] == 'abandoned'
         assert session1['stopped_at'] is not None
         assert session1['elapsed'] is not None
@@ -110,7 +111,7 @@ class TestSessionPatch:
             json={"status": "completed", "questions": 10, "asked": 10, "attempts": 12, "correct": 8}
         )
 
-        session = db.sessions.find_one({"_id": session_id})
+        session = db.sessions.find_one({"_id": ObjectId(session_id)})
         assert session['status'] == 'completed'
         assert session['questions'] == 10
         assert session['asked'] == 10
@@ -119,7 +120,8 @@ class TestSessionPatch:
 
     def test_stop_nonexistent_session_returns_404(self, auth_client):
         """Stopping a non-existent session should return 404."""
-        response = auth_client.patch('/api/sessions/nonexistent',
+        # Use a valid ObjectId that doesn't exist in the database
+        response = auth_client.patch('/api/sessions/507f1f77bcf86cd799439011',
             json={"status": "completed"}
         )
 

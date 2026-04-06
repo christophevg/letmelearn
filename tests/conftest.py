@@ -4,6 +4,7 @@ Pytest configuration and fixtures for letmelearn tests.
 
 import pytest
 import os
+import json
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
@@ -13,19 +14,49 @@ os.environ['APP_SECRET_KEY'] = 'test-secret-key'
 os.environ['OAUTH_PROVIDER'] = 'https://accounts.google.com'
 os.environ['OAUTH_CLIENT_ID'] = 'test-client-id'
 
+# Mock requests to prevent oatk from making network calls during module import
+_mock_response = MagicMock()
+_mock_response.content = json.dumps({
+    'authorization_endpoint': 'https://accounts.google.com/o/oauth2/v2/auth',
+    'token_endpoint': 'https://oauth2.googleapis.com/token',
+    'userinfo_endpoint': 'https://openidconnect.googleapis.com/v1/userinfo',
+    'jwks_uri': 'https://www.googleapis.com/oauth2/v3/certs'
+}).encode()
+_requests_patcher = patch('requests.get', return_value=_mock_response)
+_requests_patcher.start()
+
 
 @pytest.fixture(scope='session')
 def app():
     """Create Flask app for testing."""
-    # Mock oatk to avoid network calls during tests
-    with patch('letmelearn.auth.oauth') as mock_oauth:
-        mock_oauth.authenticated = lambda f: f  # Pass-through decorator
-        mock_oauth.decode = lambda token: {'email': 'test@example.com', 'name': 'Test User'}
+    # Import modules first - env vars are already set at module level
+    from letmelearn.web import server
 
-        from letmelearn.web import server
-        server.config['TESTING'] = True
-        server.config['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
-        yield server
+    # Patch oauth methods to avoid network calls
+    from letmelearn import auth
+
+    # Create mock that acts as pass-through decorator
+    def mock_authenticated(func):
+        """Pass-through decorator for @oauth.authenticated"""
+        return func
+
+    # Apply patches
+    patcherAuthenticated = patch.object(auth.oauth, 'authenticated', side_effect=mock_authenticated)
+    patcherDecode = patch.object(auth.oauth, 'decode', return_value={'email': 'test@example.com', 'name': 'Test User'})
+
+    patcherAuthenticated.start()
+    patcherDecode.start()
+
+    server.config['TESTING'] = True
+    server.config['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
+
+    # Disable session protection for testing (makes session auth more reliable)
+    auth.login_manager.session_protection = None
+
+    yield server
+
+    patcherAuthenticated.stop()
+    patcherDecode.stop()
 
 
 @pytest.fixture(scope='session')
