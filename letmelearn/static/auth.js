@@ -2,6 +2,27 @@ store.registerModule("auth", {
   state: {
     session: null
   },
+  getters: {
+    identity: function(state) {
+      return function(email) {
+        const matches = state.session.identities.find(function(identity) {
+          return identity.email == email;
+        });
+        if(matches) {
+          return matches;
+        }
+        return null;
+      }
+    },
+    session : function(state, getters) {
+      if(!state.session) { return null; }
+      var s = JSON.parse(JSON.stringify(state.session));
+      if(state.session.current) {
+        s.current = getters.identity(state.session.current);
+      }
+      return s;
+    }
+  },
   actions: {
     login: function(context) {
       console.debug("store.actions.login");
