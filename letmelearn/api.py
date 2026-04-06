@@ -214,44 +214,235 @@ server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="api-items")
 
 class Feed(Resource):
   @staticmethod
-  def _get():
-    return list(db.feed.aggregate([
+  def _get_sessions_feed(user_emails, limit=10):
+    """
+    Derive feed items from sessions collection.
+    Quiz/training results are derived from completed/abandoned sessions.
+    """
+    # Build aggregation pipeline for sessions
+    pipeline = [
       {
-        "$match" : {
-          "user": current_user.identity.email,
-          "$or" : [
-            { "asked" : { "$exists": False } },
-            { "asked" : { "$gt" : 0        } }
-          ]
+        "$match": {
+          "user": {"$in": user_emails},
+          "status": {"$in": ["completed", "abandoned"]}
         }
       },
       {
-        "$lookup" : {
-          "from" : "users",
-          "localField": "user.0",
-          "foreignField" : "_id",
-          "as" : "user"
+        "$lookup": {
+          "from": "users",
+          "localField": "user",
+          "foreignField": "_id",
+          "as": "user_info"
         }
       },
       {
-        "$project" : {
-          "_id" : False,
-          "user._id" : False
+        "$project": {
+          "_id": 0,  # Exclude ObjectId
+          "kind": {"$concat": ["$kind", " result"]},  # "quiz result" or "training result"
+          "user": {"$arrayElemAt": ["$user_info", 0]},
+          "when": {
+            "$dateToString": {
+              "date": "$stopped_at",
+              "format": "%Y-%m-%dT%H:%M:%S.%LZ"
+            }
+          },
+          "topics": 1,
+          "questions": 1,
+          "asked": 1,
+          "attempts": 1,
+          "correct": 1,
+          "elapsed": 1
         }
       },
       {
-        "$sort" : {
-          "when" : -1
+        "$project": {
+          "kind": 1,
+          "user": {
+            "email": "$user._id",
+            "name": "$user.name",
+            "picture": "$user.picture"
+          },
+          "when": 1,
+          "topics": 1,
+          "questions": 1,
+          "asked": 1,
+          "attempts": 1,
+          "correct": 1,
+          "elapsed": 1
         }
       },
       {
-        "$limit" : 10
+        "$sort": {"when": -1}
+      },
+      {
+        "$limit": limit
       }
-    ]))
+    ]
+
+    results = list(db.sessions.aggregate(pipeline))
+    # Convert ObjectId topics to strings for JSON serialization
+    for item in results:
+      if "topics" in item and item["topics"]:
+        item["topics"] = [str(t) if hasattr(t, '__str__') else t for t in item["topics"]]
+    return results
+
+  @staticmethod
+  def _get_topics_feed(user_emails, limit=10):
+    """
+    Get "new topic" events from feed collection.
+    """
+    pipeline = [
+      {
+        "$match": {
+          "user.0": {"$in": user_emails},
+          "kind": "new topic"
+        }
+      },
+      {
+        "$lookup": {
+          "from": "users",
+          "localField": "user.0",
+          "foreignField": "_id",
+          "as": "user_info"
+        }
+      },
+      {
+        "$project": {
+          "_id": 0,  # Exclude ObjectId
+          "kind": 1,
+          "user": {"$arrayElemAt": ["$user_info", 0]},
+          "when": 1,
+          "topic": 1
+        }
+      },
+      {
+        "$project": {
+          "kind": 1,
+          "user": {
+            "email": "$user._id",
+            "name": "$user.name",
+            "picture": "$user.picture"
+          },
+          "when": 1,
+          "topic": 1
+        }
+      },
+      {
+        "$sort": {"when": -1}
+      },
+      {
+        "$limit": limit
+      }
+    ]
+
+    return list(db.feed.aggregate(pipeline))
+
+  @staticmethod
+  def _get_my_feed():
+    """Get current user's own activity feed."""
+    user_email = current_user.identity.email
+
+    # Get sessions-derived feed (quiz/training results)
+    sessions_feed = Feed._get_sessions_feed([user_email])
+
+    # Get "new topic" events from feed collection
+    topics_feed = Feed._get_topics_feed([user_email])
+
+    # Combine and sort by when
+    combined = sessions_feed + topics_feed
+    combined.sort(key=lambda x: x.get("when", ""), reverse=True)
+
+    # Convert user dict to list format for frontend compatibility
+    # Handle cases where user._id might be a dict (corrupted data)
+    for item in combined:
+      if "user" in item:
+        user = item["user"]
+        if isinstance(user, dict):
+          email = user.get("email")
+          # Handle case where _id is a dict (OAuth claims) instead of string
+          if isinstance(email, dict):
+            email = email.get("email", "unknown")
+          if email and isinstance(email, str):
+            item["user"] = [{
+              "email": email,
+              "name": user.get("name", email),
+              "picture": user.get("picture")
+            }]
+          else:
+            item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
+        elif isinstance(user, list) and len(user) > 0:
+          # Already correct format
+          pass
+        else:
+          item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
+
+    return combined[:10]
+
+  @staticmethod
+  def _get_following_feed():
+    """Get activity feed from followed users."""
+    user_email = current_user.identity.email
+
+    # Get list of followed users
+    follows = list(db.follows.find(
+      {"follower": user_email},
+      {"_id": 0, "following": 1}
+    ))
+    following_emails = [f["following"] for f in follows]
+
+    if not following_emails:
+      return []
+
+    # Get sessions-derived feed from followed users
+    sessions_feed = Feed._get_sessions_feed(following_emails)
+
+    # Get "new topic" events from followed users
+    topics_feed = Feed._get_topics_feed(following_emails)
+
+    # Combine and sort by when
+    combined = sessions_feed + topics_feed
+    combined.sort(key=lambda x: x.get("when", ""), reverse=True)
+
+    # Convert user dict to list format for frontend compatibility
+    # Handle cases where user._id might be a dict (corrupted data)
+    for item in combined:
+      if "user" in item:
+        user = item["user"]
+        if isinstance(user, dict):
+          email = user.get("email")
+          # Handle case where _id is a dict (OAuth claims) instead of string
+          if isinstance(email, dict):
+            email = email.get("email", "unknown")
+          if email and isinstance(email, str):
+            item["user"] = [{
+              "email": email,
+              "name": user.get("name", email),
+              "picture": user.get("picture")
+            }]
+          else:
+            item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
+        elif isinstance(user, list) and len(user) > 0:
+          # Already correct format
+          pass
+        else:
+          item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
+
+    return combined[:10]
 
   @authenticated
   def get(self):
-    return Feed._get()
+    """Get activity feed.
+
+    Query params:
+      mode: "my" (default) - current user's activity
+            "following" - activity from followed users
+    """
+    mode = server.request.args.get("mode", "my")
+
+    if mode == "following":
+      return Feed._get_following_feed()
+    else:
+      return Feed._get_my_feed()
 
   @authenticated
   def post(self):
@@ -272,7 +463,7 @@ class Feed(Resource):
 
     db.feed.insert_one(new_item)
     new_item.pop("_id") # remove byref added _id
-    
+
     new_item["user" ] = [ current_user.identity.as_json() ] # return by value
     return new_item
 

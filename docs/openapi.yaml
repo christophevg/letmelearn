@@ -18,7 +18,7 @@ info:
     - 422 Unprocessable Entity: Validation error
     - 500 Internal Server Error: Server-side error
 
-  version: 1.2.0
+  version: 1.3.0
   contact:
     name: Christophe VG
     url: https://christophe.vg
@@ -40,6 +40,8 @@ tags:
     description: Activity feed
   - name: auth
     description: Authentication session management
+  - name: social
+    description: User following and social features
 
 paths:
   # ============================================
@@ -443,7 +445,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   # ============================================
-  # Feed (Existing)
+  # Feed (Modified for Social)
   # ============================================
 
   /feed:
@@ -451,10 +453,31 @@ paths:
       tags:
         - feed
       summary: Get activity feed
-      description: Returns last 10 feed items for current user
+      description: |
+        Returns activity feed items.
+
+        **Modes:**
+        - `my` (default): Current user's own activity
+        - `following`: Activity from users the current user follows
+
+        **Activity Sources:**
+        - Quiz/training sessions are derived from the `sessions` collection
+        - "New topic" events come from the `feed` collection
+
       operationId: getFeed
       security:
         - cookie: []
+      parameters:
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - my
+              - following
+            default: my
+          description: Feed mode - 'my' for own activity, 'following' for followed users
       responses:
         '200':
           description: Activity feed
@@ -464,17 +487,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeedItem'
+        '400':
+          description: Invalid mode parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
       tags:
         - feed
-      summary: Add feed item (legacy)
+      summary: Add feed item (new topic events only)
       description: |
-        Direct feed item creation.
+        Create a feed item for "new topic" events.
 
-        **Note:** For quiz sessions, prefer using the sessions API which handles
-        both session tracking and feed item creation.
+        **Note:** Quiz and training activity is automatically derived from sessions.
+        This endpoint is only used for special events like creating a new topic.
+
       operationId: addFeedItem
       security:
         - cookie: []
@@ -491,6 +521,158 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeedItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Social - Following (New)
+  # ============================================
+
+  /following:
+    get:
+      tags:
+        - social
+      summary: List users I follow
+      description: |
+        Returns the list of users that the authenticated user follows.
+
+      operationId: listFollowing
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: List of followed users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FollowedUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /following/{email}:
+    parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+          format: email
+        description: Email address of the user to follow/unfollow
+
+    post:
+      tags:
+        - social
+      summary: Follow a user
+      description: |
+        Create a follow relationship with another user.
+
+        **Idempotent:** If already following, returns existing relationship with 200.
+
+      operationId: followUser
+      security:
+        - cookie: []
+      responses:
+        '201':
+          description: Successfully followed user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowRelationship'
+        '200':
+          description: Already following this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowRelationship'
+        '400':
+          description: Cannot follow yourself
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - social
+      summary: Unfollow a user
+      description: |
+        Remove a follow relationship.
+
+        **Idempotent:** If not following, returns unchanged state with 200.
+
+      operationId: unfollowUser
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Successfully unfollowed user (or was not following)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnfollowResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /followers:
+    get:
+      tags:
+        - social
+      summary: List my followers
+      description: |
+        Returns the list of users who follow the authenticated user.
+
+      operationId: listFollowers
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: List of followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FollowerUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Social - Stats (New)
+  # ============================================
+
+  /stats/following/streaks:
+    get:
+      tags:
+        - stats
+        - social
+      summary: Get streaks of followed users
+      description: |
+        Returns streak information for all users that the authenticated user follows.
+
+        Includes current streak and today's practice time for each followed user.
+
+      operationId: getFollowingStreaks
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Streak information for followed users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FollowingStreak'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1003,3 +1185,110 @@ components:
         picture:
           type: string
           format: uri
+
+    # ---- Social (New) ----
+
+    FollowedUser:
+      type: object
+      required:
+        - email
+        - name
+        - followed_at
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the followed user
+        name:
+          type: string
+          description: Display name of the followed user
+        picture:
+          type: string
+          format: uri
+          description: Profile picture URL
+          nullable: true
+        followed_at:
+          type: string
+          format: date-time
+          description: When the follow relationship was created
+
+    FollowerUser:
+      type: object
+      required:
+        - email
+        - name
+        - followed_at
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the follower
+        name:
+          type: string
+          description: Display name of the follower
+        picture:
+          type: string
+          format: uri
+          description: Profile picture URL
+          nullable: true
+        followed_at:
+          type: string
+          format: date-time
+          description: When the follow relationship was created
+
+    FollowRelationship:
+      type: object
+      required:
+        - follower
+        - following
+        - created_at
+      properties:
+        follower:
+          type: string
+          format: email
+          description: Email of the user who follows
+        following:
+          $ref: '#/components/schemas/UserInfo'
+          description: The user being followed
+        created_at:
+          type: string
+          format: date-time
+          description: When the follow relationship was created
+
+    UnfollowResponse:
+      type: object
+      required:
+        - follower
+        - following
+        - removed
+      properties:
+        follower:
+          type: string
+          format: email
+          description: Email of the user who was following
+        following:
+          type: string
+          format: email
+          description: Email of the user who was followed
+        removed:
+          type: boolean
+          description: Whether the relationship was actually removed (false if didn't exist)
+
+    FollowingStreak:
+      type: object
+      required:
+        - user
+        - streak
+        - today_minutes
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+          description: The followed user
+        streak:
+          type: integer
+          minimum: 0
+          description: Current streak (consecutive days with 15+ min quiz time)
+        today_minutes:
+          type: integer
+          minimum: 0
+          description: Minutes spent in quiz mode today

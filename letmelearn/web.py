@@ -55,12 +55,14 @@ for component in [
   "TopicsStore",
   "SessionsStore",
   "StatsStore",
+  "FollowsStore",
   "StatsCards",
   "TopicSelector",
   "FolderSelector",
   "TextDiff",
   "SimpleDialog",
   "MultiTextField",
+  "FollowButton",
   "questions/BasicQuestion",
   "questions/FillInQuestion"
 ]:
@@ -78,6 +80,7 @@ import letmelearn.auth # noqa
 import letmelearn.api  # noqa
 import letmelearn.sessions # noqa
 import letmelearn.stats # noqa
+import letmelearn.follows # noqa
 
 for script in [ "logging", "auth", "diff", "nl", "ajax" ]:
   server.register_external_script(f"/app/static/{script}.js")

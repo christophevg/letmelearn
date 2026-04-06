@@ -894,6 +894,574 @@ See TODO.md for detailed implementation tasks.
    - **Option B:** 24 hours after last qualifying session
    - **Recommendation:** Option A - calendar day boundary
 
+---
+
+# Social Feed API Analysis
+
+This section extends the API with social features for following users and viewing their activity.
+
+## Overview
+
+The social feed system enables users to:
+1. Follow other users to see their learning activity
+2. View a consolidated feed showing activity from followed users
+3. See streak information for followed users
+
+## Problem: Dual-Write in Feed
+
+### Current Architecture
+
+```
+┌─────────────┐     ┌─────────────┐
+│   Quiz/     │────▶│  sessions   │
+│   Training  │     │  collection │
+└─────────────┘     └─────────────┘
+       │
+       │ (duplicate write)
+       ▼
+┌─────────────┐
+│    feed     │
+│  collection │
+└─────────────┘
+```
+
+**Issues:**
+1. Two writes for every session completion
+2. Risk of inconsistency if one write fails
+3. Feed and session data can diverge
+4. No clear source of truth
+
+### Proposed Architecture
+
+```
+┌─────────────┐     ┌─────────────┐
+│   Quiz/     │────▶│  sessions   │──┐
+│   Training  │     │  collection │  │
+└─────────────┘     └─────────────┘  │
+                                     │
+       ┌─────────────┐               │ (aggregation query)
+       │    feed     │◀──────────────┘
+       │  collection │
+       │  (new topic │
+       │    only)    │
+       └─────────────┘
+```
+
+**Benefits:**
+1. Sessions are the single source of truth for quiz/training activity
+2. Feed collection only stores "new topic" events (no duplication)
+3. Aggregation query derives feed on demand
+4. No dual-write consistency issues
+
+## Follow Relationships
+
+### Data Model
+
+A new `follows` collection stores follow relationships:
+
+```javascript
+{
+  "_id": ObjectId("..."),
+  "follower": "alice@example.com",     // who follows
+  "following": "bob@example.com",      // who is followed
+  "created_at": ISODate("2026-04-06T14:00:00Z")
+}
+```
+
+**Indexes:**
+
+```javascript
+// Unique constraint on follower-following pairs
+db.follows.createIndex(
+  { "follower": 1, "following": 1 },
+  { unique: true }
+)
+
+// Efficient lookup of user's following list
+db.follows.createIndex({ "follower": 1, "created_at": -1 })
+
+// Efficient lookup of user's followers list
+db.follows.createIndex({ "following": 1, "created_at": -1 })
+```
+
+### RESTful Design
+
+Following REST conventions for collection/resource patterns:
+
+| Operation | Method | Endpoint | Description |
+|-----------|--------|----------|-------------|
+| Follow user | POST | `/api/following/{email}` | Create follow relationship |
+| Unfollow user | DELETE | `/api/following/{email}` | Remove follow relationship |
+| List following | GET | `/api/following` | Users I follow |
+| List followers | GET | `/api/followers` | Users following me |
+
+**Why this design:**
+
+1. **`/following` as collection**: Represents the set of users the authenticated user follows
+2. **`{email}` as resource**: The user being followed is identified by their email
+3. **POST creates**: Following a user creates a new relationship
+4. **DELETE removes**: Unfollowing removes the relationship
+5. **Idempotent**: Following same user twice returns 200 (already exists)
+6. **Consistent with existing patterns**: Same authentication and error handling
+
+### Request/Response Examples
+
+**Follow a user:**
+
+```http
+POST /api/following/bob@example.com
+Authorization: Cookie session=...
+
+Response 201:
+{
+  "follower": "alice@example.com",
+  "following": {
+    "email": "bob@example.com",
+    "name": "Bob Smith",
+    "picture": "https://..."
+  },
+  "created_at": "2026-04-06T14:00:00Z"
+}
+```
+
+**Unfollow a user:**
+
+```http
+DELETE /api/following/bob@example.com
+Authorization: Cookie session=...
+
+Response 200:
+{
+  "follower": "alice@example.com",
+  "following": "bob@example.com",
+  "removed": true
+}
+```
+
+**List users I follow:**
+
+```http
+GET /api/following
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "email": "bob@example.com",
+    "name": "Bob Smith",
+    "picture": "https://...",
+    "followed_at": "2026-04-01T10:00:00Z"
+  },
+  {
+    "email": "carol@example.com",
+    "name": "Carol Jones",
+    "picture": "https://...",
+    "followed_at": "2026-03-15T08:30:00Z"
+  }
+]
+```
+
+**List my followers:**
+
+```http
+GET /api/followers
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "email": "dave@example.com",
+    "name": "Dave Wilson",
+    "picture": "https://...",
+    "followed_at": "2026-04-02T12:00:00Z"
+  }
+]
+```
+
+## Feed Modifications
+
+### Two Feed Modes
+
+The feed endpoint gains a `mode` query parameter:
+
+| Mode | Description | Source |
+|------|-------------|--------|
+| `my` | My own activity (default) | sessions + feed (new topic) |
+| `following` | Activity from followed users | sessions aggregation + feed (new topic) |
+
+### Feed Derivation from Sessions
+
+**Query for "my" mode:**
+
+```python
+def get_my_feed(user_email, limit=10):
+    # Aggregate sessions
+    sessions_pipeline = [
+        {"$match": {
+            "user": user_email,
+            "status": {"$in": ["completed", "abandoned"]}
+        }},
+        {"$project": {
+            "kind": 1,
+            "topics": 1,
+            "questions": 1,
+            "asked": 1,
+            "attempts": 1,
+            "correct": 1,
+            "elapsed": 1,
+            "when": "$started_at"
+        }},
+        {"$sort": {"when": -1}},
+        {"$limit": limit}
+    ]
+
+    # Also get "new topic" events from feed
+    feed_pipeline = [
+        {"$match": {
+            "user": [user_email],
+            "kind": "new topic"
+        }},
+        {"$sort": {"when": -1}},
+        {"$limit": limit}
+    ]
+
+    # Merge and sort results
+    ...
+```
+
+**Query for "following" mode:**
+
+```python
+def get_following_feed(user_email, limit=10):
+    # Get list of followed users
+    following = db.follows.distinct("following", {"follower": user_email})
+
+    if not following:
+        return []
+
+    # Aggregate sessions from followed users
+    sessions_pipeline = [
+        {"$match": {
+            "user": {"$in": following},
+            "status": {"$in": ["completed", "abandoned"]}
+        }},
+        {"$lookup": {
+            "from": "users",
+            "localField": "user",
+            "foreignField": "_id",
+            "as": "user_info"
+        }},
+        {"$project": {
+            "kind": 1,
+            "user": {"$arrayElemAt": ["$user_info", 0]},
+            "topics": 1,
+            "questions": 1,
+            "asked": 1,
+            "attempts": 1,
+            "correct": 1,
+            "elapsed": 1,
+            "when": "$started_at"
+        }},
+        {"$sort": {"when": -1}},
+        {"$limit": limit}
+    ]
+
+    # Also get "new topic" events from followed users
+    feed_pipeline = [
+        {"$match": {
+            "user.0": {"$in": following},
+            "kind": "new topic"
+        }},
+        {"$sort": {"when": -1}},
+        {"$limit": limit}
+    ]
+
+    # Merge and sort results
+    ...
+```
+
+### Request/Response Examples
+
+**Get my activity feed:**
+
+```http
+GET /api/feed?mode=my
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "kind": "quiz",
+    "user": {
+      "email": "alice@example.com",
+      "name": "Alice Chen",
+      "picture": "https://..."
+    },
+    "topics": ["topic-1", "topic-2"],
+    "questions": 10,
+    "asked": 10,
+    "attempts": 12,
+    "correct": 8,
+    "elapsed": 300,
+    "when": "2026-04-06T14:00:00Z"
+  },
+  {
+    "kind": "new topic",
+    "user": {
+      "email": "alice@example.com",
+      "name": "Alice Chen",
+      "picture": "https://..."
+    },
+    "topic": "topic-3",
+    "when": "2026-04-05T10:30:00Z"
+  }
+]
+```
+
+**Get following activity feed:**
+
+```http
+GET /api/feed?mode=following
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "kind": "quiz",
+    "user": {
+      "email": "bob@example.com",
+      "name": "Bob Smith",
+      "picture": "https://..."
+    },
+    "topics": ["topic-1"],
+    "questions": 15,
+    "asked": 15,
+    "attempts": 18,
+    "correct": 14,
+    "elapsed": 450,
+    "when": "2026-04-06T13:45:00Z"
+  },
+  {
+    "kind": "new topic",
+    "user": {
+      "email": "carol@example.com",
+      "name": "Carol Jones",
+      "picture": "https://..."
+    },
+    "topic": "topic-5",
+    "when": "2026-04-06T12:00:00Z"
+  }
+]
+```
+
+## Social Statistics
+
+### Following Streaks Endpoint
+
+Users can see streak information for users they follow:
+
+```http
+GET /api/stats/following/streaks
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "user": {
+      "email": "bob@example.com",
+      "name": "Bob Smith",
+      "picture": "https://..."
+    },
+    "streak": 7,
+    "today_minutes": 25
+  },
+  {
+    "user": {
+      "email": "carol@example.com",
+      "name": "Carol Jones",
+      "picture": "https://..."
+    },
+    "streak": 0,
+    "today_minutes": 0
+  }
+]
+```
+
+### Implementation
+
+```python
+class StatsFollowingStreaks(Resource):
+    @authenticated
+    def get(self):
+        user_email = current_user.identity.email
+
+        # Get list of followed users
+        following = db.follows.distinct("following", {"follower": user_email})
+
+        if not following:
+            return []
+
+        # Get streak info for each followed user
+        results = []
+        for followed_email in following:
+            # Get user info
+            user = db.users.find_one({"_id": followed_email})
+            if not user:
+                continue
+
+            # Compute streak (same logic as StatsStreak)
+            streak = compute_streak(followed_email)
+            today_minutes = compute_today_minutes(followed_email)
+
+            results.append({
+                "user": {
+                    "email": followed_email,
+                    "name": user.get("name", followed_email),
+                    "picture": user.get("picture")
+                },
+                "streak": streak,
+                "today_minutes": today_minutes
+            })
+
+        # Sort by streak descending
+        results.sort(key=lambda x: (-x["streak"], x["user"]["name"]))
+        return results
+```
+
+## API Endpoints Summary
+
+### New Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/following/{email}` | Follow a user |
+| DELETE | `/api/following/{email}` | Unfollow a user |
+| GET | `/api/following` | List users I follow |
+| GET | `/api/followers` | List my followers |
+| GET | `/api/stats/following/streaks` | Get streaks of followed users |
+
+### Modified Endpoints
+
+| Method | Endpoint | Change |
+|--------|----------|--------|
+| GET | `/api/feed` | Added `mode` query parameter (my/following) |
+
+### Deprecated Endpoints
+
+| Method | Endpoint | Note |
+|--------|----------|------|
+| POST | `/api/feed` | Only for "new topic" events; quiz/training sessions use `/api/sessions` |
+
+## Data Migration
+
+### Phase 1: Add Follows Collection
+
+```javascript
+// Create indexes
+db.follows.createIndex(
+  { "follower": 1, "following": 1 },
+  { unique: true }
+)
+db.follows.createIndex({ "follower": 1, "created_at": -1 })
+db.follows.createIndex({ "following": 1, "created_at": -1 })
+```
+
+### Phase 2: Migrate Feed to Session-Derived
+
+No data migration required. The aggregation query handles derivation.
+
+The `feed` collection will still contain "new topic" events. Quiz/training activity is derived from `sessions`.
+
+## Error Handling
+
+### Follow Errors
+
+| Scenario | Status | Error Message |
+|----------|--------|---------------|
+| Cannot follow self | 400 | "Cannot follow yourself" |
+| User not found | 404 | "User not found" |
+| Already following | 200 | Returns existing relationship |
+| Not following (on unfollow) | 200 | Returns unchanged state |
+
+### Feed Errors
+
+| Scenario | Status | Error Message |
+|----------|--------|---------------|
+| Invalid mode | 400 | "Invalid mode. Use 'my' or 'following'" |
+| Not authenticated | 401 | "Authentication required" |
+
+## Security Considerations
+
+### Privacy Settings
+
+**Question:** Should users be able to make their activity private?
+
+**Recommendation:** Start with public activity (all users can see). Add privacy settings in future iteration if needed.
+
+### Follow Limits
+
+**Question:** Should there be a limit on following?
+
+**Recommendation:** No hard limit initially. Monitor for abuse and add rate limiting if needed.
+
+### Rate Limiting
+
+```python
+# Future: Add rate limiting
+@rate_limit(requests=100, window=3600)  # 100 req/hour
+def follow_user(email):
+    ...
+```
+
+## Cross-Domain Concerns
+
+### UI/UX Coordination
+
+**Impact on frontend:**
+
+1. **User Search/Discovery**
+   - Need UI to search for and discover users
+   - Follow/unfollow buttons on user profiles
+
+2. **Feed Page**
+   - Tab or toggle between "My Activity" and "Following"
+   - User avatars in feed items
+
+3. **Streak Display**
+   - Show followed users' streaks in a list
+   - Highlight users with high streaks
+
+4. **Empty States**
+   - "You're not following anyone yet" message
+   - Suggestions for users to follow
+
+### Backend/Database Coordination
+
+**New collection:**
+- `follows` collection with indexes
+
+**Modified queries:**
+- Feed aggregation now joins sessions + feed
+- Stats endpoints need user lookup for following
+
+## Open Questions for Social Features
+
+1. **User Discovery:** How do users find each other to follow?
+   - **Option A:** Search by email
+   - **Option B:** Shareable profile links
+   - **Recommendation:** Start with email search, add profile links later
+
+2. **Activity Visibility:** Should all activity be visible?
+   - **Option A:** All quiz/training activity visible to followers
+   - **Option B:** Users can hide specific sessions
+   - **Recommendation:** Option A for simplicity, add granularity later
+
+3. **Notification:** Should users get notified when followed?
+   - **Option A:** No notifications
+   - **Option B:** In-app notification
+   - **Option C:** Email notification
+   - **Recommendation:** Option B - in-app notification in feed
+
 ## Appendix: Implementation Examples
 
 ### Python Implementation: Sessions Resource

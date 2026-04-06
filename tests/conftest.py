@@ -128,3 +128,17 @@ def cleanup_folders(db):
     """Clean up folders after each test."""
     yield
     db.folders.delete_many({})
+
+
+@pytest.fixture(autouse=True)
+def cleanup_follows(db):
+    """Clean up follows after each test."""
+    yield
+    db.follows.delete_many({})
+
+
+@pytest.fixture(autouse=True)
+def cleanup_users(db):
+    """Clean up users after each test (except test user)."""
+    yield
+    db.users.delete_many({"_id": {"$ne": "test@example.com"}})

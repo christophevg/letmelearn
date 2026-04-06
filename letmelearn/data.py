@@ -48,3 +48,14 @@ db.sessions.create_index(
   name="user_quiz_sessions"
 )
 logger.info("sessions collection indexes verified")
+
+# Create indexes for follows collection
+# These are idempotent - safe to run on every startup
+db.follows.create_index(
+  [("follower", 1), ("following", 1)],
+  unique=True,
+  name="follow_unique"
+)
+db.follows.create_index([("follower", 1), ("created_at", -1)], name="follower_created")
+db.follows.create_index([("following", 1), ("created_at", -1)], name="following_created")
+logger.info("follows collection indexes verified")

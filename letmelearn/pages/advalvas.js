@@ -264,7 +264,21 @@ Vue.component("AdvalvasFeedNewTopic", {
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
-	<h2 style="border-bottom: 1px solid #ddd">📢 Jouw Feed</h2>
+  <h2 style="border-bottom: 1px solid #ddd">
+    <span v-if="feedMode === 'my'">📢 Jouw Feed</span>
+    <span v-else>📢 Following</span>
+  </h2>
+
+  <v-chip-group v-model="internalMode" mandatory style="margin-top: 8px;">
+    <v-chip value="my" outlined small>
+      <v-icon left small>person</v-icon>
+      My Activity
+    </v-chip>
+    <v-chip value="following" outlined small :disabled="followingCount === 0">
+      <v-icon left small>people</v-icon>
+      Following ({{ followingCount }})
+    </v-chip>
+  </v-chip-group>
 
   <br>
 
@@ -292,6 +306,21 @@ Vue.component("AdvalvasFeed", {
   <br>
 </div>
 `,
+  data: function() {
+    return {
+      internalMode: "my"
+    };
+  },
+  watch: {
+    internalMode: function(newMode) {
+      if (newMode !== this.feedMode) {
+        store.dispatch("setFeedMode", newMode);
+      }
+    },
+    feedMode: function(newMode) {
+      this.internalMode = newMode;
+    }
+  },
   computed: {
     detail_of: function() {
       return function(item) {
@@ -304,6 +333,12 @@ Vue.component("AdvalvasFeed", {
     },
     feed: function() {
       return store.getters.feed;
+    },
+    feedMode: function() {
+      return store.getters.feedMode;
+    },
+    followingCount: function() {
+      return store.getters.followingCount || 0;
     },
     format_date: function() {
       return function(when) {
@@ -346,6 +381,7 @@ var Home = {
   },
   mounted: function() {
     store.dispatch("loadStats");
+    store.dispatch("loadFollowing");
   }
 };
 

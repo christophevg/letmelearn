@@ -97,6 +97,17 @@ letmelearn/
 
 Tests are located in `tests/` directory. The main test file is `test_treeitems.py` covering the `TreeItems` dataclasses.
 
+**Backend Tests**: Use `pytest` in `tests/` directory for Python unit tests.
+
+**Frontend Tests**: Use browser-based test page at `letmelearn/pages/tests.js` for Vuex store module testing. This page is enabled with `TEST_PAGE=true` environment variable. When adding new Vuex store modules, add corresponding tests to this test page.
+
+### Test Workflow
+
+When implementing new functionality:
+1. **Backend (Python)**: Write unit tests in `tests/test_*.py`
+2. **Frontend (Vue/Vuex)**: Add tests to `letmelearn/pages/tests.js` for store modules
+3. Run all tests before committing: `make test` (Python) and verify browser tests work
+
 ## Database Sync Commands
 
 ```bash

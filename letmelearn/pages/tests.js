@@ -126,6 +126,47 @@ var Tests = {
     </v-card>
 
     <v-card style="margin: 16px 0;">
+      <v-card-title><h3>👥 Follows Store Tests</h3></v-card-title>
+      <v-card-text>
+        <v-btn @click="testFollowsStore" color="primary" :loading="followsLoading" :disabled="running">
+          Run Follows Tests
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in followsResults" :key="'follows-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
+      <v-card-title><h3>📡 Feed Store Tests</h3></v-card-title>
+      <v-card-text>
+        <v-btn @click="testFeedStore" color="primary" :loading="feedLoading" :disabled="running">
+          Run Feed Tests
+        </v-btn>
+        <v-btn @click="testFeedModeToggle" color="info" :loading="feedModeLoading" :disabled="running" style="margin-left: 8px;">
+          Test Mode Toggle
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in feedResults" :key="'feed-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+        <div style="margin-top: 16px; padding: 12px; background: #fff3e0; border-radius: 4px;">
+          <strong>Current Feed Mode:</strong> {{ feedMode }}
+          <div style="margin-top: 8px; font-size: 12px; color: #666;">
+            "my" shows your own activity, "following" shows activity from users you follow
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
       <v-card-title><h3>🔍 Current State</h3></v-card-title>
       <v-card-text>
         <v-btn @click="showCurrentState" color="info" :disabled="running">
@@ -155,11 +196,17 @@ var Tests = {
       lifecycleLoading: false,
       cardsLoading: false,
       resumeLoading: false,
+      followsLoading: false,
+      feedLoading: false,
+      feedModeLoading: false,
       statsResults: [],
       sessionsResults: [],
       lifecycleResults: [],
       cardsResults: [],
       resumeResults: [],
+      followsResults: [],
+      feedResults: [],
+      feedModeResults: [],
       stateOutput: "Click button to show state...",
       summary: { total: 0, passed: 0, failed: 0 }
     };
@@ -187,11 +234,21 @@ var Tests = {
     },
     streakRisk: function() {
       return store.getters.streakRisk;
+    },
+    feedMode: function() {
+      return store.getters.feedMode || "my";
     }
   },
   methods: {
     updateSummary: function() {
-      var all = this.statsResults.concat(this.sessionsResults).concat(this.lifecycleResults).concat(this.cardsResults).concat(this.resumeResults);
+      var all = this.statsResults
+        .concat(this.sessionsResults)
+        .concat(this.lifecycleResults)
+        .concat(this.cardsResults)
+        .concat(this.resumeResults)
+        .concat(this.followsResults)
+        .concat(this.feedResults)
+        .concat(this.feedModeResults);
       this.summary = {
         total: all.length,
         passed: all.filter(function(t) { return t.passed; }).length,
@@ -524,7 +581,167 @@ var Tests = {
       this.stateOutput = "Current Store State:\n\n";
       this.stateOutput += "sessions:\n" + JSON.stringify(store.state.sessions, null, 2) + "\n\n";
       this.stateOutput += "stats:\n" + JSON.stringify(store.state.stats, null, 2) + "\n\n";
-      this.stateOutput += "feed:\n" + JSON.stringify(store.state.feed, null, 2);
+      this.stateOutput += "feed:\n" + JSON.stringify(store.state.feed, null, 2) + "\n\n";
+      this.stateOutput += "follows:\n" + JSON.stringify(store.state.follows, null, 2);
+    },
+
+    // FollowsStore Tests
+    testFollowsStore: function() {
+      var self = this;
+      self.followsLoading = true;
+      self.followsResults = [];
+      self.updateSummary();
+
+      // Test 1: Initial state
+      var following = store.getters.following;
+      var followers = store.getters.followers;
+      self.followsResults.push(self.pass("Initial state", "following=" + following.length + ", followers=" + followers.length));
+
+      // Test 2: Check isFollowing getter with non-existent user
+      var isFollowing = store.getters.isFollowing("nonexistent@example.com");
+      if (isFollowing === false) {
+        self.followsResults.push(self.pass("isFollowing returns false for non-followed user"));
+      } else {
+        self.followsResults.push(self.fail("isFollowing should return false", "got=" + isFollowing));
+      }
+
+      // Test 3: Check followingCount and followersCount getters
+      var followingCount = store.getters.followingCount;
+      var followersCount = store.getters.followersCount;
+      if (typeof followingCount === 'number' && typeof followersCount === 'number') {
+        self.followsResults.push(self.pass("Count getters work", "followingCount=" + followingCount + ", followersCount=" + followersCount));
+      } else {
+        self.followsResults.push(self.fail("Count getters invalid"));
+      }
+
+      // Test 4: Test userFollowed mutation (no API call, just state change)
+      var mockUser = { email: "test-mock@example.com", name: "Test Mock", picture: "https://example.com/mock.jpg" };
+      store.commit("userFollowed", mockUser);
+      if (store.getters.isFollowing("test-mock@example.com")) {
+        self.followsResults.push(self.pass("userFollowed mutation works"));
+      } else {
+        self.followsResults.push(self.fail("userFollowed mutation failed"));
+      }
+
+      // Test 5: Verify followingCount increased
+      var newCount = store.getters.followingCount;
+      if (newCount === followingCount + 1) {
+        self.followsResults.push(self.pass("followingCount incremented", "count=" + newCount));
+      } else {
+        self.followsResults.push(self.fail("followingCount not incremented", "expected=" + (followingCount + 1) + ", got=" + newCount));
+      }
+
+      // Test 6: Test userUnfollowed mutation (no API call, just state change)
+      store.commit("userUnfollowed", "test-mock@example.com");
+      if (!store.getters.isFollowing("test-mock@example.com")) {
+        self.followsResults.push(self.pass("userUnfollowed mutation works"));
+      } else {
+        self.followsResults.push(self.fail("userUnfollowed mutation failed"));
+      }
+
+      // Test 7: Verify followingCount decreased
+      var finalCount = store.getters.followingCount;
+      if (finalCount === followingCount) {
+        self.followsResults.push(self.pass("followingCount restored", "count=" + finalCount));
+      } else {
+        self.followsResults.push(self.fail("followingCount not restored", "expected=" + followingCount + ", got=" + finalCount));
+      }
+
+      // Test 8: Load following list (read-only API call)
+      store.dispatch('loadFollowing')
+        .then(function() {
+          self.followsResults.push(self.pass("loadFollowing completed"));
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.followsResults.push(self.fail("loadFollowing failed", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.followsLoading = false;
+        });
+    },
+
+    // FeedStore Tests
+    testFeedStore: function() {
+      var self = this;
+      self.feedLoading = true;
+      self.feedResults = [];
+      self.updateSummary();
+
+      // Test 1: Initial state
+      var feed = store.getters.feed;
+      var mode = store.getters.feedMode;
+      self.feedResults.push(self.pass("Initial state", "feed items=" + feed.length + ", mode=" + mode));
+
+      // Test 2: Check default mode is "my"
+      if (mode === "my") {
+        self.feedResults.push(self.pass("Default mode is 'my'"));
+      } else {
+        self.feedResults.push(self.fail("Default mode should be 'my'", "got=" + mode));
+      }
+
+      // Test 3: Load feed with "my" mode
+      store.dispatch('load_feed')
+        .then(function() {
+          self.feedResults.push(self.pass("load_feed completed"));
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.feedResults.push(self.fail("load_feed failed", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.feedLoading = false;
+        });
+    },
+
+    // Feed Mode Toggle Test
+    testFeedModeToggle: function() {
+      var self = this;
+      self.feedModeLoading = true;
+      self.feedModeResults = [];
+      self.updateSummary();
+
+      // Test 1: Set mode to "following"
+      store.commit("feedMode", "following");
+      var mode = store.getters.feedMode;
+      if (mode === "following") {
+        self.feedModeResults.push(self.pass("Mode set to 'following'"));
+      } else {
+        self.feedModeResults.push(self.fail("Mode should be 'following'", "got=" + mode));
+      }
+
+      // Test 2: Set mode back to "my"
+      store.commit("feedMode", "my");
+      mode = store.getters.feedMode;
+      if (mode === "my") {
+        self.feedModeResults.push(self.pass("Mode set back to 'my'"));
+      } else {
+        self.feedModeResults.push(self.fail("Mode should be 'my'", "got=" + mode));
+      }
+
+      // Test 3: Verify setFeedMode action
+      store.dispatch("setFeedMode", "following")
+        .then(function() {
+          mode = store.getters.feedMode;
+          if (mode === "following") {
+            self.feedModeResults.push(self.pass("setFeedMode action works"));
+          } else {
+            self.feedModeResults.push(self.fail("setFeedMode didn't change mode", "got=" + mode));
+          }
+
+          // Reset to "my"
+          store.dispatch("setFeedMode", "my");
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.feedModeResults.push(self.fail("setFeedMode failed", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.feedModeLoading = false;
+        });
     },
 
     runAllTests: function() {
@@ -535,6 +752,9 @@ var Tests = {
       self.lifecycleResults = [];
       self.cardsResults = [];
       self.resumeResults = [];
+      self.followsResults = [];
+      self.feedResults = [];
+      self.feedModeResults = [];
       self.summary = { total: 0, passed: 0, failed: 0 };
 
       // Run stats tests first
@@ -572,14 +792,41 @@ var Tests = {
               var checkCards = setInterval(function() {
                 if (!self.cardsLoading) {
                   clearInterval(checkCards);
-                  // Run session resume test last
+                  // Run session resume test
                   self.testSessionResume();
 
                   // Wait for resume test to complete
                   var checkResume = setInterval(function() {
                     if (!self.resumeLoading) {
                       clearInterval(checkResume);
-                      self.running = false;
+                      // Run follows tests
+                      self.testFollowsStore();
+
+                      // Wait for follows tests to complete
+                      var checkFollows = setInterval(function() {
+                        if (!self.followsLoading) {
+                          clearInterval(checkFollows);
+                          // Run feed tests
+                          self.testFeedStore();
+
+                          // Wait for feed tests to complete
+                          var checkFeed = setInterval(function() {
+                            if (!self.feedLoading) {
+                              clearInterval(checkFeed);
+                              // Run feed mode tests
+                              self.testFeedModeToggle();
+
+                              // Wait for feed mode tests to complete
+                              var checkFeedMode = setInterval(function() {
+                                if (!self.feedModeLoading) {
+                                  clearInterval(checkFeedMode);
+                                  self.running = false;
+                                }
+                              }, 100);
+                            }
+                          }, 100);
+                        }
+                      }, 100);
                     }
                   }, 100);
                 }

@@ -259,12 +259,8 @@ var Train = {
         elapsed: this.$refs.timer.elapsed
       };
 
-      // Stop session tracking
+      // Stop session tracking (this is now the source of truth for feed)
       this.stopSession("completed");
-
-      if (this.result.asked > 0) {
-        store.dispatch("add_feed_item", this.result);
-      }
 
       // Refresh stats after training
       store.dispatch("refreshAfterQuiz");
