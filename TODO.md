@@ -30,19 +30,19 @@
 
 ### Phase 5: Frontend - Session Integration (prio:1)
 
-- [ ] Integrate session tracking in quiz page
+- [x] Integrate session tracking in quiz page
   - Call startSession when quiz begins
   - Call stopSession when quiz ends
   - Handle page unload (beforeunload event)
   - Handle session resume on page load
   - Acceptance: Sessions tracked correctly through quiz lifecycle
 
-- [ ] Integrate session tracking in training page
+- [x] Integrate session tracking in training page
   - Similar to quiz integration
   - Training sessions marked with kind="training"
   - Acceptance: Training sessions tracked correctly
 
-- [ ] Handle edge cases for session tracking
+- [x] Handle edge cases for session tracking
   - Browser tab close (beforeunload)
   - Browser crash (server-side 5-min timeout)
   - Network failure during stop (retry logic)

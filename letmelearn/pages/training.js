@@ -1,33 +1,33 @@
 var Train = {
   template: `
 <ProtectedPage title="Trainen" icon="fitness_center">
-  
+
   <!-- toolbar -->
-  
+
   <template v-slot:subheader>
-  
+
     <TopicSelector @change="change_topic" multiple tags/>
-  
+
     <v-btn flat icon @click="start" :disabled="!selected || playing" class="small-button">
       <v-icon>play_arrow</v-icon>
     </v-btn>
- 
+
     <v-btn flat icon  @click="toggle_timing" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
       <v-icon>{{ timing_icon }}</v-icon>
     </v-btn>
- 
+
     <v-btn flat icon @click="stop" :disabled="!playing" class="ma-0">
       <v-icon>stop</v-icon>
     </v-btn>
- 
+
     <v-btn flat icon @click="reset" :disabled="!playing" class="ma-0" v-if="!show_in_menu">
       <v-icon>replay</v-icon>
     </v-btn>
- 
+
     <v-btn flat icon @click="swap" :disabled="!selected" class="ma-0" v-if="!show_in_menu">
       <v-icon>{{ direction_icon }}</v-icon>
     </v-btn>
- 
+
     <v-menu bottom left v-if="show_in_menu">
       <template v-slot:activator="{ on }">
         <v-btn
@@ -55,7 +55,7 @@ var Train = {
 
         </v-list-tile>
         <v-list-tile>
-  
+
           <v-btn flat icon @click="swap" :disabled="!selected" class="ma-0">
             <v-icon>{{ direction_icon }}</v-icon>
           </v-btn>
@@ -134,7 +134,7 @@ var Train = {
 
         <v-card-actions>
           <v-spacer></v-spacer>
-            
+
             Er waren {{ result.questions }} vragen.<br>
             Daarvan zijn er {{ result.asked }} gesteld.<br>
             In {{ result.attempts }} pogingen, had je er {{ result.correct }} juist.<br>
@@ -142,9 +142,9 @@ var Train = {
             <template v-if="this.timer_active">
               Je deed dit in {{ result.elapsed }} seconden.<br>
             </template>
-  
+
             <br>
-              
+
           <v-spacer></v-spacer>
           <br><br>
         </v-card-actions>
@@ -162,10 +162,32 @@ var Train = {
     index:   3
   },
   mounted: function() {
-    if(! this.selected ) { return }
-    var expected_hash = store.getters.selected_hash
-    if( window.location.hash.substring(1) != expected_hash ){
+    var self = this;
+
+    // Handle page unload - stop session if active
+    window.addEventListener("beforeunload", function(e) {
+      if (self.playing) {
+        self.stopSession("abandoned");
+      }
+    });
+
+    // Check for existing session (page refresh/reload)
+    if (store.getters.hasActiveSession) {
+      console.debug("Training: resuming existing session");
+    }
+
+    if (!this.selected) { return; }
+    var expected_hash = store.getters.selected_hash;
+    if (window.location.hash.substring(1) != expected_hash) {
       window.location.hash = expected_hash;
+    }
+  },
+  beforeDestroy: function() {
+    // Clean up beforeunload listener
+    window.removeEventListener("beforeunload");
+    // Stop session if still active
+    if (this.playing) {
+      this.stopSession("abandoned");
     }
   },
   computed: {
@@ -201,68 +223,107 @@ var Train = {
     }
   },
   methods: {
-    start : function() {
+    start: function() {
+      var self = this;
       this.result = null;
       this.correct = 0;
       this.attempts = 0;
-      this.asked_questions = []
+      this.asked_questions = [];
+
+      // Start session tracking
+      var topicIds = store.getters.selected_topics.map(function(topic) {
+        return topic._id;
+      });
+      store.dispatch("startSession", { kind: "training", topics: topicIds })
+        .then(function() {
+          console.debug("Training: session started");
+        })
+        .catch(function(err) {
+          console.error("Training: failed to start session", err);
+        });
+
       store.dispatch("create_quiz");
       this.questions = store.getters.quiz.length;
       this.$refs.timer.start();
     },
-    stop : function() {
+    stop: function() {
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
       this.result = {
-        kind     : "training result",
-        topics   : store.getters.selected_topics.map(function(topic) { return topic._id }),
+        kind: "training result",
+        topics: store.getters.selected_topics.map(function(topic) { return topic._id; }),
         questions: this.questions,
-        asked    : this.asked,
-        attempts : this.attempts,
-        correct  : this.correct,
-        elapsed  : this.$refs.timer.elapsed
-      }
-     if(this.result.asked > 0) {
+        asked: this.asked,
+        attempts: this.attempts,
+        correct: this.correct,
+        elapsed: this.$refs.timer.elapsed
+      };
+
+      // Stop session tracking
+      this.stopSession("completed");
+
+      if (this.result.asked > 0) {
         store.dispatch("add_feed_item", this.result);
       }
+
+      // Refresh stats after training
+      store.dispatch("refreshAfterQuiz");
+    },
+    stopSession: function(status) {
+      if (!store.getters.hasActiveSession) {
+        return;
+      }
+      store.dispatch("stopSession", {
+        status: status,
+        questions: this.questions,
+        asked: this.asked,
+        attempts: this.attempts,
+        correct: this.correct
+      })
+        .then(function() {
+          console.debug("Training: session stopped (" + status + ")");
+        })
+        .catch(function(err) {
+          console.error("Training: failed to stop session", err);
+        });
     },
     toggle_timing: function() {
       this.$refs.timer.toggle_timing();
     },
     handle_timer_changed: function(duration) {
-      this.timer_active = duration > 0; 
+      this.timer_active = duration > 0;
     },
     handle_timer_done: function() {
       this.done = true;
       this.stop();
     },
-    reset : function() {
+    reset: function() {
       this.stop();
       this.start();
     },
     change_topic: function(new_topic) {
-      if(this.problem) { this.reset(); }
+      if (this.problem) { this.reset(); }
     },
-    swap : function() {
+    swap: function() {
       this.right2left = !this.right2left;
       this.reset();
     },
     next: function(success) {
-      if(this.asked_questions.indexOf(this.problem) === -1) {
+      if (this.asked_questions.indexOf(this.problem) === -1) {
         this.asked_questions.push(this.problem);
       }
 
       this.attempts += 1;
 
-      if(success) {
+      if (success) {
         store.commit("mark_correct");
         this.correct += 1;
       } else {
-        store.commit("mark_incorrect");        
+        store.commit("mark_incorrect");
       }
 
       // no next question?
-      if( ! this.problem ) {
+      if (!this.problem) {
         this.stop();
       }
     },

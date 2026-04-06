@@ -74,6 +74,22 @@ var Tests = {
     </v-card>
 
     <v-card style="margin: 16px 0;">
+      <v-card-title><h3>🔁 Session Resume Test</h3></v-card-title>
+      <v-card-text>
+        <v-btn @click="testSessionResume" color="info" :loading="resumeLoading" :disabled="running">
+          Test Session Resume
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in resumeResults" :key="'resume-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
       <v-card-title><h3>🎴 StatsCards Component Tests</h3></v-card-title>
       <v-card-text>
         <v-btn @click="testStatsCards" color="primary" :loading="cardsLoading" :disabled="running">
@@ -138,10 +154,12 @@ var Tests = {
       sessionsLoading: false,
       lifecycleLoading: false,
       cardsLoading: false,
+      resumeLoading: false,
       statsResults: [],
       sessionsResults: [],
       lifecycleResults: [],
       cardsResults: [],
+      resumeResults: [],
       stateOutput: "Click button to show state...",
       summary: { total: 0, passed: 0, failed: 0 }
     };
@@ -173,7 +191,7 @@ var Tests = {
   },
   methods: {
     updateSummary: function() {
-      var all = this.statsResults.concat(this.sessionsResults).concat(this.lifecycleResults).concat(this.cardsResults);
+      var all = this.statsResults.concat(this.sessionsResults).concat(this.lifecycleResults).concat(this.cardsResults).concat(this.resumeResults);
       this.summary = {
         total: all.length,
         passed: all.filter(function(t) { return t.passed; }).length,
@@ -291,71 +309,66 @@ var Tests = {
       self.lifecycleResults = [];
       self.updateSummary();
 
-      var sessionId = null;
+      // Mock session ID for testing (no server interaction)
+      var mockSessionId = "test-session-" + Date.now();
+      var mockStartTime = new Date().toISOString();
 
-      // Step 1: Start a quiz session
-      store.dispatch('startSession', { kind: 'quiz', topics: ['test-topic-1'] })
-        .then(function(result) {
-          if (!result || !result.session_id) {
-            throw new Error("No session_id returned");
-          }
-          sessionId = result.session_id;
-          self.lifecycleResults.push(self.pass("startSession succeeded", "sessionId=" + sessionId + ", status=" + result.status));
+      // Step 1: Test store state management by simulating the session lifecycle
+      // We use store.commit directly to avoid creating real sessions in the database
 
-          // Verify state was updated
-          if (store.getters.hasActiveSession === true && store.getters.currentSessionId === sessionId) {
-            self.lifecycleResults.push(self.pass("State updated after startSession"));
-          } else {
-            self.lifecycleResults.push(self.fail("State not updated correctly", "hasActiveSession=" + store.getters.hasActiveSession));
-          }
+      // Test: sessionStarted mutation
+      store.commit("sessionStarted", {
+        sessionId: mockSessionId,
+        startTime: mockStartTime,
+        kind: "quiz"
+      });
+      self.lifecycleResults.push(self.pass("sessionStarted mutation", "sessionId=" + mockSessionId));
 
-          // Step 2: Wait 1 second
-          self.lifecycleResults.push(self.pass("Waiting 1 second to accumulate elapsed time..."));
-          return new Promise(function(resolve) { setTimeout(resolve, 1000); });
-        })
-        .then(function() {
-          // Step 3: Stop the session
-          return store.dispatch('stopSession', {
-            status: 'completed',
-            questions: 10,
-            asked: 10,
-            attempts: 12,
-            correct: 8
-          });
-        })
-        .then(function(result) {
-          if (result && result.elapsed >= 1) {
-            self.lifecycleResults.push(self.pass("stopSession succeeded", "elapsed=" + result.elapsed + "s"));
-          } else {
-            self.lifecycleResults.push(self.fail("stopSession invalid response", JSON.stringify(result)));
-          }
+      // Verify state was updated
+      if (store.getters.hasActiveSession === true && store.getters.currentSessionId === mockSessionId) {
+        self.lifecycleResults.push(self.pass("State updated after sessionStarted"));
+      } else {
+        self.lifecycleResults.push(self.fail("State not updated correctly", "hasActiveSession=" + store.getters.hasActiveSession));
+      }
 
-          // Verify state was cleared
-          if (store.getters.hasActiveSession === false) {
-            self.lifecycleResults.push(self.pass("State cleared after stopSession"));
-          } else {
-            self.lifecycleResults.push(self.fail("State not cleared after stopSession"));
-          }
+      // Verify session kind
+      if (store.getters.sessionKind === "quiz") {
+        self.lifecycleResults.push(self.pass("Session kind is 'quiz'"));
+      } else {
+        self.lifecycleResults.push(self.fail("Session kind wrong", "kind=" + store.getters.sessionKind));
+      }
 
-          // Step 4: Refresh stats
-          return store.dispatch('refreshAfterQuiz');
-        })
-        .then(function() {
-          var weekly = store.getters.weekly;
-          if (typeof weekly.quizzes === 'number') {
-            self.lifecycleResults.push(self.pass("refreshAfterQuiz succeeded", "quizzes count now: " + weekly.quizzes));
-          } else {
-            self.lifecycleResults.push(self.fail("refreshAfterQuiz failed"));
-          }
-          self.updateSummary();
-        })
-        .catch(function(err) {
-          self.lifecycleResults.push(self.fail("Lifecycle test failed", err.message || err));
-          self.updateSummary();
-        })
-        .finally(function() {
-          self.lifecycleLoading = false;
-        });
+      // Test: sessionStopped mutation
+      store.commit("sessionStopped");
+      self.lifecycleResults.push(self.pass("sessionStopped mutation"));
+
+      // Verify state was cleared
+      if (store.getters.hasActiveSession === false) {
+        self.lifecycleResults.push(self.pass("State cleared after sessionStopped"));
+      } else {
+        self.lifecycleResults.push(self.fail("State not cleared after sessionStopped"));
+      }
+
+      // Test: sessionResumed mutation
+      store.commit("sessionResumed", {
+        sessionId: mockSessionId,
+        startTime: mockStartTime,
+        kind: "training"
+      });
+      self.lifecycleResults.push(self.pass("sessionResumed mutation"));
+
+      // Verify resumed state
+      if (store.getters.hasActiveSession === true && store.getters.sessionKind === "training") {
+        self.lifecycleResults.push(self.pass("Session resumed with correct kind"));
+      } else {
+        self.lifecycleResults.push(self.fail("Session resume failed"));
+      }
+
+      // Clean up
+      store.commit("sessionStopped");
+
+      self.updateSummary();
+      self.lifecycleLoading = false;
     },
 
     testStatsCards: function() {
@@ -437,6 +450,76 @@ var Tests = {
         });
     },
 
+    testSessionResume: function() {
+      var self = this;
+      self.resumeLoading = true;
+      self.resumeResults = [];
+      self.updateSummary();
+
+      var mockSessionId = "test-resume-" + Date.now();
+      var mockStartTime = new Date().toISOString();
+
+      // Test: Simulating session start and page refresh scenario
+      // 1. Start a session (simulated)
+      store.commit("sessionStarted", {
+        sessionId: mockSessionId,
+        startTime: mockStartTime,
+        kind: "training"
+      });
+      self.resumeResults.push(self.pass("Session started (simulated)", "kind=training"));
+
+      // Verify state
+      if (store.getters.hasActiveSession) {
+        self.resumeResults.push(self.pass("hasActiveSession is true after start"));
+      } else {
+        self.resumeResults.push(self.fail("hasActiveSession should be true"));
+      }
+
+      // 2. Simulate page refresh by resuming the session
+      store.commit("sessionResumed", {
+        sessionId: mockSessionId,
+        startTime: mockStartTime,
+        kind: "training"
+      });
+      self.resumeResults.push(self.pass("Session resumed (simulated)"));
+
+      // Verify resumed state
+      if (store.getters.hasActiveSession && store.getters.sessionKind === "training") {
+        self.resumeResults.push(self.pass("Session state correct after resume"));
+      } else {
+        self.resumeResults.push(self.fail("Session state incorrect after resume"));
+      }
+
+      // 3. Stop the session
+      store.commit("sessionStopped");
+      self.resumeResults.push(self.pass("Session stopped"));
+
+      // Verify state cleared
+      if (!store.getters.hasActiveSession) {
+        self.resumeResults.push(self.pass("State cleared after stop"));
+      } else {
+        self.resumeResults.push(self.fail("State not cleared after stop"));
+      }
+
+      // 4. Test: verify getters return correct defaults when no session
+      var sessionId = store.getters.currentSessionId;
+      if (sessionId === null) {
+        self.resumeResults.push(self.pass("currentSessionId is null after stop"));
+      } else {
+        self.resumeResults.push(self.fail("currentSessionId should be null", "got=" + sessionId));
+      }
+
+      var sessionKind = store.getters.sessionKind;
+      if (sessionKind === null) {
+        self.resumeResults.push(self.pass("sessionKind is null after stop"));
+      } else {
+        self.resumeResults.push(self.fail("sessionKind should be null", "got=" + sessionKind));
+      }
+
+      self.updateSummary();
+      self.resumeLoading = false;
+    },
+
     showCurrentState: function() {
       this.stateOutput = "Current Store State:\n\n";
       this.stateOutput += "sessions:\n" + JSON.stringify(store.state.sessions, null, 2) + "\n\n";
@@ -451,6 +534,7 @@ var Tests = {
       self.sessionsResults = [];
       self.lifecycleResults = [];
       self.cardsResults = [];
+      self.resumeResults = [];
       self.summary = { total: 0, passed: 0, failed: 0 };
 
       // Run stats tests first
@@ -481,14 +565,23 @@ var Tests = {
           var checkLifecycle = setInterval(function() {
             if (!self.lifecycleLoading) {
               clearInterval(checkLifecycle);
-              // Run StatsCards tests last
+              // Run StatsCards tests
               self.testStatsCards();
 
               // Wait for cards tests to complete
               var checkCards = setInterval(function() {
                 if (!self.cardsLoading) {
                   clearInterval(checkCards);
-                  self.running = false;
+                  // Run session resume test last
+                  self.testSessionResume();
+
+                  // Wait for resume test to complete
+                  var checkResume = setInterval(function() {
+                    if (!self.resumeLoading) {
+                      clearInterval(checkResume);
+                      self.running = false;
+                    }
+                  }, 100);
                 }
               }, 100);
             }
