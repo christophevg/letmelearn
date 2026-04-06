@@ -309,7 +309,9 @@ Vue.component("AdvalvasFeed", {
 var Home = {
   template : `
 <ProtectedPage icon="dashboard" title="Ad Valvas">
-  
+
+  <StatsCards style="margin-bottom: 16px"/>
+
   <v-layout row wrap>
     <v-flex sm12 md6 v-if="feed.length">
       <AdvalvasFeed :feed="feed"/>
@@ -333,6 +335,9 @@ var Home = {
     feed: function() {
       return store.getters.feed;
     }
+  },
+  mounted: function() {
+    store.dispatch("loadStats");
   }
 };
 

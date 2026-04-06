@@ -15,14 +15,14 @@
 
 ### Phase 4: Frontend - Components (prio:1)
 
-- [ ] Create `StatsCards` Vue component
+- [x] Create `StatsCards` Vue component
   - Four stat cards: Streak, Activity, Accuracy, Time
   - Responsive layout (4 columns on desktop, 2x2 on mobile)
   - Risk level styling (colors based on risk_level)
   - Loading skeleton states
   - Acceptance: Cards display correctly on all screen sizes
 
-- [ ] Integrate StatsCards into Advalvas page
+- [x] Integrate StatsCards into Advalvas page
   - Add above feed section
   - Load stats on page mount
   - Refresh stats after quiz completion

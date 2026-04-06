@@ -55,6 +55,7 @@ for component in [
   "TopicsStore",
   "SessionsStore",
   "StatsStore",
+  "StatsCards",
   "TopicSelector",
   "FolderSelector",
   "TextDiff",

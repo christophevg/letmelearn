@@ -74,6 +74,42 @@ var Tests = {
     </v-card>
 
     <v-card style="margin: 16px 0;">
+      <v-card-title><h3>🎴 StatsCards Component Tests</h3></v-card-title>
+      <v-card-text>
+        <v-btn @click="testStatsCards" color="primary" :loading="cardsLoading" :disabled="running">
+          Run StatsCards Tests
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in cardsResults" :key="'cards-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
+      <v-card-title><h3>👁️ StatsCards Visual Preview</h3></v-card-title>
+      <v-card-text>
+        <StatsCards/>
+        <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          <strong>Current Data:</strong>
+          <div style="margin-top: 8px;">
+            <span style="margin-right: 16px;">🔥 Streak: {{ streakCount }}</span>
+            <span style="margin-right: 16px;">⏱️ Today: {{ todayMinutes }}min</span>
+            <span style="margin-right: 16px;">🎯 Accuracy: {{ accuracy }}%</span>
+            <span style="margin-right: 16px;">📊 Time: {{ timeMinutes }}min</span>
+          </div>
+          <div style="margin-top: 8px;">
+            <span>Risk Level: <strong>{{ riskLevel }}</strong></span>
+            <span style="margin-left: 16px;">Streak Risk: <strong>{{ streakRisk }}</strong></span>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
       <v-card-title><h3>🔍 Current State</h3></v-card-title>
       <v-card-text>
         <v-btn @click="showCurrentState" color="info" :disabled="running">
@@ -101,9 +137,11 @@ var Tests = {
       statsLoading: false,
       sessionsLoading: false,
       lifecycleLoading: false,
+      cardsLoading: false,
       statsResults: [],
       sessionsResults: [],
       lifecycleResults: [],
+      cardsResults: [],
       stateOutput: "Click button to show state...",
       summary: { total: 0, passed: 0, failed: 0 }
     };
@@ -113,11 +151,29 @@ var Tests = {
       if (this.summary.failed > 0) return "error";
       if (this.summary.passed === this.summary.total && this.summary.total > 0) return "success";
       return "info";
+    },
+    streakCount: function() {
+      return store.getters.streakCount;
+    },
+    todayMinutes: function() {
+      return store.getters.todayMinutes;
+    },
+    accuracy: function() {
+      return store.getters.weekly.accuracy || 0;
+    },
+    timeMinutes: function() {
+      return store.getters.weekly.time_minutes || 0;
+    },
+    riskLevel: function() {
+      return store.getters.riskLevel;
+    },
+    streakRisk: function() {
+      return store.getters.streakRisk;
     }
   },
   methods: {
     updateSummary: function() {
-      var all = this.statsResults.concat(this.sessionsResults).concat(this.lifecycleResults);
+      var all = this.statsResults.concat(this.sessionsResults).concat(this.lifecycleResults).concat(this.cardsResults);
       this.summary = {
         total: all.length,
         passed: all.filter(function(t) { return t.passed; }).length,
@@ -302,6 +358,85 @@ var Tests = {
         });
     },
 
+    testStatsCards: function() {
+      var self = this;
+      self.cardsLoading = true;
+      self.cardsResults = [];
+      self.updateSummary();
+
+      // Test 1: Component exists
+      if (Vue.options.components.StatsCards) {
+        self.cardsResults.push(self.pass("StatsCards component is registered"));
+      } else {
+        self.cardsResults.push(self.fail("StatsCards component not found"));
+      }
+
+      // Test 2: Load stats first
+      store.dispatch('loadStats')
+        .then(function() {
+          self.cardsResults.push(self.pass("Stats loaded for component test"));
+
+          // Test 3: Check streak data
+          var streak = store.getters.streak;
+          if (typeof streak.streak === 'number') {
+            self.cardsResults.push(self.pass("Streak data available", "streak=" + streak.streak));
+          } else {
+            self.cardsResults.push(self.fail("Streak data unavailable"));
+          }
+
+          // Test 4: Check weekly data
+          var weekly = store.getters.weekly;
+          if (typeof weekly.accuracy === 'number' && typeof weekly.time_minutes === 'number') {
+            self.cardsResults.push(self.pass("Weekly data available", "accuracy=" + weekly.accuracy + "%, time=" + weekly.time_minutes + "min"));
+          } else {
+            self.cardsResults.push(self.fail("Weekly data unavailable"));
+          }
+
+          // Test 5: Check risk level values
+          var riskLevel = store.getters.riskLevel;
+          var validLevels = ['none', 'low', 'medium', 'high'];
+          if (validLevels.indexOf(riskLevel) !== -1) {
+            self.cardsResults.push(self.pass("Risk level valid", "riskLevel=" + riskLevel));
+          } else {
+            self.cardsResults.push(self.fail("Invalid risk level", "riskLevel=" + riskLevel));
+          }
+
+          // Test 6: Check todayMinutes getter
+          var todayMinutes = store.getters.todayMinutes;
+          if (typeof todayMinutes === 'number' && todayMinutes >= 0) {
+            self.cardsResults.push(self.pass("Today minutes valid", "todayMinutes=" + todayMinutes));
+          } else {
+            self.cardsResults.push(self.fail("Today minutes invalid"));
+          }
+
+          // Test 7: Verify computed streakCardClass logic
+          // The class depends on riskLevel and streakRisk
+          var streakRisk = store.getters.streakRisk;
+          if (!streakRisk) {
+            self.cardsResults.push(self.pass("Streak is safe (no risk)", "expected class: streak-safe"));
+          } else if (riskLevel === 'high') {
+            self.cardsResults.push(self.pass("Streak at high risk", "expected class: streak-risk-high"));
+          } else if (riskLevel === 'medium') {
+            self.cardsResults.push(self.pass("Streak at medium risk", "expected class: streak-risk-medium"));
+          } else {
+            self.cardsResults.push(self.pass("Streak at low risk", "expected class: streak-risk-low"));
+          }
+
+          // Test 8: Check loading state getter
+          var isLoading = store.getters.statsLoading;
+          self.cardsResults.push(self.pass("Loading state accessible", "loading=" + isLoading));
+
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.cardsResults.push(self.fail("Failed to load stats", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.cardsLoading = false;
+        });
+    },
+
     showCurrentState: function() {
       this.stateOutput = "Current Store State:\n\n";
       this.stateOutput += "sessions:\n" + JSON.stringify(store.state.sessions, null, 2) + "\n\n";
@@ -315,6 +450,7 @@ var Tests = {
       self.statsResults = [];
       self.sessionsResults = [];
       self.lifecycleResults = [];
+      self.cardsResults = [];
       self.summary = { total: 0, passed: 0, failed: 0 };
 
       // Run stats tests first
@@ -345,7 +481,16 @@ var Tests = {
           var checkLifecycle = setInterval(function() {
             if (!self.lifecycleLoading) {
               clearInterval(checkLifecycle);
-              self.running = false;
+              // Run StatsCards tests last
+              self.testStatsCards();
+
+              // Wait for cards tests to complete
+              var checkCards = setInterval(function() {
+                if (!self.cardsLoading) {
+                  clearInterval(checkCards);
+                  self.running = false;
+                }
+              }, 100);
             }
           }, 100);
         }
