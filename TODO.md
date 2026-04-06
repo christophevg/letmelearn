@@ -9,6 +9,10 @@
 
 ## improve
 
+- [x] make import more robust
+  - [ ] extract common parsing logic
+- [ ] create AbstractQuestion base class
+
 - [ ] add testing ;-)
 - [ ] generic error catch-all
   - [x] all API calls
@@ -17,8 +21,6 @@
 - [ ] on db connection failure
 
 - [ ] use ProtectedPage baseweb plugin
-
-- [ ] create AbstractQuestion base class
 
 - [ ] add proper internationalisation (https://kazupon.github.io/vue-i18n)
 
