@@ -11,7 +11,7 @@ Vue.component("TopicSelector", {
       <span>{{ current.length }}</span>
     </template>
     <v-chip @click="show_tree">
-      <span v-if="current.length==1">{{ current[0] }}</span>
+      <div style="max-width:100px; white-space: nowrap; overflow:hidden; text-overflow: ellipsis;" v-if="current.length==1">{{ current[0] }}</div>
       <v-avatar><v-icon right>folder</v-icon></v-avatar>
     </v-chip>
   </v-badge>
