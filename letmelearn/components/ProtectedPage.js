@@ -57,6 +57,7 @@ store.registerModule("status", {
 });
 
 Vue.component("ProtectedPage", {
+  props: [ "title", "icon" ],
   template: `
 <Page>
   <div v-if="session" style="margin-top:64px">
@@ -80,10 +81,18 @@ Vue.component("ProtectedPage", {
         <v-avatar @click="show_identities=true">
           <img :src="session.picture" :alt="session.name" referrerpolicy="no-referrer">
         </v-avatar>
+        <v-avatar v-if="session.current" size="30px" style="position:relative;top:-8px;left:-20px;">
+          <img :src="session.current.picture" :alt="session.current.name" referrerpolicy="no-referrer">
+        </v-avatar>
         Hi {{ session.name }}! 👋
       </v-toolbar-title>
 
       <v-spacer/>
+
+      <template v-if="title && icon && !show_extended">
+        <h1 align="center" style="white-space: nowrap; border:1px solid red;"><v-icon>{{ icon }}</v-icon>&nbsp;{{ title }}</h1>
+        <v-spacer/>
+      </template>
 
       <slot name="subheader" v-if="!show_extended"/>
 
@@ -100,9 +109,12 @@ Vue.component("ProtectedPage", {
 
       <v-spacer/>
   
-      <slot name="subheader"/>
-
+      <h1 align="center" style="white-space: nowrap;"><v-icon>{{ icon }}</v-icon>&nbsp;{{ title }}</h1>
       <v-spacer/>
+  
+      <template v-if="$slots.subheader">
+        <slot name="subheader"/>
+      </template>
   
     </v-toolbar>
 
@@ -163,7 +175,7 @@ Vue.component("ProtectedPage", {
       return this.$vuetify.breakpoint.name == "xs" || this.$vuetify.breakpoint.name == "sm";
     },
     session : function() {
-      return store.state.auth.session;
+      return store.getters.session;
     },
     identities: function() {
       const identities = [...this.session["identities"]];
