@@ -1,4 +1,4 @@
-all: run
+-include ~/.claude/Makefile
 
 run:
 	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
@@ -69,7 +69,7 @@ $(PROJECT)-test-%:
 	pip install -U ruff tox > /dev/null
 
 uninstall: uninstall-envs
-uninstall-envs: uninstall-env-test 
+uninstall-envs: uninstall-env-test
 uninstall-env-test: $(addprefix uninstall-env-test-,$(PYTHON_VERSIONS))
 $(addprefix uninstall-env-test-,$(PYTHON_VERSIONS)): uninstall-env-%:
 	@echo "👷‍♂️ $(RED)deleting virtual environment $(PROJECT)-$*$(NC)"
@@ -90,7 +90,7 @@ env:
 env-test:
 	@echo "👉 $(BLUE)activating virtual test environment $(TEST_ENVS)$(NC)"
 	pyenv local $(TEST_ENVS)
-	
+
 # functional targets
 
 test: env-test lint
