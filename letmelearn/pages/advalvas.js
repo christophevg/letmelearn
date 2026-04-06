@@ -32,6 +32,14 @@ Vue.component("AdvalvasUpdates", {
     return {
       news: [
         {
+          title: "Streaks!",
+          date: "8 april 2026",
+          pars: [
+            `Oefen elke dag gedurende 15 minuten en zie je LetMeLearn Streaks opbouwen!`
+          ],
+          image: "streaks.png"
+        },
+        {
           title: "Folders voor Topics",
           date: "1 mei 2025",
           pars: [
@@ -82,7 +90,7 @@ Vue.component("AdvalvasUpdates", {
              van mogelijkheden.`,
             `Je kan vanaf nu ook je bestaande onderwerpen aanpassen. Zo kan je
              de naam aanpassen en ook je eigen titels voor eigenschappen van de
-             vragen aanpassen. Dus je kan bv. kiezen voor de omschrijving "FR" 
+             vragen aanpassen. Dus je kan bv. kiezen voor de omschrijving "FR"
              of "NL" ipv "Key" en "Value".`
           ],
           image: "new-question-type.png",
@@ -144,9 +152,9 @@ Vue.component("AdvalvasFeedQuizResult", {
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
-      {{ item.questions }} vragen | 
-      {{ item.asked }} gevraagd | 
-      {{ item.attempts }} pogingen |  
+      {{ item.questions }} vragen |
+      {{ item.asked }} gevraagd |
+      {{ item.attempts }} pogingen |
       {{ item.correct }} correct
       <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
     </v-list-tile-sub-title>
@@ -173,7 +181,7 @@ Vue.component("AdvalvasFeedQuizResult", {
         return "🥉";
       }
     }
-  }  
+  }
 });
 
 Vue.component("AdvalvasFeedTraining", {
@@ -191,9 +199,9 @@ Vue.component("AdvalvasFeedTraining", {
     </v-list-tile-sub-title>
 
     <v-list-tile-sub-title>
-      {{ item.questions }} vragen | 
-      {{ item.asked }} gevraagd | 
-      {{ item.attempts }} pogingen |  
+      {{ item.questions }} vragen |
+      {{ item.asked }} gevraagd |
+      {{ item.attempts }} pogingen |
       {{ item.correct }} correct
       <span v-if="item.elapsed"> | in {{ item.elapsed }}s</span>
     </v-list-tile-sub-title>
@@ -220,7 +228,7 @@ Vue.component("AdvalvasFeedTraining", {
         return "👏";
       }
     }
-  }  
+  }
 })
 
 Vue.component("AdvalvasFeedNewTopic", {
@@ -231,7 +239,7 @@ Vue.component("AdvalvasFeedNewTopic", {
    <v-list-tile-sub-title class="text--primary">
       <router-link :to="'/topics#'+ topic._id">{{ topic.name }}</router-link>
       &nbsp;<router-link :to="'/quiz#' + topic._id" style="text-decoration:none">▶️</router-link>
-  
+
    </v-list-tile-sub-title>
    <v-list-tile-sub-title>
       Stijl: {{ topic.question.type }} |
@@ -250,14 +258,14 @@ Vue.component("AdvalvasFeedNewTopic", {
       var topic = store.getters.topic(this.item.topic);
       if(topic) { return topic; }
     }
-  }        
+  }
 });
 
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
 	<h2 style="border-bottom: 1px solid #ddd">📢 Jouw Feed</h2>
-  
+
   <br>
 
   <v-list two-line>
