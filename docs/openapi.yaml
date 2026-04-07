@@ -528,6 +528,39 @@ paths:
   # Social - Following (New)
   # ============================================
 
+  /users:
+    get:
+      tags:
+        - social
+      summary: Search for users
+      description: |
+        Search for users by email prefix.
+
+        **Use Case:** Find users to follow by typing their email address.
+
+      operationId: searchUsers
+      security:
+        - cookie: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Email prefix to search for (minimum 2 characters)
+      responses:
+        '200':
+          description: List of matching users (max 10)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /following:
     get:
       tags:

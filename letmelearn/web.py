@@ -63,6 +63,8 @@ for component in [
   "SimpleDialog",
   "MultiTextField",
   "FollowButton",
+  "UserSearch",
+  "FollowingStreaks",
   "questions/BasicQuestion",
   "questions/FillInQuestion"
 ]:

@@ -61,15 +61,15 @@
 
 #### Remaining Tasks
 
-- [ ] Create UserSearch component (prio:1)
+- [x] Create UserSearch component (prio:1)
   - Search for users by email
   - Display follow/unfollow button
-- [ ] Create FollowingStreaks component (prio:1)
+- [x] Create FollowingStreaks component (prio:1)
   - Display followed users' streaks
   - Sort by streak descending
   - Show today's practice time
-- [ ] Update `docs/openapi.yaml` with social endpoints (prio:1)
-- [ ] Update `analysis/api.md` with social feed analysis (prio:1)
+- [x] Update `docs/openapi.yaml` with social endpoints (prio:1)
+- [x] Update `analysis/api.md` with social feed analysis (prio:1)
 
 ---
 

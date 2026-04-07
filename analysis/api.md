@@ -1078,6 +1078,45 @@ Response 200:
 ]
 ```
 
+## User Search
+
+### Search Endpoint
+
+**GET /api/users?email={prefix}**
+
+Search for users by email prefix. Used in the UserSearch component to find users to follow.
+
+| Query Param | Type | Required | Description |
+|-------------|------|----------|-------------|
+| email | string | Yes | Email prefix to search for (min 2 chars) |
+
+**Request:**
+
+```http
+GET /api/users?email=alice
+Authorization: Cookie session=...
+
+Response 200:
+[
+  {
+    "email": "alice@example.com",
+    "name": "Alice Smith",
+    "picture": "https://..."
+  },
+  {
+    "email": "alice.jones@company.com",
+    "name": "Alice Jones",
+    "picture": "https://..."
+  }
+]
+```
+
+**Notes:**
+- Minimum 2 characters required to perform search
+- Returns maximum 10 results
+- Current user is excluded from results
+- Case-insensitive prefix matching
+
 ## Feed Modifications
 
 ### Two Feed Modes
@@ -1334,6 +1373,7 @@ class StatsFollowingStreaks(Resource):
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/api/users?email={prefix}` | Search for users by email prefix |
 | POST | `/api/following/{email}` | Follow a user |
 | DELETE | `/api/following/{email}` | Unfollow a user |
 | GET | `/api/following` | List users I follow |

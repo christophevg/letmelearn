@@ -275,7 +275,61 @@ class Followers(Resource):
         return result
 
 
+class UserSearch(Resource):
+    """Search for users by email."""
+
+    @authenticated
+    def get(self):
+        """
+        Search for users by email prefix.
+
+        Query params:
+            email: Email prefix to search for (required, min 2 chars)
+
+        Returns:
+            [
+                {
+                    "email": "user@example.com",
+                    "name": "User Name",
+                    "picture": "https://..."
+                },
+                ...
+            ]
+
+        Status codes:
+            200: Search results
+            400: Missing or invalid email parameter
+        """
+        email_prefix = server.request.args.get("email", "")
+
+        if len(email_prefix) < 2:
+            return []
+
+        user_email = current_user.identity.email
+
+        # Search for users by email prefix (case-insensitive)
+        users = list(db.users.find(
+            {"_id": {"$regex": f"^{email_prefix}", "$options": "i"}},
+            {"_id": 1, "name": 1, "picture": 1}
+        ).limit(10))
+
+        # Format response and exclude current user
+        result = []
+        for user in users:
+            email = user["_id"]
+            if email == user_email:
+                continue  # Don't include current user in results
+            result.append({
+                "email": email,
+                "name": user.get("name", email),
+                "picture": user.get("picture")
+            })
+
+        return result
+
+
 # Register endpoints
 server.api.add_resource(Following, "/api/following", endpoint="api-following")
 server.api.add_resource(FollowingUser, "/api/following/<path:email>", endpoint="api-following-user")
 server.api.add_resource(Followers, "/api/followers", endpoint="api-followers")
+server.api.add_resource(UserSearch, "/api/users", endpoint="api-users")

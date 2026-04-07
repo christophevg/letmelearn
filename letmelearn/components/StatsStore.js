@@ -21,6 +21,7 @@ store.registerModule("stats", {
       accuracy: 0,
       time_minutes: 0
     },
+    _followingStreaks: [],
     _loading: false,
     _error: null
   },
@@ -48,6 +49,9 @@ store.registerModule("stats", {
     },
     streakCount: function(state) {
       return state._streak.streak;
+    },
+    followingStreaks: function(state) {
+      return state._followingStreaks;
     }
   },
   actions: {
@@ -119,6 +123,26 @@ store.registerModule("stats", {
     refreshAfterQuiz: function(context) {
       console.debug("store.actions.refreshAfterQuiz");
       return context.dispatch("loadStats");
+    },
+
+    /**
+     * Load streak data for followed users.
+     *
+     * @param {Object} context - Vuex context
+     * @returns {Promise} Resolves with following streaks data
+     */
+    loadFollowingStreaks: function(context) {
+      console.debug("store.actions.loadFollowingStreaks");
+      return new Promise(function(resolve, reject) {
+        api("GET", "stats/following/streaks", function(response) {
+          console.debug("store.actions.loadFollowingStreaks success", response);
+          context.commit("followingStreaksLoaded", response);
+          resolve(response);
+        }, {}, function(error) {
+          console.error("store.actions.loadFollowingStreaks error", error);
+          reject(error);
+        });
+      });
     }
   },
   mutations: {
@@ -146,6 +170,10 @@ store.registerModule("stats", {
     },
     statsError: function(state, error) {
       state._error = error;
+    },
+    followingStreaksLoaded: function(state, payload) {
+      state._followingStreaks = payload || [];
+      console.debug("store.mutations.followingStreaksLoaded", state._followingStreaks);
     }
   }
 });

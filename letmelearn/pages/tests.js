@@ -106,6 +106,56 @@ var Tests = {
     </v-card>
 
     <v-card style="margin: 16px 0;">
+      <v-card-title><h3>🔍 UserSearch Tests</h3></v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="userSearchQuery"
+          label="Search query (min 2 chars)"
+          @input="debouncedUserSearch"
+          hint="Type at least 2 characters to search"
+        />
+        <v-btn @click="testUserSearch" color="primary" :loading="userSearchLoading" :disabled="running || userSearchQuery.length < 2">
+          Run User Search
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in userSearchResults" :key="'usersearch-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+        <div v-if="userSearchResults.length > 0" style="margin-top: 16px;">
+          <v-chip v-for="user in userSearchResults" :key="'result-'+user.email" style="margin: 4px;">
+            <v-avatar left><img :src="user.picture || '/app/static/images/default-avatar.png'"></v-avatar>
+            {{ user.name || user.email }}
+          </v-chip>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
+      <v-card-title><h3>🔥 FollowingStreaks Tests</h3></v-card-title>
+      <v-card-text>
+        <v-btn @click="testFollowingStreaks" color="primary" :loading="followingStreaksLoading" :disabled="running">
+          Run FollowingStreaks Tests
+        </v-btn>
+        <div style="margin-top: 16px;">
+          <div v-for="(test, i) in followingStreaksResults" :key="'streaks-'+i" style="margin: 8px 0; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+            <v-icon :color="test.passed ? 'green' : 'red'">{{ test.passed ? 'check_circle' : 'cancel' }}</v-icon>
+            <strong>{{ test.name }}</strong>
+            <div v-if="test.message" style="margin-left: 32px; font-size: 12px; color: #666;">{{ test.message }}</div>
+          </div>
+        </div>
+        <div v-if="followingStreaksData.length > 0" style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          <strong>Following Streaks:</strong>
+          <div v-for="user in followingStreaksData" :key="'streak-user-'+user.email" style="margin-top: 8px;">
+            {{ user.name || user.email }}: 🔥 {{ user.streak }} streak, {{ user.today_minutes }}min today
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <v-card style="margin: 16px 0;">
       <v-card-title><h3>👁️ StatsCards Visual Preview</h3></v-card-title>
       <v-card-text>
         <StatsCards/>
@@ -199,6 +249,8 @@ var Tests = {
       followsLoading: false,
       feedLoading: false,
       feedModeLoading: false,
+      userSearchLoading: false,
+      followingStreaksLoading: false,
       statsResults: [],
       sessionsResults: [],
       lifecycleResults: [],
@@ -207,6 +259,11 @@ var Tests = {
       followsResults: [],
       feedResults: [],
       feedModeResults: [],
+      userSearchResults: [],
+      followingStreaksResults: [],
+      userSearchQuery: "",
+      userSearchDebounceTimer: null,
+      followingStreaksData: [],
       stateOutput: "Click button to show state...",
       summary: { total: 0, passed: 0, failed: 0 }
     };
@@ -248,7 +305,9 @@ var Tests = {
         .concat(this.resumeResults)
         .concat(this.followsResults)
         .concat(this.feedResults)
-        .concat(this.feedModeResults);
+        .concat(this.feedModeResults)
+        .concat(this.userSearchResults)
+        .concat(this.followingStreaksResults);
       this.summary = {
         total: all.length,
         passed: all.filter(function(t) { return t.passed; }).length,
@@ -744,6 +803,148 @@ var Tests = {
         });
     },
 
+    // UserSearch Tests
+    debouncedUserSearch: function() {
+      var self = this;
+      if (self.userSearchDebounceTimer) {
+        clearTimeout(self.userSearchDebounceTimer);
+      }
+      self.userSearchDebounceTimer = setTimeout(function() {
+        if (self.userSearchQuery.length >= 2) {
+          self.testUserSearch();
+        }
+      }, 300);
+    },
+
+    testUserSearch: function() {
+      var self = this;
+      self.userSearchLoading = true;
+      self.userSearchResults = [];
+      self.updateSummary();
+
+      // Test 1: Check searchUsers action exists
+      if (typeof store.dispatch === 'function') {
+        self.userSearchResults.push(self.pass("Store dispatch available"));
+      } else {
+        self.userSearchResults.push(self.fail("Store dispatch not available"));
+      }
+
+      // Test 2: Call searchUsers with query
+      var query = self.userSearchQuery || "te"; // Default to "te" if empty
+      store.dispatch('searchUsers', query)
+        .then(function(users) {
+          // Check response is array
+          if (Array.isArray(users)) {
+            self.userSearchResults.push(self.pass("searchUsers returns array", "found " + users.length + " users"));
+          } else {
+            self.userSearchResults.push(self.fail("searchUsers should return array", "got: " + typeof users));
+          }
+
+          // Test 3: Check user structure
+          if (users.length > 0) {
+            var user = users[0];
+            if (user.email && typeof user.name !== 'undefined') {
+              self.userSearchResults.push(self.pass("User has correct structure", "email=" + user.email));
+            } else {
+              self.userSearchResults.push(self.fail("User missing required fields", JSON.stringify(user)));
+            }
+
+            // Test 4: Verify no current user in results
+            var currentUser = store.getters.feed && store.getters.feed[0] && store.getters.feed[0].user[0];
+            if (currentUser) {
+              var hasCurrentUser = users.some(function(u) { return u.email === currentUser.email; });
+              if (!hasCurrentUser) {
+                self.userSearchResults.push(self.pass("Current user excluded from results"));
+              } else {
+                self.userSearchResults.push(self.fail("Current user should be excluded"));
+              }
+            }
+          }
+
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.userSearchResults.push(self.fail("searchUsers failed", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.userSearchLoading = false;
+        });
+    },
+
+    // FollowingStreaks Tests
+    testFollowingStreaks: function() {
+      var self = this;
+      self.followingStreaksLoading = true;
+      self.followingStreaksResults = [];
+      self.followingStreaksData = [];
+      self.updateSummary();
+
+      // Test 1: Check followingStreaks getter exists
+      var streaks = store.getters.followingStreaks;
+      if (Array.isArray(streaks)) {
+        self.followingStreaksResults.push(self.pass("followingStreaks getter exists", "returns array"));
+      } else {
+        self.followingStreaksResults.push(self.fail("followingStreaks should return array"));
+      }
+
+      // Test 2: Load following streaks
+      store.dispatch('loadFollowingStreaks')
+        .then(function(data) {
+          self.followingStreaksResults.push(self.pass("loadFollowingStreaks completed"));
+
+          // Store data for display
+          self.followingStreaksData = data || [];
+
+          // Test 3: Check data structure
+          if (Array.isArray(data)) {
+            self.followingStreaksResults.push(self.pass("Response is array", "length=" + data.length));
+
+            // Test 4: Check item structure
+            if (data.length > 0) {
+              var item = data[0];
+              var hasEmail = typeof item.email === 'string';
+              var hasStreak = typeof item.streak === 'number';
+              var hasMinutes = typeof item.today_minutes === 'number';
+
+              if (hasEmail && hasStreak && hasMinutes) {
+                self.followingStreaksResults.push(self.pass("Item structure correct",
+                  item.name + ": streak=" + item.streak + ", today=" + item.today_minutes + "min"));
+              } else {
+                self.followingStreaksResults.push(self.fail("Item missing fields", JSON.stringify(item)));
+              }
+
+              // Test 5: Check sorting (by streak descending)
+              var sorted = true;
+              for (var i = 1; i < data.length; i++) {
+                if (data[i].streak > data[i-1].streak) {
+                  sorted = false;
+                  break;
+                }
+              }
+              if (sorted) {
+                self.followingStreaksResults.push(self.pass("Results sorted by streak (descending)"));
+              } else {
+                self.followingStreaksResults.push(self.fail("Results not sorted correctly"));
+              }
+            } else {
+              self.followingStreaksResults.push(self.pass("No followed users (empty result)"));
+            }
+          } else {
+            self.followingStreaksResults.push(self.fail("Response should be array"));
+          }
+
+          self.updateSummary();
+        })
+        .catch(function(err) {
+          self.followingStreaksResults.push(self.fail("loadFollowingStreaks failed", err.message || err));
+          self.updateSummary();
+        })
+        .finally(function() {
+          self.followingStreaksLoading = false;
+        });
+    },
+
     runAllTests: function() {
       var self = this;
       self.running = true;
@@ -755,6 +956,8 @@ var Tests = {
       self.followsResults = [];
       self.feedResults = [];
       self.feedModeResults = [];
+      self.userSearchResults = [];
+      self.followingStreaksResults = [];
       self.summary = { total: 0, passed: 0, failed: 0 };
 
       // Run stats tests first
@@ -820,7 +1023,16 @@ var Tests = {
                               var checkFeedMode = setInterval(function() {
                                 if (!self.feedModeLoading) {
                                   clearInterval(checkFeedMode);
-                                  self.running = false;
+                                  // Run FollowingStreaks tests
+                                  self.testFollowingStreaks();
+
+                                  // Wait for FollowingStreaks tests to complete
+                                  var checkFollowingStreaks = setInterval(function() {
+                                    if (!self.followingStreaksLoading) {
+                                      clearInterval(checkFollowingStreaks);
+                                      self.running = false;
+                                    }
+                                  }, 100);
                                 }
                               }, 100);
                             }

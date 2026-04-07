@@ -88,6 +88,22 @@ store.registerModule("follows", {
         context.dispatch("loadFollowing"),
         context.dispatch("loadFollowers")
       ]);
+    },
+    searchUsers: function(context, emailPrefix) {
+      console.debug("store.actions.searchUsers", emailPrefix);
+      return new Promise(function(resolve, reject) {
+        if (!emailPrefix || emailPrefix.length < 2) {
+          resolve([]);
+          return;
+        }
+        api("GET", "users?email=" + encodeURIComponent(emailPrefix), function(response) {
+          console.debug("store.actions.searchUsers success", response);
+          resolve(response);
+        }, {}, function(error) {
+          console.error("store.actions.searchUsers error", error);
+          reject(error);
+        });
+      });
     }
   },
   mutations: {
