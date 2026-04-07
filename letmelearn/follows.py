@@ -141,7 +141,7 @@ class FollowingUser(Resource):
 
         # Cannot follow yourself
         if email == user_email:
-            abort(400, "Cannot follow yourself")
+            abort(422, "Cannot follow yourself")
 
         # Check if user exists
         target_user = db.users.find_one({"_id": email})
@@ -197,7 +197,11 @@ class FollowingUser(Resource):
         Returns:
             {
                 "follower": "current@example.com",
-                "following": "user@example.com",
+                "following": {
+                    "email": "user@example.com",
+                    "name": "User Name",
+                    "picture": "https://..."
+                },
                 "removed": true
             }
 
@@ -205,6 +209,9 @@ class FollowingUser(Resource):
             200: Successfully unfollowed (or wasn't following)
         """
         user_email = current_user.identity.email
+
+        # Get user info before removing relationship
+        target_user = db.users.find_one({"_id": email})
 
         # Remove follow relationship
         result = db.follows.delete_one({
@@ -217,7 +224,11 @@ class FollowingUser(Resource):
 
         return {
             "follower": user_email,
-            "following": email,
+            "following": {
+                "email": email,
+                "name": target_user.get("name", email) if target_user else email,
+                "picture": target_user.get("picture") if target_user else None
+            },
             "removed": result.deleted_count > 0
         }, 200
 
@@ -302,7 +313,7 @@ class UserSearch(Resource):
         """
         email_prefix = server.request.args.get("email", "")
 
-        if len(email_prefix) < 2:
+        if len(email_prefix) < 3:
             return []
 
         user_email = current_user.identity.email
@@ -330,6 +341,6 @@ class UserSearch(Resource):
 
 # Register endpoints
 server.api.add_resource(Following, "/api/following", endpoint="api-following")
-server.api.add_resource(FollowingUser, "/api/following/<path:email>", endpoint="api-following-user")
+server.api.add_resource(FollowingUser, "/api/following/<string:email>", endpoint="api-following-user")
 server.api.add_resource(Followers, "/api/followers", endpoint="api-followers")
 server.api.add_resource(UserSearch, "/api/users", endpoint="api-users")

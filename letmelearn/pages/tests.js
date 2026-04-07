@@ -148,8 +148,8 @@ var Tests = {
         </div>
         <div v-if="followingStreaksData.length > 0" style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
           <strong>Following Streaks:</strong>
-          <div v-for="user in followingStreaksData" :key="'streak-user-'+user.email" style="margin-top: 8px;">
-            {{ user.name || user.email }}: 🔥 {{ user.streak }} streak, {{ user.today_minutes }}min today
+          <div v-for="item in followingStreaksData" :key="'streak-user-'+item.user.email" style="margin-top: 8px;">
+            {{ item.user.name || item.user.email }}: 🔥 {{ item.streak }} streak, {{ item.today_minutes }}min today
           </div>
         </div>
       </v-card-text>
@@ -903,18 +903,28 @@ var Tests = {
             // Test 4: Check item structure
             if (data.length > 0) {
               var item = data[0];
-              var hasEmail = typeof item.email === 'string';
+              var hasUser = typeof item.user === 'object' && item.user !== null;
               var hasStreak = typeof item.streak === 'number';
               var hasMinutes = typeof item.today_minutes === 'number';
 
-              if (hasEmail && hasStreak && hasMinutes) {
+              if (hasUser && hasStreak && hasMinutes) {
                 self.followingStreaksResults.push(self.pass("Item structure correct",
-                  item.name + ": streak=" + item.streak + ", today=" + item.today_minutes + "min"));
+                  item.user.name + ": streak=" + item.streak + ", today=" + item.today_minutes + "min"));
               } else {
                 self.followingStreaksResults.push(self.fail("Item missing fields", JSON.stringify(item)));
               }
 
-              // Test 5: Check sorting (by streak descending)
+              // Test 5: Check user object structure
+              if (hasUser) {
+                var user = item.user;
+                if (typeof user.email === 'string' && typeof user.name === 'string') {
+                  self.followingStreaksResults.push(self.pass("User object has email and name"));
+                } else {
+                  self.followingStreaksResults.push(self.fail("User object missing fields", JSON.stringify(user)));
+                }
+              }
+
+              // Test 6: Check sorting (by streak descending)
               var sorted = true;
               for (var i = 1; i < data.length; i++) {
                 if (data[i].streak > data[i-1].streak) {

@@ -231,9 +231,11 @@ class StatsFollowingStreaks(Resource):
         Returns:
             [
                 {
-                    "email": "user@example.com",
-                    "name": "User Name",
-                    "picture": "https://...",
+                    "user": {
+                        "email": "user@example.com",
+                        "name": "User Name",
+                        "picture": "https://..."
+                    },
                     "streak": 7,
                     "today_minutes": 25
                 },
@@ -269,15 +271,17 @@ class StatsFollowingStreaks(Resource):
             streak_data = compute_streak_for_user(email)
 
             results.append({
-                "email": email,
-                "name": user.get("name", email),
-                "picture": user.get("picture"),
+                "user": {
+                    "email": email,
+                    "name": user.get("name", email),
+                    "picture": user.get("picture")
+                },
                 "streak": streak_data["streak"],
                 "today_minutes": streak_data["today_minutes"]
             })
 
         # Sort by streak descending, then by name
-        results.sort(key=lambda x: (-x["streak"], x["name"]))
+        results.sort(key=lambda x: (-x["streak"], x["user"]["name"]))
 
         return results
 

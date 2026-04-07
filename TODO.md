@@ -75,24 +75,27 @@
 
 **High Priority**
 
-- [ ] Fix email as path parameter in `/api/following` (prio:1)
+- [x] Fix email as path parameter in `/api/following` (prio:1)
   - Issue: Email addresses cause URL encoding issues with `@` and `.` characters
   - Current: `/api/following/<path:email>` indicates encoding issues
   - Recommendation: Use URL-safe user identifier
   - File: `letmelearn/follows.py` (line 333)
+  - Fix: Changed `<path:email>` to `<string:email>`
 
-- [ ] Fix schema inconsistency in `following` field type (prio:1)
+- [x] Fix schema inconsistency in `following` field type (prio:1)
   - Issue: `following` field has different types in POST vs DELETE responses
   - POST returns `following` as UserInfo object, DELETE returns it as string (email)
   - Recommendation: Standardize to return UserInfo object everywhere
   - File: `letmelearn/follows.py` (lines 179-187, 218-222)
+  - Fix: DELETE now returns UserInfo object
 
-- [ ] Fix OpenAPI schema mismatch for FollowingStreak (prio:1)
+- [x] Fix OpenAPI schema mismatch for FollowingStreak (prio:1)
   - Issue: OpenAPI schema uses `user` object but implementation returns flat fields
   - OpenAPI: `{ user: { email, name, picture }, streak, today_minutes }`
   - Implementation: `{ email, name, picture, streak, today_minutes }`
   - Files: `docs/openapi.yaml` (lines 1277-1294), `letmelearn/stats.py` (lines 271-277)
   - As per recommendation for "Fix schema inconsistency in `following` field type": Standardize to use UserInfo object everywhere
+  - Fix: Implementation now wraps user info in `user` object
 
 **Medium Priority**
 
@@ -102,10 +105,11 @@
   - File: `letmelearn/follows.py`
   - User Decision: This should then be a general pattern, implemented in a general way and also handled in a general way in the frontend
 
-- [ ] Increase minimum search prefix length (prio:2)
+- [x] Increase minimum search prefix length (prio:2)
   - Issue: User enumeration vulnerability - 2 character minimum is too short
   - Recommendation: Increase from 2 to 3+ chars
   - File: `letmelearn/follows.py` (lines 310-314)
+  - Fix: Changed minimum from 2 to 3 characters
 
 - [ ] Add privacy setting for streak visibility (prio:2)
   - Issue: `/api/stats/following/streaks` exposes streak data without user consent
@@ -113,10 +117,11 @@
   - Files: `letmelearn/stats.py`, `letmelearn/auth.py`, MongoDB users collection
   - User Decision: streaks should only be visible to followers. Having a follower implies this right. We're not introducing privacy settings for users right now. Extract the privacy settings part to a separate low priority task for later.
 
-- [ ] Add 422 Unprocessable Entity for business rule violations (prio:2)
+- [x] Add 422 Unprocessable Entity for business rule violations (prio:2)
   - Issue: Uses 400 for business rule violations, 422 is more semantic
   - Recommendation: 400 for malformed requests, 422 for valid format but invalid business rule
   - Files: `letmelearn/follows.py`, `docs/openapi.yaml`
+  - Fix: Changed "Cannot follow yourself" from 400 to 422
 
 **Low Priority**
 

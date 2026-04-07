@@ -547,8 +547,8 @@ paths:
           required: true
           schema:
             type: string
-            minLength: 2
-          description: Email prefix to search for (minimum 2 characters)
+            minLength: 3
+          description: Email prefix to search for (minimum 3 characters)
       responses:
         '200':
           description: List of matching users (max 10)
@@ -620,7 +620,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/FollowRelationship'
         '400':
-          description: Cannot follow yourself
+          description: Malformed request (invalid JSON)
           content:
             application/json:
               schema:
@@ -631,6 +631,14 @@ paths:
           description: User not found
           content:
             application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Cannot follow yourself (business rule violation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
               schema:
                 $ref: '#/components/schemas/Error'
 
@@ -1300,9 +1308,8 @@ components:
           format: email
           description: Email of the user who was following
         following:
-          type: string
-          format: email
-          description: Email of the user who was followed
+          $ref: '#/components/schemas/UserInfo'
+          description: The user who was unfollowed
         removed:
           type: boolean
           description: Whether the relationship was actually removed (false if didn't exist)
