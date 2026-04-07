@@ -112,11 +112,12 @@
   - File: `letmelearn/follows.py` (lines 310-314)
   - Fix: Changed minimum from 2 to 3 characters
 
-- [ ] Add privacy setting for streak visibility (prio:2)
+- [x] Add privacy setting for streak visibility (prio:2)
   - Issue: `/api/stats/following/streaks` exposes streak data without user consent
   - Recommendation: Add `privacy.show_streak_to_followers` to user schema
   - Files: `letmelearn/stats.py`, `letmelearn/auth.py`, MongoDB users collection
   - User Decision: streaks should only be visible to followers. Having a follower implies this right. We're not introducing privacy settings for users right now. Extract the privacy settings part to a separate low priority task for later.
+  - Fix: Already implemented correctly - endpoint only returns streaks for users the authenticated user follows
 
 - [x] Add 422 Unprocessable Entity for business rule violations (prio:2)
   - Issue: Uses 400 for business rule violations, 422 is more semantic
