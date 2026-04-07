@@ -57,75 +57,7 @@
 - [ ] share topics with other users (prio:0)
 - [ ] search/filter topics by all aspects (name, tags,...) (prio:0)
 
-### Phase 7: Social Feed System (prio:1)
-
-#### Remaining Tasks
-
-- [x] Create UserSearch component (prio:1)
-  - Search for users by email
-  - Display follow/unfollow button
-- [x] Create FollowingStreaks component (prio:1)
-  - Display followed users' streaks
-  - Sort by streak descending
-  - Show today's practice time
-- [x] Update `docs/openapi.yaml` with social endpoints (prio:1)
-- [x] Update `analysis/api.md` with social feed analysis (prio:1)
-
-#### API Review Fixes (from api-architect review)
-
-**High Priority**
-
-- [x] Fix email as path parameter in `/api/following` (prio:1)
-  - Issue: Email addresses cause URL encoding issues with `@` and `.` characters
-  - Current: `/api/following/<path:email>` indicates encoding issues
-  - Recommendation: Use URL-safe user identifier
-  - File: `letmelearn/follows.py` (line 333)
-  - Fix: Changed `<path:email>` to `<string:email>`
-
-- [x] Fix schema inconsistency in `following` field type (prio:1)
-  - Issue: `following` field has different types in POST vs DELETE responses
-  - POST returns `following` as UserInfo object, DELETE returns it as string (email)
-  - Recommendation: Standardize to return UserInfo object everywhere
-  - File: `letmelearn/follows.py` (lines 179-187, 218-222)
-  - Fix: DELETE now returns UserInfo object
-
-- [x] Fix OpenAPI schema mismatch for FollowingStreak (prio:1)
-  - Issue: OpenAPI schema uses `user` object but implementation returns flat fields
-  - OpenAPI: `{ user: { email, name, picture }, streak, today_minutes }`
-  - Implementation: `{ email, name, picture, streak, today_minutes }`
-  - Files: `docs/openapi.yaml` (lines 1277-1294), `letmelearn/stats.py` (lines 271-277)
-  - As per recommendation for "Fix schema inconsistency in `following` field type": Standardize to use UserInfo object everywhere
-  - Fix: Implementation now wraps user info in `user` object
-
-**Medium Priority**
-
-- [x] Implement RFC 7807 Problem Details for errors (prio:2)
-  - Issue: Errors use Flask's `abort()` returning plain text, not structured format
-  - Recommendation: Return `{"type": "...", "title": "...", "status": 400, "detail": "..."}`
-  - File: `letmelearn/follows.py`
-  - User Decision: This should then be a general pattern, implemented in a general way and also handled in a general way in the frontend
-  - Fix: Created `letmelearn/errors.py` module with `problem()` and `problem_response()` functions, updated all `abort()` calls to use RFC 7807 format, updated frontend `ajax.js` to parse Problem Details
-
-- [x] Increase minimum search prefix length (prio:2)
-  - Issue: User enumeration vulnerability - 2 character minimum is too short
-  - Recommendation: Increase from 2 to 3+ chars
-  - File: `letmelearn/follows.py` (lines 310-314)
-  - Fix: Changed minimum from 2 to 3 characters
-
-- [x] Add privacy setting for streak visibility (prio:2)
-  - Issue: `/api/stats/following/streaks` exposes streak data without user consent
-  - Recommendation: Add `privacy.show_streak_to_followers` to user schema
-  - Files: `letmelearn/stats.py`, `letmelearn/auth.py`, MongoDB users collection
-  - User Decision: streaks should only be visible to followers. Having a follower implies this right. We're not introducing privacy settings for users right now. Extract the privacy settings part to a separate low priority task for later.
-  - Fix: Already implemented correctly - endpoint only returns streaks for users the authenticated user follows
-
-- [x] Add 422 Unprocessable Entity for business rule violations (prio:2)
-  - Issue: Uses 400 for business rule violations, 422 is more semantic
-  - Recommendation: 400 for malformed requests, 422 for valid format but invalid business rule
-  - Files: `letmelearn/follows.py`, `docs/openapi.yaml`
-  - Fix: Changed "Cannot follow yourself" from 400 to 422
-
-**Low Priority**
+### API Review Fixes (from api-architect review) - Low Priority
 
 - [ ] Add rate limiting (prio:0)
   - Recommendation: add rate limiting
@@ -150,55 +82,109 @@
 
 ## Done
 
-- [x] Phase 7: Social Feed System - Backend (prio:1)
-  - [x] Create `follows` MongoDB collection with indexes
-  - [x] Implement `POST /api/following/{email}` endpoint
-  - [x] Implement `DELETE /api/following/{email}` endpoint
-  - [x] Implement `GET /api/following` endpoint
-  - [x] Implement `GET /api/followers` endpoint
-  - [x] Modify `GET /api/feed` to support `mode` parameter
-  - [x] Implement `GET /api/stats/following/streaks` endpoint
-  - [x] Write backend unit tests (tests/test_follows.py)
+### Phase 7: Social Feed System - API Review Fixes
 
-- [x] Phase 7: Social Feed System - Frontend (prio:1)
-  - [x] Create `FollowsStore` Vuex module
-  - [x] Modify `FeedStore` for mode support
-  - [x] Add frontend tests to tests.js
-  - [x] Create `FollowButton` component
-  - [x] Modify Advalvas page for feed modes
-  - [x] Remove dual-write from quiz.js and training.js
-  - [x] Fix JSON serialization for feed aggregation
+- [x] Fix email as path parameter in `/api/following` (prio:1)
+  - Issue: Email addresses cause URL encoding issues with `@` and `.` characters
+  - Fix: Changed `<path:email>` to `<string:email>`
 
-- [x] Phase 6: Testing & Documentation
-  - [x] Write backend unit tests
-  - [x] Write backend integration tests
-  - [x] Fix OAuth mocking for tests
-  - [x] Update documentation
+- [x] Fix schema inconsistency in `following` field type (prio:1)
+  - Issue: `following` field has different types in POST vs DELETE responses
+  - Fix: DELETE now returns UserInfo object
 
-- [x] Phase 5: Frontend - Session Integration
-  - [x] Integrate session tracking in quiz page
-  - [x] Integrate session tracking in training page
-  - [x] Handle edge cases for session tracking
+- [x] Fix OpenAPI schema mismatch for FollowingStreak (prio:1)
+  - Issue: OpenAPI schema uses `user` object but implementation returns flat fields
+  - Fix: Implementation now wraps user info in `user` object
 
-- [x] Phase 4: Frontend - Components
-  - [x] Create StatsCards Vue component
-  - [x] Integrate StatsCards into Advalvas page
+- [x] Implement RFC 7807 Problem Details for errors (prio:2)
+  - Issue: Errors use Flask's `abort()` returning plain text, not structured format
+  - Fix: Created `letmelearn/errors.py` module, updated all `abort()` calls, updated frontend `ajax.js`
+  - Added `/errors` documentation page with human-friendly descriptions
 
-- [x] Phase 3: Frontend - Store Modules
-  - [x] Create `sessions` Vuex module (SessionsStore.js)
-  - [x] Create `stats` Vuex module (StatsStore.js)
-  - [x] Register store modules in web.py
+- [x] Increase minimum search prefix length (prio:2)
+  - Issue: User enumeration vulnerability - 2 character minimum is too short
+  - Fix: Changed minimum from 2 to 3 characters
 
-- [x] Phase 1: Backend - Session Tracking
-  - [x] Create `sessions` MongoDB collection with indexes
-  - [x] Implement `POST /api/sessions` endpoint
-  - [x] Implement `PATCH /api/sessions/{id}` endpoint
-  - [x] Implement `GET /api/sessions/current` endpoint
+- [x] Add privacy setting for streak visibility (prio:2)
+  - Issue: `/api/stats/following/streaks` exposes streak data without user consent
+  - Fix: Already implemented correctly - endpoint only returns streaks for users the authenticated user follows
 
-- [x] Phase 2: Backend - Statistics
-  - [x] Implement streak computation logic
-  - [x] Implement `GET /api/stats/streak` endpoint
-  - [x] Implement `GET /api/stats/weekly` endpoint
+- [x] Add 422 Unprocessable Entity for business rule violations (prio:2)
+  - Issue: Uses 400 for business rule violations, 422 is more semantic
+  - Fix: Changed "Cannot follow yourself" from 400 to 422
+
+### Phase 7: Social Feed System - Frontend
+
+- [x] Create UserSearch component (prio:1)
+  - Search for users by email
+  - Display follow/unfollow button
+
+- [x] Create FollowingStreaks component (prio:1)
+  - Display followed users' streaks
+  - Sort by streak descending
+  - Show today's practice time
+
+- [x] Update `docs/openapi.yaml` with social endpoints (prio:1)
+
+- [x] Update `analysis/api.md` with social feed analysis (prio:1)
+
+- [x] Create `FollowsStore` Vuex module
+- [x] Modify `FeedStore` for mode support
+- [x] Add frontend tests to tests.js
+- [x] Create `FollowButton` component
+- [x] Modify Advalvas page for feed modes
+- [x] Remove dual-write from quiz.js and training.js
+- [x] Fix JSON serialization for feed aggregation
+
+### Phase 7: Social Feed System - Backend
+
+- [x] Create `follows` MongoDB collection with indexes
+- [x] Implement `POST /api/following/{email}` endpoint
+- [x] Implement `DELETE /api/following/{email}` endpoint
+- [x] Implement `GET /api/following` endpoint
+- [x] Implement `GET /api/followers` endpoint
+- [x] Modify `GET /api/feed` to support `mode` parameter
+- [x] Implement `GET /api/stats/following/streaks` endpoint
+- [x] Write backend unit tests (tests/test_follows.py)
+
+### Phase 6: Testing & Documentation
+
+- [x] Write backend unit tests
+- [x] Write backend integration tests
+- [x] Fix OAuth mocking for tests
+- [x] Update documentation
+
+### Phase 5: Frontend - Session Integration
+
+- [x] Integrate session tracking in quiz page
+- [x] Integrate session tracking in training page
+- [x] Handle edge cases for session tracking
+
+### Phase 4: Frontend - Components
+
+- [x] Create StatsCards Vue component
+- [x] Integrate StatsCards into Advalvas page
+
+### Phase 3: Frontend - Store Modules
+
+- [x] Create `sessions` Vuex module (SessionsStore.js)
+- [x] Create `stats` Vuex module (StatsStore.js)
+- [x] Register store modules in web.py
+
+### Phase 2: Backend - Statistics
+
+- [x] Implement streak computation logic
+- [x] Implement `GET /api/stats/streak` endpoint
+- [x] Implement `GET /api/stats/weekly` endpoint
+
+### Phase 1: Backend - Session Tracking
+
+- [x] Create `sessions` MongoDB collection with indexes
+- [x] Implement `POST /api/sessions` endpoint
+- [x] Implement `PATCH /api/sessions/{id}` endpoint
+- [x] Implement `GET /api/sessions/current` endpoint
+
+### Other
 
 - [x] clear dialogs on dismissal
   - [x] create topic
