@@ -27,24 +27,27 @@ function parseProblemDetails(response) {
  * @returns {string} User-friendly error message
  */
 function getProblemMessage(problem) {
-  // Map error types to Dutch messages
+  // Extract the fragment from type (e.g., "/errors#not-found" -> "not-found")
+  var errorId = problem.type ? problem.type.split("#")[1] : null;
+
+  // Map error IDs to Dutch messages
   var messages = {
-    "https://api.letmelearn.com/errors/self-follow": "Je kunt jezelf niet volgen.",
-    "https://api.letmelearn.com/errors/user-not-found": "Deze gebruiker bestaat niet.",
-    "https://api.letmelearn.com/errors/session-not-found": "Deze sessie bestaat niet.",
-    "https://api.letmelearn.com/errors/invalid-session": "Ongeldige sessie ID.",
-    "https://api.letmelearn.com/errors/duplicate-name": "Deze naam bestaat al. Kies een andere naam.",
-    "https://api.letmelearn.com/errors/unauthorized": "Je moet ingelogd zijn om deze actie uit te voeren.",
-    "https://api.letmelearn.com/errors/forbidden": "Je hebt geen toegang tot deze actie.",
-    "https://api.letmelearn.com/errors/not-found": "Het opgevraagde item bestaat niet.",
-    "https://api.letmelearn.com/errors/bad-request": "Ongeldig verzoek. Controleer je invoer.",
-    "https://api.letmelearn.com/errors/unprocessable-entity": "Het verzoek kon niet verwerkt worden.",
-    "https://api.letmelearn.com/errors/internal-error": "Er is een onverwachte fout opgetreden. Probeer het later opnieuw."
+    "self-follow": "Je kunt jezelf niet volgen.",
+    "user-not-found": "Deze gebruiker bestaat niet.",
+    "session-not-found": "Deze sessie bestaat niet.",
+    "invalid-session": "Ongeldige sessie ID.",
+    "duplicate-name": "Deze naam bestaat al. Kies een andere naam.",
+    "unauthorized": "Je moet ingelogd zijn om deze actie uit te voeren.",
+    "forbidden": "Je hebt geen toegang tot deze actie.",
+    "not-found": "Het opgevraagde item bestaat niet.",
+    "bad-request": "Ongeldig verzoek. Controleer je invoer.",
+    "unprocessable-entity": "Het verzoek kon niet verwerkt worden.",
+    "internal-error": "Er is een onverwachte fout opgetreden. Probeer het later opnieuw."
   };
 
   // Check for mapped message
-  if (messages[problem.type]) {
-    return messages[problem.type];
+  if (errorId && messages[errorId]) {
+    return messages[errorId];
   }
 
   // Use detail if available

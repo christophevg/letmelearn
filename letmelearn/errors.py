@@ -5,9 +5,9 @@ Provides standardized error responses across all API endpoints.
 
 Example response:
 {
-    "type": "https://api.letmelearn.com/errors/validation",
-    "title": "Validation Error",
-    "status": 422,
+    "type": "/errors#bad-request",
+    "title": "Bad Request",
+    "status": 400,
     "detail": "Cannot follow yourself"
 }
 """
@@ -18,81 +18,94 @@ from werkzeug.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)
 
-# Base URL for error type URIs
-ERROR_BASE_URL = "https://api.letmelearn.com/errors"
+# Base URL for error type URIs (fragment-based for in-page documentation)
+ERROR_BASE_URL = "/errors"
 
 
 # Problem type definitions
 PROBLEM_TYPES = {
     # 4xx Client Errors
     "bad_request": {
-        "type": f"{ERROR_BASE_URL}/bad-request",
+        "type": f"{ERROR_BASE_URL}#bad-request",
         "title": "Bad Request",
-        "status": 400
+        "status": 400,
+        "description": "The request could not be understood by the server due to malformed syntax."
     },
     "unauthorized": {
-        "type": f"{ERROR_BASE_URL}/unauthorized",
+        "type": f"{ERROR_BASE_URL}#unauthorized",
         "title": "Unauthorized",
-        "status": 401
+        "status": 401,
+        "description": "Authentication is required to access this resource."
     },
     "forbidden": {
-        "type": f"{ERROR_BASE_URL}/forbidden",
+        "type": f"{ERROR_BASE_URL}#forbidden",
         "title": "Forbidden",
-        "status": 403
+        "status": 403,
+        "description": "You do not have permission to access this resource."
     },
     "not_found": {
-        "type": f"{ERROR_BASE_URL}/not-found",
+        "type": f"{ERROR_BASE_URL}#not-found",
         "title": "Not Found",
-        "status": 404
+        "status": 404,
+        "description": "The requested resource could not be found."
     },
     "method_not_allowed": {
-        "type": f"{ERROR_BASE_URL}/method-not-allowed",
+        "type": f"{ERROR_BASE_URL}#method-not-allowed",
         "title": "Method Not Allowed",
-        "status": 405
+        "status": 405,
+        "description": "The HTTP method is not allowed for this resource."
     },
     "conflict": {
-        "type": f"{ERROR_BASE_URL}/conflict",
+        "type": f"{ERROR_BASE_URL}#conflict",
         "title": "Conflict",
-        "status": 409
+        "status": 409,
+        "description": "The request conflicts with the current state of the resource."
     },
     "unprocessable_entity": {
-        "type": f"{ERROR_BASE_URL}/unprocessable-entity",
+        "type": f"{ERROR_BASE_URL}#unprocessable-entity",
         "title": "Unprocessable Entity",
-        "status": 422
+        "status": 422,
+        "description": "The request was well-formed but could not be processed due to semantic errors."
     },
 
     # Business Rule Errors
     "self_follow": {
-        "type": f"{ERROR_BASE_URL}/self-follow",
+        "type": f"{ERROR_BASE_URL}#self-follow",
         "title": "Cannot Follow Self",
-        "status": 422
+        "status": 422,
+        "description": "You cannot follow yourself. This operation is not allowed."
     },
     "user_not_found": {
-        "type": f"{ERROR_BASE_URL}/user-not-found",
+        "type": f"{ERROR_BASE_URL}#user-not-found",
         "title": "User Not Found",
-        "status": 404
+        "status": 404,
+        "description": "The specified user could not be found in the system."
     },
     "session_not_found": {
-        "type": f"{ERROR_BASE_URL}/session-not-found",
+        "type": f"{ERROR_BASE_URL}#session-not-found",
         "title": "Session Not Found",
-        "status": 404
+        "status": 404,
+        "description": "The specified session could not be found or does not belong to you."
     },
     "invalid_session": {
-        "type": f"{ERROR_BASE_URL}/invalid-session",
+        "type": f"{ERROR_BASE_URL}#invalid-session",
         "title": "Invalid Session",
-        "status": 422
+        "status": 422,
+        "description": "The session ID format is invalid."
     },
     "duplicate_name": {
-        "type": f"{ERROR_BASE_URL}/duplicate-name",
+        "type": f"{ERROR_BASE_URL}#duplicate-name",
         "title": "Duplicate Name",
-        "status": 409
+        "status": 409,
+        "description": "A resource with this name already exists. Please choose a different name."
     },
 
     # 5xx Server Errors
     "internal_error": {
-        "type": f"{ERROR_BASE_URL}/internal-error",
+        "type": f"{ERROR_BASE_URL}#internal-error",
         "title": "Internal Server Error",
-        "status": 500
+        "status": 500,
+        "description": "An unexpected error occurred on the server. Please try again later."
     }
 }
 

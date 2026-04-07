@@ -7,7 +7,8 @@ for page, route in {
   "advalvas" : None,
   "quiz"     : "/quiz",
   "topics"   : "/topics",
-  "training" : "/training"
+  "training" : "/training",
+  "errors"   : "/errors"
  }.items():
   server.register_component(f"{page}.js", os.path.dirname(__file__), route=route)
 
