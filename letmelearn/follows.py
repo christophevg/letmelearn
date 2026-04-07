@@ -14,11 +14,11 @@ from datetime import datetime
 
 from flask_restful import Resource
 from flask_login import current_user
-from flask import abort
 
 from letmelearn.web import server
 from letmelearn.data import db
 from letmelearn.auth import authenticated
+from letmelearn.errors import problem_response
 
 logger = logging.getLogger(__name__)
 
@@ -141,12 +141,12 @@ class FollowingUser(Resource):
 
         # Cannot follow yourself
         if email == user_email:
-            abort(422, "Cannot follow yourself")
+            return problem_response("self_follow", detail="Users cannot follow themselves")
 
         # Check if user exists
         target_user = db.users.find_one({"_id": email})
         if not target_user:
-            abort(404, "User not found")
+            return problem_response("user_not_found", detail=f"User '{email}' not found")
 
         # Check if already following
         existing = db.follows.find_one({

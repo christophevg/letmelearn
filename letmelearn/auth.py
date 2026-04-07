@@ -7,6 +7,7 @@ from functools import wraps
 from letmelearn.web import server
 
 from letmelearn.data import db
+from letmelearn.errors import problem_response
 
 # setup flask_login infrastructure
 
@@ -14,7 +15,7 @@ from flask_login import LoginManager
 from flask_login import UserMixin
 from flask_login import current_user, login_user, logout_user
 
-from flask import Response, abort
+from flask import Response
 from flask_restful import Resource
 
 import oatk.js
@@ -146,7 +147,7 @@ def authenticated(func):
   def wrapper(*args, **kwargs):
     if not current_user.is_anonymous:
       return func(*args, **kwargs)
-    abort(401)
+    return problem_response("unauthorized", detail="Authentication required")
   return wrapper
 
 # setup oatk
@@ -161,7 +162,7 @@ class Session(Resource):
     user = User.find(claims["email"])
     if not user:
       logger.warn(f"unknown user: {claims}")
-      abort(403)
+      return problem_response("forbidden", detail="Unknown user")
     user.update(**claims)
     login_user(user, remember=True)
     return current_user.as_json()

@@ -2,7 +2,6 @@ import logging
 
 from flask_restful import Resource
 from flask_login import current_user
-from flask import abort
 
 import pymongo
 from pymongo.collection import ReturnDocument
@@ -13,6 +12,7 @@ from letmelearn.web       import server
 from letmelearn.data      import db
 from letmelearn.auth      import authenticated
 from letmelearn.treeitems import TreeItems, Folder, Topic, idfy
+from letmelearn.errors    import problem_response
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class Folders(Resource):
     except KeyError:
       # we didn't find this folder
       logger.warn(f"couldn't find folder '{path}'")
-      abort(404)
+      return problem_response("not_found", detail=f"Folder '{path}' not found")
 
   @authenticated
   def delete(self, path):
@@ -60,7 +60,7 @@ class Folders(Resource):
     except KeyError:
       # we didn't find this folder
       logger.warn(f"couldn't find item '{path}'")
-      abort(404)
+      return problem_response("not_found", detail=f"Item '{path}' not found")
 
 server.api.add_resource(Folders, "/api/folders",             endpoint="api-folders")
 server.api.add_resource(Folders, "/api/folders/",            endpoint="api-folders-root")
@@ -90,7 +90,7 @@ class Topics(Resource):
     try:
       db.topics.insert_one(new_topic)
     except pymongo.errors.DuplicateKeyError:
-      abort(500, "Deze naam is eerder al eens gebruikt. Kies een andere en wijzig achteraf.")
+      return problem_response("duplicate_name", detail="This name has already been used. Please choose a different name.")
     return new_topic
 
 server.api.add_resource(Topics, "/api/topics", endpoint="api-topics")
@@ -142,7 +142,7 @@ class TopicResource(Resource):
       except KeyError:
         # we didn't find this folder
         logger.warn(f"couldn't find new folder '{folder}'")
-        abort(404)
+        return problem_response("not_found", detail=f"Folder '{folder}' not found")
   
     return {
       "topic"     : updated_topic,

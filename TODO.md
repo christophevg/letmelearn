@@ -99,11 +99,12 @@
 
 **Medium Priority**
 
-- [ ] Implement RFC 7807 Problem Details for errors (prio:2)
+- [x] Implement RFC 7807 Problem Details for errors (prio:2)
   - Issue: Errors use Flask's `abort()` returning plain text, not structured format
   - Recommendation: Return `{"type": "...", "title": "...", "status": 400, "detail": "..."}`
   - File: `letmelearn/follows.py`
   - User Decision: This should then be a general pattern, implemented in a general way and also handled in a general way in the frontend
+  - Fix: Created `letmelearn/errors.py` module with `problem()` and `problem_response()` functions, updated all `abort()` calls to use RFC 7807 format, updated frontend `ajax.js` to parse Problem Details
 
 - [x] Increase minimum search prefix length (prio:2)
   - Issue: User enumeration vulnerability - 2 character minimum is too short

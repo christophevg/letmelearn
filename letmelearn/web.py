@@ -83,6 +83,10 @@ import letmelearn.api  # noqa
 import letmelearn.sessions # noqa
 import letmelearn.stats # noqa
 import letmelearn.follows # noqa
+import letmelearn.errors # noqa
+
+# Register RFC 7807 Problem Details error handlers
+letmelearn.errors.register_error_handlers(server.app)
 
 for script in [ "logging", "auth", "diff", "nl", "ajax" ]:
   server.register_external_script(f"/app/static/{script}.js")

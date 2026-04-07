@@ -11,7 +11,6 @@ import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from flask import abort
 from flask_restful import Resource
 from flask_login import current_user
 from bson.objectid import ObjectId
@@ -19,6 +18,7 @@ from bson.objectid import ObjectId
 from letmelearn.web import server
 from letmelearn.data import db
 from letmelearn.auth import authenticated
+from letmelearn.errors import problem_response
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ class SessionResource(Resource):
         try:
             oid = ObjectId(session_id)
         except Exception:
-            abort(422, "Invalid session ID")
+            return problem_response("invalid_session", detail="Invalid session ID format")
 
         session = db.sessions.find_one({
             "_id": oid,
@@ -135,7 +135,7 @@ class SessionResource(Resource):
         })
 
         if not session:
-            abort(404, "Session not found")
+            return problem_response("session_not_found", detail=f"Session '{session_id}' not found")
 
         if session["status"] != "active":
             # Idempotent: return existing result if already stopped
