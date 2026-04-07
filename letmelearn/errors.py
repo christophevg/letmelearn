@@ -171,8 +171,8 @@ def problem_response(problem_type, detail=None, instance=None, **kwargs):
     Example:
         return problem_response("self_follow", detail="Users cannot follow themselves")
     """
-    problem, status = problem(problem_type, detail, instance, **kwargs)
-    return jsonify(problem), status
+    problem_data, status = problem(problem_type, detail, instance, **kwargs)
+    return jsonify(problem_data), status
 
 
 def register_error_handlers(app):

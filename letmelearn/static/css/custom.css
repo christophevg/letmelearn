@@ -114,3 +114,13 @@
     background-position: -200% 0;
   }
 }
+
+/* Following section hover effect for unfollow button */
+.following-user-tile .following-unfollow-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.following-user-tile:hover .following-unfollow-btn {
+  opacity: 1;
+}

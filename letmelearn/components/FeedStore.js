@@ -4,12 +4,13 @@
  * Manages the activity feed with support for:
  * - "my" mode: current user's activity
  * - "following" mode: activity from followed users
+ * - "all" mode: combined activity from both
  */
 
 store.registerModule("feed", {
   state: {
     feed: [],
-    mode: "my"  // "my" or "following"
+    mode: "all"  // "my", "following", or "all"
   },
   getters: {
     feed: function(state) {

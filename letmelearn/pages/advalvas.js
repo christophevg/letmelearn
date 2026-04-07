@@ -140,7 +140,7 @@ Vue.component("AdvalvasUpdates", {
 Vue.component("AdvalvasFeedQuizResult", {
   props : [ "item" ],
   template: `
-  <v-list-tile-content v-if="topics.every((i)=>i!==undefined)">
+  <v-list-tile-content v-if="topics.length > 0 && topics.every((i)=>i!==undefined)">
     <v-list-tile-title><b>{{ result }} Resultaat</b></v-list-tile-title>
     <v-list-tile-sub-title class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
@@ -168,7 +168,16 @@ Vue.component("AdvalvasFeedQuizResult", {
 `,
   computed: {
     topics: function() {
-      return this.item.topics.map((id) => store.getters.topic(id));
+      if (!this.item.topics || !Array.isArray(this.item.topics)) {
+        return [];
+      }
+      return this.item.topics.map(function(t) {
+        // Handle both cases: object with _id and name, or just an ID string
+        if (typeof t === "object" && t._id && t.name) {
+          return t;
+        }
+        return store.getters.topic(t);
+      });
     },
     result: function() {
       if(this.item.questions == this.item.asked) {     // all questions asked
@@ -187,7 +196,7 @@ Vue.component("AdvalvasFeedQuizResult", {
 Vue.component("AdvalvasFeedTraining", {
   props : [ "item" ],
   template: `
-  <v-list-tile-content v-if="topics.every((i)=>i!==undefined)">
+  <v-list-tile-content v-if="topics.length > 0 && topics.every((i)=>i!==undefined)">
     <v-list-tile-title><b>{{ result }} Training</b></v-list-tile-title>
     <v-list-tile-sub-title class="text--primary">
       onderwerp{{ topics.length < 2 ? "" : "en" }}:
@@ -215,7 +224,16 @@ Vue.component("AdvalvasFeedTraining", {
 `,
   computed: {
     topics: function() {
-      return this.item.topics.map((id) => store.getters.topic(id));
+      if (!this.item.topics || !Array.isArray(this.item.topics)) {
+        return [];
+      }
+      return this.item.topics.map(function(t) {
+        // Handle both cases: object with _id and name, or just an ID string
+        if (typeof t === "object" && t._id && t.name) {
+          return t;
+        }
+        return store.getters.topic(t);
+      });
     },
     result: function() {
       if(this.item.questions == this.item.asked) {     // all questions asked
@@ -234,14 +252,14 @@ Vue.component("AdvalvasFeedTraining", {
 Vue.component("AdvalvasFeedNewTopic", {
   props: [ "item" ],
   template: `
- <v-list-tile-content v-if="topic">
+ <v-list-tile-content v-if="topic && topic._id">
    <v-list-tile-title><b>🆕 Nieuw onderwerp</b></v-list-tile-title>
    <v-list-tile-sub-title class="text--primary">
       <router-link :to="'/topics#'+ topic._id">{{ topic.name }}</router-link>
       &nbsp;<router-link :to="'/quiz#' + topic._id" style="text-decoration:none">▶️</router-link>
 
    </v-list-tile-sub-title>
-   <v-list-tile-sub-title>
+   <v-list-tile-sub-title v-if="topic.question">
       Stijl: {{ topic.question.type }} |
       {{ topic.items.length }} {{ topic.items.length < 2 ? "vraag" : "vragen" }}
    </v-list-tile-sub-title>
@@ -255,8 +273,21 @@ Vue.component("AdvalvasFeedNewTopic", {
 `,
   computed: {
     topic: function() {
-      var topic = store.getters.topic(this.item.topic);
-      if(topic) { return topic; }
+      var t = this.item.topic;
+      if (!t) {
+        return null;
+      }
+      // Handle both cases: object with _id and name, or just an ID string
+      if (typeof t === "object" && t._id) {
+        // For following feed, we only have id and name - need to fetch full topic for question.type
+        var fullTopic = store.getters.topic(t._id);
+        if (fullTopic) {
+          return fullTopic;
+        }
+        // Return partial topic info for following feed (name only)
+        return t;
+      }
+      return store.getters.topic(t);
     }
   }
 });
@@ -264,21 +295,27 @@ Vue.component("AdvalvasFeedNewTopic", {
 Vue.component("AdvalvasFeed", {
   template:`
 <div>
-  <h2 style="border-bottom: 1px solid #ddd">
-    <span v-if="feedMode === 'my'">📢 Jouw Feed</span>
-    <span v-else>📢 Following</span>
-  </h2>
+  <h2 style="border-bottom: 1px solid #ddd">📢 Jouw Feed</h2>
 
-  <v-btn-toggle v-model="internalMode" mandatory style="margin-top: 8px;">
-    <v-btn flat value="my">
+  <div style="margin-top: 8px;">
+    <v-btn
+      flat
+      :color="showMy ? 'primary' : 'default'"
+      @click="toggleMy"
+    >
       <v-icon left small>person</v-icon>
       My Activity
     </v-btn>
-    <v-btn flat value="following" :disabled="followingCount === 0">
+    <v-btn
+      flat
+      :color="showFollowing ? 'primary' : 'default'"
+      :disabled="followingCount === 0"
+      @click="toggleFollowing"
+    >
       <v-icon left small>people</v-icon>
       Following ({{ followingCount }})
     </v-btn>
-  </v-btn-toggle>
+  </div>
 
   <br>
 
@@ -290,7 +327,7 @@ Vue.component("AdvalvasFeed", {
         ripple
       >
         <v-list-tile-avatar>
-          <img :src="item.user[0].picture">
+          <img :src="userPicture(item)">
         </v-list-tile-avatar>
 
         <component :is="detail_of(item)" :item="item"/>
@@ -308,17 +345,13 @@ Vue.component("AdvalvasFeed", {
 `,
   data: function() {
     return {
-      internalMode: "my"
+      showMy: true,
+      showFollowing: true
     };
   },
   watch: {
-    internalMode: function(newMode) {
-      if (newMode !== this.feedMode) {
-        store.dispatch("setFeedMode", newMode);
-      }
-    },
     feedMode: function(newMode) {
-      this.internalMode = newMode;
+      this.updateTogglesFromMode(newMode);
     }
   },
   computed: {
@@ -345,23 +378,325 @@ Vue.component("AdvalvasFeed", {
         return moment(when).calendar();
       }
     }
+  },
+  methods: {
+    userPicture: function(item) {
+      if (item.user && Array.isArray(item.user) && item.user.length > 0 && item.user[0].picture) {
+        return item.user[0].picture;
+      }
+      // Default avatar as inline SVG data URI
+      return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239e9e9e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+    },
+    updateTogglesFromMode: function(mode) {
+      if (mode === "my") {
+        this.showMy = true;
+        this.showFollowing = false;
+      } else if (mode === "following") {
+        this.showMy = false;
+        this.showFollowing = true;
+      } else if (mode === "all") {
+        this.showMy = true;
+        this.showFollowing = true;
+      }
+    },
+    getModeFromToggles: function() {
+      if (this.showMy && this.showFollowing) {
+        return "all";
+      } else if (this.showFollowing) {
+        return "following";
+      } else {
+        return "my";
+      }
+    },
+    toggleMy: function() {
+      this.showMy = !this.showMy;
+      // If both are off, turn on "my" as default
+      if (!this.showMy && !this.showFollowing) {
+        this.showMy = true;
+      }
+      var newMode = this.getModeFromToggles();
+      if (newMode !== this.feedMode) {
+        store.dispatch("setFeedMode", newMode);
+      }
+    },
+    toggleFollowing: function() {
+      this.showFollowing = !this.showFollowing;
+      // If both are off, turn on "my" as default
+      if (!this.showMy && !this.showFollowing) {
+        this.showMy = true;
+      }
+      var newMode = this.getModeFromToggles();
+      if (newMode !== this.feedMode) {
+        store.dispatch("setFeedMode", newMode);
+      }
+    }
+  },
+  mounted: function() {
+    this.updateTogglesFromMode(this.feedMode);
   }
 })
 
+
+Vue.component("FollowingSection", {
+  template: `
+<div>
+  <h2 style="border-bottom: 1px solid #ddd; padding-bottom: 8px;">👥 Social</h2>
+
+  <!-- Following Card with integrated search -->
+  <v-card style="margin-top: 16px;">
+    <v-card-title>
+      <v-icon left>people_outline</v-icon>
+      <span>Following ({{ followingCount }})</span>
+    </v-card-title>
+    <v-card-text style="padding-top: 0;">
+      <v-list v-if="following.length > 0" dense>
+        <template v-for="(user, index) in following">
+          <v-list-tile :key="user.email" class="following-user-tile">
+            <v-list-tile-avatar size="32">
+              <img :src="user.picture || defaultAvatar">
+            </v-list-tile-avatar>
+
+            <v-list-tile-content>
+              <v-list-tile-title>{{ user.name || user.email }}</v-list-tile-title>
+            </v-list-tile-content>
+
+            <v-list-tile-action class="following-unfollow-btn">
+              <v-btn
+                color="default"
+                small
+                @click.stop="unfollowUser(user.email)"
+              >
+                <v-icon left small>close</v-icon>
+                Unfollow
+              </v-btn>
+            </v-list-tile-action>
+          </v-list-tile>
+          <v-divider v-if="index < following.length - 1" :key="'divider-f-' + user.email"></v-divider>
+        </template>
+      </v-list>
+      <p v-else class="grey--text" style="margin: 0;">
+        You're not following anyone yet. Search below to get started!
+      </p>
+    </v-card-text>
+
+    <!-- Integrated User Search -->
+    <v-card-text style="padding-top: 0; border-top: 1px solid #eee;" v-if="following.length > 0">
+      <div style="border-top: 1px solid #eee; margin: 0 -16px; padding: 16px 16px 0;">
+        <v-text-field
+          v-model="searchQuery"
+          label="Search by email to follow more users"
+          prepend-icon="search"
+          clearable
+          :loading="searchLoading"
+          @input="debouncedSearch"
+          hint="Type at least 2 characters"
+          style="margin-top: 0;"
+        />
+      </div>
+    </v-card-text>
+    <v-card-text v-else style="padding-top: 16px;">
+      <v-text-field
+        v-model="searchQuery"
+        label="Search by email"
+        prepend-icon="search"
+        clearable
+        :loading="searchLoading"
+        @input="debouncedSearch"
+        hint="Type at least 2 characters"
+      />
+    </v-card-text>
+
+    <!-- Search Results -->
+    <v-card-text style="padding-top: 0;" v-if="searchResults.length > 0 || (searchQuery && searchQuery.length >= 2 && !searchLoading)">
+      <v-list v-if="searchResults.length > 0" two-line dense>
+        <template v-for="(user, index) in searchResults">
+          <v-list-tile :key="'search-' + user.email" avatar>
+            <v-list-tile-avatar>
+              <img :src="user.picture || defaultAvatar">
+            </v-list-tile-avatar>
+
+            <v-list-tile-content>
+              <v-list-tile-title>{{ user.name || user.email }}</v-list-tile-title>
+              <v-list-tile-sub-title>{{ user.email }}</v-list-tile-sub-title>
+            </v-list-tile-content>
+
+            <v-list-tile-action>
+              <FollowButton
+                :email="user.email"
+                :name="user.name"
+                :picture="user.picture"
+                small
+                @followed="onFollowed"
+                @unfollowed="onUnfollowed"
+              />
+            </v-list-tile-action>
+          </v-list-tile>
+          <v-divider v-if="index < searchResults.length - 1" :key="'divider-search-' + user.email"></v-divider>
+        </template>
+      </v-list>
+      <v-alert
+        v-else-if="searchQuery && searchQuery.length >= 2 && !searchLoading"
+        type="info"
+        :value="true"
+        outline
+      >
+        No users found matching "{{ searchQuery }}"
+      </v-alert>
+    </v-card-text>
+  </v-card>
+
+  <!-- Followers Card -->
+  <v-card style="margin-top: 16px;">
+    <v-card-title>
+      <v-icon left>people</v-icon>
+      <span>Followers ({{ followersCount }})</span>
+    </v-card-title>
+    <v-card-text style="padding-top: 0;">
+      <v-list v-if="followers.length > 0" dense>
+        <template v-for="(user, index) in followers">
+          <v-list-tile :key="'follower-' + user.email">
+            <v-list-tile-avatar size="32">
+              <img :src="user.picture || defaultAvatar">
+            </v-list-tile-avatar>
+
+            <v-list-tile-content>
+              <v-list-tile-title>{{ user.name || user.email }}</v-list-tile-title>
+            </v-list-tile-content>
+          </v-list-tile>
+          <v-divider v-if="index < followers.length - 1" :key="'divider-fr-' + user.email"></v-divider>
+        </template>
+      </v-list>
+      <p v-else class="grey--text" style="margin: 0;">
+        No followers yet.
+      </p>
+    </v-card-text>
+  </v-card>
+</div>
+`,
+  data: function() {
+    return {
+      searchQuery: "",
+      searchResults: [],
+      searchLoading: false,
+      debounceTimer: null
+    };
+  },
+  computed: {
+    following: function() {
+      return store.getters.following || [];
+    },
+    followers: function() {
+      return store.getters.followers || [];
+    },
+    followingCount: function() {
+      return store.getters.followingCount || 0;
+    },
+    followersCount: function() {
+      return store.getters.followersCount || 0;
+    },
+    defaultAvatar: function() {
+      return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239e9e9e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+    }
+  },
+  methods: {
+    debouncedSearch: function() {
+      var self = this;
+      if (self.debounceTimer) {
+        clearTimeout(self.debounceTimer);
+      }
+      self.debounceTimer = setTimeout(function() {
+        self.performSearch();
+      }, 300);
+    },
+    performSearch: function() {
+      var self = this;
+      if (!self.searchQuery || self.searchQuery.length < 2) {
+        self.searchResults = [];
+        return;
+      }
+      self.searchLoading = true;
+      self.searchResults = [];
+      store.dispatch("searchUsers", self.searchQuery)
+        .then(function(users) {
+          self.searchLoading = false;
+          self.searchResults = users;
+        })
+        .catch(function(error) {
+          self.searchLoading = false;
+          console.error("UserSearch search error:", error);
+        });
+    },
+    clearSearch: function() {
+      var self = this;
+      self.searchQuery = "";
+      self.searchResults = [];
+    },
+    onFollowed: function(data) {
+      var self = this;
+      store.dispatch("loadFollowing").then(function() {
+        // Reload feed if currently viewing following or all feed
+        var mode = store.getters.feedMode;
+        if (mode === "following" || mode === "all") {
+          store.dispatch("load_feed");
+        }
+      });
+      self.clearSearch();
+    },
+    onUnfollowed: function(email) {
+      store.dispatch("loadFollowing").then(function() {
+        // If no longer following anyone, switch to "my" feed mode
+        if (store.getters.followingCount === 0) {
+          store.dispatch("setFeedMode", "my");
+        } else {
+          var mode = store.getters.feedMode;
+          if (mode === "following" || mode === "all") {
+            store.dispatch("load_feed");
+          }
+        }
+      });
+    },
+    unfollowUser: function(email) {
+      var self = this;
+      store.dispatch("unfollowUser", email)
+        .then(function() {
+          return store.dispatch("loadFollowing");
+        })
+        .then(function() {
+          // If no longer following anyone, switch to "my" feed mode
+          if (store.getters.followingCount === 0) {
+            store.dispatch("setFeedMode", "my");
+          } else {
+            var mode = store.getters.feedMode;
+            if (mode === "following" || mode === "all") {
+              store.dispatch("load_feed");
+            }
+          }
+        })
+        .catch(function(error) {
+          console.error("Failed to unfollow:", error);
+        });
+    }
+  }
+});
 
 var Home = {
   template : `
 <ProtectedPage icon="dashboard" title="Ad Valvas">
 
-  <StatsCards style="margin-bottom: 16px"/>
+  <StatsCards style="margin-bottom: 24px"/>
 
   <v-layout row wrap>
     <v-flex sm12 md6 v-if="feed.length">
-      <AdvalvasFeed :feed="feed"/>
+      <div style="padding-right: 12px;">
+        <AdvalvasFeed :feed="feed"/>
+      </div>
     </v-flex>
 
     <v-flex sm12 md6 :offset-md3="!feed.length">
-      <AdvalvasUpdates/>
+      <div :style="feed.length ? 'padding-left: 12px;' : ''">
+        <FollowingSection/>
+        <AdvalvasUpdates style="margin-top: 24px;"/>
+      </div>
     </v-flex>
   </v-layout>
 
@@ -382,6 +717,7 @@ var Home = {
   mounted: function() {
     store.dispatch("loadStats");
     store.dispatch("loadFollowing");
+    store.dispatch("loadFollowers");
   }
 };
 

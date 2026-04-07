@@ -5,6 +5,7 @@ from flask_login import current_user
 
 import pymongo
 from pymongo.collection import ReturnDocument
+from bson.objectid import ObjectId
 
 from datetime import datetime
 
@@ -219,71 +220,77 @@ class Feed(Resource):
     Derive feed items from sessions collection.
     Quiz/training results are derived from completed/abandoned sessions.
     """
-    # Build aggregation pipeline for sessions
-    pipeline = [
-      {
-        "$match": {
-          "user": {"$in": user_emails},
-          "status": {"$in": ["completed", "abandoned"]}
-        }
-      },
-      {
-        "$lookup": {
-          "from": "users",
-          "localField": "user",
-          "foreignField": "_id",
-          "as": "user_info"
-        }
-      },
-      {
-        "$project": {
-          "_id": 0,  # Exclude ObjectId
-          "kind": {"$concat": ["$kind", " result"]},  # "quiz result" or "training result"
-          "user": {"$arrayElemAt": ["$user_info", 0]},
-          "when": {
-            "$dateToString": {
-              "date": "$stopped_at",
-              "format": "%Y-%m-%dT%H:%M:%S.%LZ"
-            }
-          },
-          "topics": 1,
-          "questions": 1,
-          "asked": 1,
-          "attempts": 1,
-          "correct": 1,
-          "elapsed": 1
-        }
-      },
-      {
-        "$project": {
-          "kind": 1,
-          "user": {
-            "email": "$user._id",
-            "name": "$user.name",
-            "picture": "$user.picture"
-          },
-          "when": 1,
-          "topics": 1,
-          "questions": 1,
-          "asked": 1,
-          "attempts": 1,
-          "correct": 1,
-          "elapsed": 1
-        }
-      },
-      {
-        "$sort": {"when": -1}
-      },
-      {
-        "$limit": limit
-      }
-    ]
+    # Get sessions for the specified users
+    sessions = list(db.sessions.find(
+      {"user": {"$in": user_emails}, "status": {"$in": ["completed", "abandoned"]}},
+      {"_id": 0, "user": 1, "kind": 1, "topics": 1, "questions": 1, "asked": 1, "attempts": 1, "correct": 1, "elapsed": 1, "stopped_at": 1}
+    ).sort("stopped_at", -1).limit(limit))
 
-    results = list(db.sessions.aggregate(pipeline))
-    # Convert ObjectId topics to strings for JSON serialization
-    for item in results:
-      if "topics" in item and item["topics"]:
-        item["topics"] = [str(t) if hasattr(t, '__str__') else t for t in item["topics"]]
+    if not sessions:
+      return []
+
+    # Get unique user emails from sessions
+    session_emails = list(set(s["user"] for s in sessions))
+
+    # Look up users (similar to how Following endpoint does it)
+    users_map = {
+      u["_id"]: u
+      for u in db.users.find({"_id": {"$in": session_emails}}, {"_id": 1, "name": 1, "picture": 1})
+    }
+
+    # Build results
+    results = []
+    for session in sessions:
+      user_email = session["user"]
+      user_doc = users_map.get(user_email)
+
+      # Build user object
+      if user_doc:
+        user_info = {
+          "email": user_email,
+          "name": user_doc.get("name", user_email),
+          "picture": user_doc.get("picture")
+        }
+      else:
+        user_info = {
+          "email": user_email,
+          "name": user_email,
+          "picture": None
+        }
+
+      # Convert ObjectId topics to strings and add topic names
+      topic_objects = []
+      if "topics" in session and session["topics"]:
+        topic_ids = [str(t) if hasattr(t, '__str__') else t for t in session["topics"]]
+        valid_object_ids = []
+        for tid in topic_ids:
+          try:
+            valid_object_ids.append(ObjectId(tid))
+          except:
+            topic_objects.append({"_id": tid, "name": tid})
+
+        if valid_object_ids:
+          topic_docs = list(db.topics.find(
+            {"_id": {"$in": valid_object_ids}},
+            {"_id": 1, "name": 1}
+          ))
+          topic_map = {str(t["_id"]): t.get("name", "Unknown") for t in topic_docs}
+          for tid in topic_ids:
+            if tid in topic_map:
+              topic_objects.append({"_id": tid, "name": topic_map[tid]})
+
+      results.append({
+        "kind": session["kind"] + " result",
+        "user": [user_info],
+        "when": session["stopped_at"].isoformat() + "Z" if session.get("stopped_at") else None,
+        "topics": topic_objects,
+        "questions": session.get("questions"),
+        "asked": session.get("asked"),
+        "attempts": session.get("attempts"),
+        "correct": session.get("correct"),
+        "elapsed": session.get("elapsed")
+      })
+
     return results
 
   @staticmethod
@@ -291,51 +298,69 @@ class Feed(Resource):
     """
     Get "new topic" events from feed collection.
     """
-    pipeline = [
-      {
-        "$match": {
-          "user.0": {"$in": user_emails},
-          "kind": "new topic"
-        }
-      },
-      {
-        "$lookup": {
-          "from": "users",
-          "localField": "user.0",
-          "foreignField": "_id",
-          "as": "user_info"
-        }
-      },
-      {
-        "$project": {
-          "_id": 0,  # Exclude ObjectId
-          "kind": 1,
-          "user": {"$arrayElemAt": ["$user_info", 0]},
-          "when": 1,
-          "topic": 1
-        }
-      },
-      {
-        "$project": {
-          "kind": 1,
-          "user": {
-            "email": "$user._id",
-            "name": "$user.name",
-            "picture": "$user.picture"
-          },
-          "when": 1,
-          "topic": 1
-        }
-      },
-      {
-        "$sort": {"when": -1}
-      },
-      {
-        "$limit": limit
-      }
-    ]
+    # Get feed items for the specified users
+    feed_items = list(db.feed.find(
+      {"user.0": {"$in": user_emails}, "kind": "new topic"},
+      {"_id": 0, "user": 1, "kind": 1, "when": 1, "topic": 1}
+    ).sort("when", -1).limit(limit))
 
-    return list(db.feed.aggregate(pipeline))
+    if not feed_items:
+      return []
+
+    # Get unique user emails from feed items
+    feed_emails = []
+    for item in feed_items:
+      if item.get("user") and len(item["user"]) > 0:
+        feed_emails.append(item["user"][0])
+    feed_emails = list(set(feed_emails))
+
+    # Look up users
+    users_map = {
+      u["_id"]: u
+      for u in db.users.find({"_id": {"$in": feed_emails}}, {"_id": 1, "name": 1, "picture": 1})
+    }
+
+    # Build results
+    results = []
+    for item in feed_items:
+      user_email = item["user"][0] if item.get("user") else None
+      user_doc = users_map.get(user_email) if user_email else None
+
+      # Build user object
+      if user_doc:
+        user_info = {
+          "email": user_email,
+          "name": user_doc.get("name", user_email),
+          "picture": user_doc.get("picture")
+        }
+      else:
+        user_info = {
+          "email": user_email or "unknown",
+          "name": user_email or "Unknown",
+          "picture": None
+        }
+
+      # Add topic name
+      topic_info = None
+      if "topic" in item and item["topic"]:
+        topic_id = str(item["topic"]) if hasattr(item["topic"], '__str__') else item["topic"]
+        try:
+          topic_doc = db.topics.find_one({"_id": ObjectId(topic_id)}, {"_id": 1, "name": 1})
+          if topic_doc:
+            topic_info = {"_id": topic_id, "name": topic_doc.get("name", "Unknown")}
+          else:
+            topic_info = {"_id": topic_id, "name": topic_id}
+        except:
+          topic_info = {"_id": topic_id, "name": topic_id}
+
+      results.append({
+        "kind": item["kind"],
+        "user": [user_info],
+        "when": item.get("when") if isinstance(item.get("when"), str) else (item.get("when").isoformat() + "Z" if item.get("when") else None),
+        "topic": topic_info
+      })
+
+    return results
 
   @staticmethod
   def _get_my_feed():
@@ -351,30 +376,6 @@ class Feed(Resource):
     # Combine and sort by when
     combined = sessions_feed + topics_feed
     combined.sort(key=lambda x: x.get("when", ""), reverse=True)
-
-    # Convert user dict to list format for frontend compatibility
-    # Handle cases where user._id might be a dict (corrupted data)
-    for item in combined:
-      if "user" in item:
-        user = item["user"]
-        if isinstance(user, dict):
-          email = user.get("email")
-          # Handle case where _id is a dict (OAuth claims) instead of string
-          if isinstance(email, dict):
-            email = email.get("email", "unknown")
-          if email and isinstance(email, str):
-            item["user"] = [{
-              "email": email,
-              "name": user.get("name", email),
-              "picture": user.get("picture")
-            }]
-          else:
-            item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
-        elif isinstance(user, list) and len(user) > 0:
-          # Already correct format
-          pass
-        else:
-          item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
 
     return combined[:10]
 
@@ -403,29 +404,32 @@ class Feed(Resource):
     combined = sessions_feed + topics_feed
     combined.sort(key=lambda x: x.get("when", ""), reverse=True)
 
-    # Convert user dict to list format for frontend compatibility
-    # Handle cases where user._id might be a dict (corrupted data)
-    for item in combined:
-      if "user" in item:
-        user = item["user"]
-        if isinstance(user, dict):
-          email = user.get("email")
-          # Handle case where _id is a dict (OAuth claims) instead of string
-          if isinstance(email, dict):
-            email = email.get("email", "unknown")
-          if email and isinstance(email, str):
-            item["user"] = [{
-              "email": email,
-              "name": user.get("name", email),
-              "picture": user.get("picture")
-            }]
-          else:
-            item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
-        elif isinstance(user, list) and len(user) > 0:
-          # Already correct format
-          pass
-        else:
-          item["user"] = [{"email": "unknown", "name": "Unknown", "picture": None}]
+    return combined[:10]
+
+  @staticmethod
+  def _get_all_feed():
+    """Get combined activity feed from both user and followed users."""
+    user_email = current_user.identity.email
+
+    # Get following list
+    follows = list(db.follows.find(
+      {"follower": user_email},
+      {"_id": 0, "following": 1}
+    ))
+    following_emails = [f["following"] for f in follows]
+
+    # Combined list: user + followed users
+    all_emails = [user_email] + following_emails
+
+    # Get sessions-derived feed
+    sessions_feed = Feed._get_sessions_feed(all_emails)
+
+    # Get "new topic" events
+    topics_feed = Feed._get_topics_feed(all_emails)
+
+    # Combine and sort by when
+    combined = sessions_feed + topics_feed
+    combined.sort(key=lambda x: x.get("when", ""), reverse=True)
 
     return combined[:10]
 
@@ -436,11 +440,14 @@ class Feed(Resource):
     Query params:
       mode: "my" (default) - current user's activity
             "following" - activity from followed users
+            "all" - combined activity from both
     """
     mode = server.request.args.get("mode", "my")
 
     if mode == "following":
       return Feed._get_following_feed()
+    elif mode == "all":
+      return Feed._get_all_feed()
     else:
       return Feed._get_my_feed()
 
