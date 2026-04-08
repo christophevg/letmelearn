@@ -168,12 +168,11 @@ class TopicResource(Resource):
       id: Topic ID.
 
     Returns:
-      {"topic": id, "treeitems": updated_tree, "feed": updated_feed}
+      {"topic": id, "treeitems": updated_tree}
 
-    Note: Also removes topic from folder tree and deletes related feed items.
+    Note: Also removes topic from folder tree.
     """
     from letmelearn.api.folders import Folders
-    from letmelearn.api.feed import Feed
 
     # delete the topic
     db.topics.delete_one({
@@ -190,13 +189,9 @@ class TopicResource(Resource):
       # might happen if the topic wasn't added to the TreeItems yet
       pass
 
-    # delete feed items referencing it
-    db.feed.delete_many({"topics": id})
-
     return {
       "topic": id,
-      "treeitems": Folders._set(tree.as_dicts()),
-      "feed": Feed._get()
+      "treeitems": Folders._set(tree.as_dicts())
     }
 
 

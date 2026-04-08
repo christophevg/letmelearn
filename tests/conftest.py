@@ -150,8 +150,11 @@ def assert_rfc7807_error(response, expected_type, expected_status):
   assert data['status'] == expected_status, \
     f"Status field mismatch: {data['status']} != {expected_status}"
 
-  # Type should reference expected error
-  assert expected_type in data['type'].lower(), \
-    f"Type '{data['type']}' should contain '{expected_type}'"
+  # Type should reference expected error (allow both underscore and hyphen forms)
+  # e.g., 'not_found' matches '/errors#not-found'
+  type_lower = data['type'].lower()
+  expected_hyphen = expected_type.replace('_', '-')
+  assert expected_type in type_lower or expected_hyphen in type_lower, \
+    f"Type '{data['type']}' should contain '{expected_type}' or '{expected_hyphen}'"
 
   return data
