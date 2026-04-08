@@ -837,16 +837,29 @@ components:
   # ============================================
 
   schemas:
-    # ---- Error ----
+    # ---- Error (RFC 7807 Problem Details) ----
     Error:
       type: object
+      required:
+        - type
+        - title
+        - status
       properties:
-        error:
+        type:
           type: string
-          description: Error message
-        code:
+          description: Error type URI reference (e.g., /errors#not-found)
+        title:
+          type: string
+          description: Short human-readable summary of the error
+        status:
           type: integer
           description: HTTP status code
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+        instance:
+          type: string
+          description: URI reference identifying this specific occurrence
 
     # ---- Session Tracking (New) ----
 
