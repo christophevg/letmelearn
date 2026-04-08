@@ -1,29 +1,64 @@
 # TODO
 
-## Priority Order
+This document tracks all tasks for Let Me Learn: current work, backlog, and completed items.
 
-| Priority | Meaning |
-|----------|---------|
-| prio:1 | Most urgent - do first |
-| prio:2-4 | Medium priority |
-| prio:5 | Nice to have |
-| prio:0 | Unprioritized - lowest |
+## Workflow
+
+### TODO Management (this document)
+
+1. **Add** — User adds rough task outlines to the "Backlog" section
+2. **Refine** — Review expands tasks with clear descriptions and acceptance criteria
+3. **Prioritize** — User assigns priorities using `prio:N` tags (see table below)
+4. **Work** — Work proceeds on tasks by priority (prio:1 first) OR by user's explicit instructions
+5. **Complete** — When done, mark `[x]` AND move to the "Done" section with completion date
+
+### Task Development (when starting work)
+
+1. Ensure task has clear description and acceptance criteria
+2. Create `analysis/` folder notes if complex analysis needed
+3. Create `reporting/{task-slug}/` folder for implementation notes
+4. Work through task, updating status as needed
+5. Mark as complete and move to Done section
+
+## Priority System
+
+| Priority | Meaning | Behavior |
+|----------|---------|----------|
+| `prio:1` | Most urgent | Work on this first |
+| `prio:2-4` | Medium | Work after prio:1 items |
+| `prio:5` | Nice to have | Work when no higher priority items |
+| `prio:0` | Unprioritized | Default if no priority specified |
+
+**Note**: Items without an explicit priority tag default to `prio:0` (lowest priority).
 
 ---
 
-## Improve
+## Current Work
 
-### General
+*Tasks being actively worked on. Check the checkbox when starting work.*
 
-- [ ] create backend tests for all API calls based on OpenAPI spec (prio:1)
-  - [ ] Create test_folders.py with CRUD tests
-  - [ ] Create test_topics.py with CRUD tests
-  - [ ] Create test_auth.py with session management tests
-  - [ ] Create test_feed.py with mode parameter tests
-  - [ ] Add /api/stats/following/streaks tests to test_stats.py
-  - [ ] Add /api/users search endpoint tests
-  - [ ] Integrate schemathesis for OpenAPI contract testing
-  - [ ] Ensure all error responses follow RFC 7807 format
+### Backend Testing (prio:1) — In Progress
+
+- [x] ~~Create API sub-module for better code organization~~
+- [x] ~~Simplify OAuth testing with TEST_MODE~~
+- [x] ~~Create test_auth.py with session management tests~~
+- [x] ~~Create test_folders.py with CRUD tests~~
+- [x] ~~Create test_topics.py with CRUD tests~~
+- [x] ~~Create test_feed.py with mode parameter tests~~
+- [x] ~~Create test_users.py with search tests~~
+- [x] ~~Create test_errors.py for RFC 7807 compliance~~
+- [x] ~~Extend test_stats.py with following streaks tests~~
+- [ ] Integrate schemathesis for OpenAPI contract testing
+- [ ] Add /api/stats/following/streaks tests to test_stats.py (extended)
+
+---
+
+## Backlog
+
+*Unsorted and pending tasks. Ready for prioritization.*
+
+### General Improvements
+
 - [ ] fill In Question: text size according to width when xs (prio:0)
 - [ ] create AbstractQuestion base class (prio:0)
 - [ ] generic error catch-all (prio:0)
@@ -54,17 +89,18 @@
 - [ ] add ability to dismiss/acknowledge seen news items (prio:0)
 - [ ] add loading states / skeleton loaders (prio:0)
 
-## Extend
+### Feature Extensions
 
 - [ ] add streak freeze feature (prio:3)
   - Protect streak for one day if user misses goal
   - Max 2 consecutive freezes
   - Requires `frozen_days` array in user document
-  - Postponed until core streak feature is implemented
 - [ ] share topics with other users (prio:0)
 - [ ] search/filter topics by all aspects (name, tags,...) (prio:0)
 
-### API Review Fixes (from api-architect review) - Low Priority
+### API Review Fixes (Low Priority)
+
+*Technical debt items from api-architect review.*
 
 - [ ] Add rate limiting (prio:0)
   - Recommendation: add rate limiting
@@ -89,52 +125,39 @@
 
 ## Done
 
+*All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-08: Backend Testing Infrastructure
+
+- [x] Create API sub-module for better code organization
+- [x] Simplify OAuth testing with TEST_MODE
+- [x] Update OpenAPI Error schema to RFC 7807 format
+- [x] Create test_auth.py with session management tests (17 tests)
+- [x] Create test_folders.py with CRUD tests (9 tests)
+- [x] Create test_topics.py with CRUD tests (18 tests)
+- [x] Create test_feed.py with mode parameter tests (14 tests)
+- [x] Create test_users.py with search tests (7 tests)
+- [x] Create test_errors.py for RFC 7807 compliance (6 tests)
+- [x] Extend test_stats.py with following streaks tests (6 tests)
+- [x] Fix FeedStore.js default mode from "all" to "my"
+- [x] Fix deprecation warnings (logger.warn → logger.warning)
+
 ### Phase 7: Social Feed System - API Review Fixes
 
 - [x] Fix email as path parameter in `/api/following` (prio:1)
-  - Issue: Email addresses cause URL encoding issues with `@` and `.` characters
-  - Fix: Changed `<path:email>` to `<string:email>`
-
 - [x] Fix schema inconsistency in `following` field type (prio:1)
-  - Issue: `following` field has different types in POST vs DELETE responses
-  - Fix: DELETE now returns UserInfo object
-
 - [x] Fix OpenAPI schema mismatch for FollowingStreak (prio:1)
-  - Issue: OpenAPI schema uses `user` object but implementation returns flat fields
-  - Fix: Implementation now wraps user info in `user` object
-
 - [x] Implement RFC 7807 Problem Details for errors (prio:2)
-  - Issue: Errors use Flask's `abort()` returning plain text, not structured format
-  - Fix: Created `letmelearn/errors.py` module, updated all `abort()` calls, updated frontend `ajax.js`
-  - Added `/errors` documentation page with human-friendly descriptions
-
 - [x] Increase minimum search prefix length (prio:2)
-  - Issue: User enumeration vulnerability - 2 character minimum is too short
-  - Fix: Changed minimum from 2 to 3 characters
-
 - [x] Add privacy setting for streak visibility (prio:2)
-  - Issue: `/api/stats/following/streaks` exposes streak data without user consent
-  - Fix: Already implemented correctly - endpoint only returns streaks for users the authenticated user follows
-
 - [x] Add 422 Unprocessable Entity for business rule violations (prio:2)
-  - Issue: Uses 400 for business rule violations, 422 is more semantic
-  - Fix: Changed "Cannot follow yourself" from 400 to 422
 
 ### Phase 7: Social Feed System - Frontend
 
 - [x] Create UserSearch component (prio:1)
-  - Search for users by email
-  - Display follow/unfollow button
-
 - [x] Create FollowingStreaks component (prio:1)
-  - Display followed users' streaks
-  - Sort by streak descending
-  - Show today's practice time
-
 - [x] Update `docs/openapi.yaml` with social endpoints (prio:1)
-
 - [x] Update `analysis/api.md` with social feed analysis (prio:1)
-
 - [x] Create `FollowsStore` Vuex module
 - [x] Modify `FeedStore` for mode support
 - [x] Add frontend tests to tests.js
@@ -205,5 +228,3 @@
   - [x] create OpenAPI specification (docs/openapi.yaml)
   - [x] create API analysis document (analysis/api.md)
   - [x] update TODO.md with implementation tasks
-- [x] add testing (prio:0)
-  - Superseded by prio:1 backend testing task with clarified scope
