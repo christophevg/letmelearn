@@ -11,18 +11,21 @@
 
 ---
 
-## Backlog
-
-### Fix
-
-- [ ] fill In Question: text size according to width when xs (prio:0)
-
 ## Improve
 
 ### General
 
+- [ ] create backend tests for all API calls based on OpenAPI spec (prio:1)
+  - [ ] Create test_folders.py with CRUD tests
+  - [ ] Create test_topics.py with CRUD tests
+  - [ ] Create test_auth.py with session management tests
+  - [ ] Create test_feed.py with mode parameter tests
+  - [ ] Add /api/stats/following/streaks tests to test_stats.py
+  - [ ] Add /api/users search endpoint tests
+  - [ ] Integrate schemathesis for OpenAPI contract testing
+  - [ ] Ensure all error responses follow RFC 7807 format
+- [ ] fill In Question: text size according to width when xs (prio:0)
 - [ ] create AbstractQuestion base class (prio:0)
-- [ ] add testing (prio:0)
 - [ ] generic error catch-all (prio:0)
   - [ ] start up (prio:0)
 - [ ] generic error reporting (prio:0)
@@ -33,6 +36,10 @@
   - [ ] extract common parsing logic (prio:0)
 
 ### Ad Valvas Dashboard
+
+#### Fix
+
+- [ ] When the "alternate identify" feature is used, all sections in the advalvas dashboard (stats, feed, socials) should be updated accordingly (prio:2)
 
 #### UX Improvements
 
@@ -49,7 +56,7 @@
 
 ## Extend
 
-- [ ] add streak freeze feature (prio:2)
+- [ ] add streak freeze feature (prio:3)
   - Protect streak for one day if user misses goal
   - Max 2 consecutive freezes
   - Requires `frozen_days` array in user document
@@ -198,3 +205,5 @@
   - [x] create OpenAPI specification (docs/openapi.yaml)
   - [x] create API analysis document (analysis/api.md)
   - [x] update TODO.md with implementation tasks
+- [x] add testing (prio:0)
+  - Superseded by prio:1 backend testing task with clarified scope

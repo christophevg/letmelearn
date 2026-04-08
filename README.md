@@ -44,7 +44,4 @@ So, the setup/architecture of this application will be my (currently) prefered o
   - [x] Implement "learn a topic"
     <p align="center">
       <img src="https://raw.githubusercontent.com/christophevg/letmelearn/master/media/letmelearn.png">
-    </p>  
-- [ ] Further refactor code into more generic framework
-  - [ ] Generic API layer
-  - [ ] Dynamic Store construction
+    </p>
