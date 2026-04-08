@@ -64,14 +64,20 @@ class TestFollowingPost:
         data = response.get_json()
         assert data['following']['email'] == 'target@example.com'
 
-    def test_follow_self_returns_400(self, auth_client):
-        """Following yourself should return 400."""
+    def test_follow_self_returns_422(self, auth_client):
+        """Following yourself should return 422 Unprocessable Entity."""
         response = auth_client.post('/api/following/test@example.com')
 
-        assert response.status_code == 400
-        # Flask abort returns 'message' or 'error' depending on configuration
+        assert response.status_code == 422
         data = response.get_json()
-        assert 'yourself' in (data.get('error') or data.get('message') or '').lower()
+        # RFC 7807 error format
+        assert 'type' in data
+        assert 'title' in data
+        assert 'status' in data
+        assert data['status'] == 422
+        # Check for self-follow message
+        detail = data.get('detail', '').lower()
+        assert 'yourself' in detail or 'themselves' in detail
 
     def test_follow_nonexistent_user_returns_404(self, auth_client):
         """Following a non-existent user should return 404."""

@@ -166,13 +166,12 @@ def problem_response(problem_type, detail=None, instance=None, **kwargs):
         **kwargs: Additional problem-specific fields
 
     Returns:
-        Flask response object
+        Tuple of (problem_dict, status_code) for use in Flask-RESTful resources
 
     Example:
         return problem_response("self_follow", detail="Users cannot follow themselves")
     """
-    problem_data, status = problem(problem_type, detail, instance, **kwargs)
-    return jsonify(problem_data), status
+    return problem(problem_type, detail, instance, **kwargs)
 
 
 def register_error_handlers(app):
@@ -187,36 +186,44 @@ def register_error_handlers(app):
 
     @app.errorhandler(400)
     def handle_bad_request(e):
-        return problem_response("bad_request", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("bad_request", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(401)
     def handle_unauthorized(e):
-        return problem_response("unauthorized", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("unauthorized", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(403)
     def handle_forbidden(e):
-        return problem_response("forbidden", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("forbidden", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(404)
     def handle_not_found(e):
-        return problem_response("not_found", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("not_found", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(405)
     def handle_method_not_allowed(e):
-        return problem_response("method_not_allowed", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("method_not_allowed", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(409)
     def handle_conflict(e):
-        return problem_response("conflict", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("conflict", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(422)
     def handle_unprocessable_entity(e):
-        return problem_response("unprocessable_entity", detail=str(e.description) if hasattr(e, 'description') else None)
+        problem_data, status = problem("unprocessable_entity", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
 
     @app.errorhandler(500)
     def handle_internal_error(e):
         logger.error(f"Internal server error: {e}")
-        return problem_response("internal_error", detail="An unexpected error occurred")
+        problem_data, status = problem("internal_error", detail="An unexpected error occurred")
+        return jsonify(problem_data), status
 
     @app.errorhandler(Exception)
     def handle_exception(e):
@@ -238,4 +245,5 @@ def register_error_handlers(app):
 
         # Log unexpected exceptions
         logger.exception(f"Unexpected error: {e}")
-        return problem_response("internal_error", detail="An unexpected error occurred")
+        problem_data, status = problem("internal_error", detail="An unexpected error occurred")
+        return jsonify(problem_data), status

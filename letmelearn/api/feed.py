@@ -1,224 +1,40 @@
+"""
+Feed endpoint for activity feed.
+
+Provides RESTful endpoints for:
+- GET /api/feed - Get activity feed (with mode parameter)
+- POST /api/feed - Create feed item (new topic event)
+"""
+
 import logging
+from datetime import datetime
 
 from flask_restful import Resource
 from flask_login import current_user
-
-import pymongo
-from pymongo.collection import ReturnDocument
 from bson.objectid import ObjectId
 
-from datetime import datetime
-
-from letmelearn.web       import server
-from letmelearn.data      import db
-from letmelearn.auth      import authenticated
-from letmelearn.treeitems import TreeItems, Folder, Topic, idfy
-from letmelearn.errors    import problem_response
+from letmelearn.web import server
+from letmelearn.data import db
+from letmelearn.auth import authenticated
 
 logger = logging.getLogger(__name__)
 
-class Folders(Resource):
-  @staticmethod
-  def _get():
-    items = db.folders.find_one({ "_id": current_user.identity.email })
-    if items and "items" in items:
-      return items["items"]
-    return []
-  
-  @staticmethod
-  def _set(items):
-    return db.folders.find_one_and_replace(
-      { "_id"   : current_user.identity.email },
-      { "items" : items },
-      upsert=True,
-      return_document=ReturnDocument.AFTER
-    )["items"]
-  
-  @authenticated
-  def get(self):
-    return self._get()
-
-  @authenticated
-  def post(self, path=None):
-    name = server.request.json["name"]
-    logger.info(f"adding {name} to {path}")
-
-    tree = TreeItems.from_dicts(Folders._get())
-    try:
-      tree[path].add(Folder(name))
-      return Folders._set(tree.as_dicts())
-    except KeyError:
-      # we didn't find this folder
-      logger.warn(f"couldn't find folder '{path}'")
-      return problem_response("not_found", detail=f"Folder '{path}' not found")
-
-  @authenticated
-  def delete(self, path):
-    tree = TreeItems.from_dicts(Folders._get())
-    try:
-      tree.remove(path)
-      return Folders._set(tree.as_dicts())
-    except KeyError:
-      # we didn't find this folder
-      logger.warn(f"couldn't find item '{path}'")
-      return problem_response("not_found", detail=f"Item '{path}' not found")
-
-server.api.add_resource(Folders, "/api/folders",             endpoint="api-folders")
-server.api.add_resource(Folders, "/api/folders/",            endpoint="api-folders-root")
-server.api.add_resource(Folders, "/api/folders/<path:path>", endpoint="api-folders-parent")
-
-class Topics(Resource):
-  @authenticated
-  def get(self):    
-    return list(db.topics.find(
-      { "user": current_user.identity.email },
-      { "user": False }
-    ))
-
-  @authenticated
-  def post(self):
-    name     = server.request.json["name"]
-    question = server.request.json["question"]
-    items    = server.request.json.get("items", [])
-    id       = idfy(name)
-    new_topic = {
-      "_id"      : id,
-      "user"     : current_user.identity.email,
-      "name"     : name,
-      "question" : question,
-      "items"    : items
-    }
-    try:
-      db.topics.insert_one(new_topic)
-    except pymongo.errors.DuplicateKeyError:
-      return problem_response("duplicate_name", detail="This name has already been used. Please choose a different name.")
-    return new_topic
-
-server.api.add_resource(Topics, "/api/topics", endpoint="api-topics")
-
-class TopicResource(Resource):
-  @authenticated
-  def get(self, id):    
-    return db.topics.find_one({
-      "_id": id,
-      "user": current_user.identity.email
-    })
-
-  @authenticated
-  def patch(self, id):
-    update = server.request.json
-    update.pop("_id", None)
-    update.pop("user", None)
-    folder = update.pop("folder", None)
-    
-    logger.info(f"patching {id} with {update} and {folder}")
-
-    # patch topic
-    updated_topic = db.topics.find_one_and_update(
-      {
-        "_id"  : id,
-        "user" : current_user.identity.email
-      },
-      {
-        "$set" : update
-      },
-      return_document=ReturnDocument.AFTER
-    )
-
-    # optionally move to new folder
-    tree = TreeItems.from_dicts(Folders._get())
-    if folder:
-      # (re)move
-      try:
-        # first find parent
-        parent = tree[folder["id"]]
-        # then first remove
-        try:
-          topic = tree.remove(id)
-        except KeyError:
-          # topic might not yet be in the tree
-          topic = Topic(updated_topic["name"], id=id)
-        # then add to new parent
-        parent.add(topic)
-      except KeyError:
-        # we didn't find this folder
-        logger.warn(f"couldn't find new folder '{folder}'")
-        return problem_response("not_found", detail=f"Folder '{folder}' not found")
-  
-    return {
-      "topic"     : updated_topic,
-      "treeitems" : Folders._set(tree.as_dicts())
-    }
-
-  @authenticated
-  def delete(self, id):
-    # delete the topic
-    db.topics.delete_one({
-      "_id": id,
-      "user": current_user.identity.email
-    })
-
-    # remove it from the folders structure
-    try:
-      tree = TreeItems.from_dicts(Folders._get())
-      tree.remove(id)
-      Folders._set(tree.as_dicts())
-    except KeyError:
-      # might happen if the topic wasn't added to the TreeItems yet
-      pass
-      
-    # delete feed items referencing it
-    db.feed.delete_many({ "topics" : id })
-
-    return {
-      "topic"   : id,
-      "treeitems" : Folders._set(tree.as_dicts()),
-      "feed"    : Feed._get()
-    }
-
-server.api.add_resource(TopicResource, "/api/topics/<id>", endpoint="api-topic")
-
-class Items(Resource):
-  @authenticated
-  def post(self, id):    
-    return db.topics.find_one_and_update(
-      {
-        "_id"  : id,
-        "user" : current_user.identity.email
-      },
-      {
-        "$push" : { "items" : server.request.json }
-      })
-
-  @authenticated
-  def patch(self, id):
-    return db.topics.find_one_and_update(
-      {
-        "_id"   : id,
-        "user"  : current_user.identity.email,
-        "items" : server.request.json["original"]
-      },
-      {
-        "$set" : {
-          "items.$" : server.request.json["update"]
-        }
-      })
-
-  @authenticated
-  def delete(self, id):
-    return db.topics.find_one_and_update(
-      { "_id" : id, "user" : current_user.identity.email },
-      { "$pull" : { "items" : server.request.json }}
-    )
-
-server.api.add_resource(Items, "/api/topics/<id>/items", endpoint="api-items")
 
 class Feed(Resource):
+  """Manage activity feed."""
+
   @staticmethod
   def _get_sessions_feed(user_emails, limit=10):
-    """
-    Derive feed items from sessions collection.
+    """Derive feed items from sessions collection.
+
     Quiz/training results are derived from completed/abandoned sessions.
+
+    Args:
+      user_emails: List of user emails to get sessions for.
+      limit: Maximum number of items to return.
+
+    Returns:
+      List of feed items from sessions.
     """
     # Get sessions for the specified users
     sessions = list(db.sessions.find(
@@ -295,8 +111,14 @@ class Feed(Resource):
 
   @staticmethod
   def _get_topics_feed(user_emails, limit=10):
-    """
-    Get "new topic" events from feed collection.
+    """Get "new topic" events from feed collection.
+
+    Args:
+      user_emails: List of user emails to get feed for.
+      limit: Maximum number of items to return.
+
+    Returns:
+      List of feed items from feed collection.
     """
     # Get feed items for the specified users
     feed_items = list(db.feed.find(
@@ -364,7 +186,11 @@ class Feed(Resource):
 
   @staticmethod
   def _get_my_feed():
-    """Get current user's own activity feed."""
+    """Get current user's own activity feed.
+
+    Returns:
+      List of feed items (sessions + topics).
+    """
     user_email = current_user.identity.email
 
     # Get sessions-derived feed (quiz/training results)
@@ -381,7 +207,11 @@ class Feed(Resource):
 
   @staticmethod
   def _get_following_feed():
-    """Get activity feed from followed users."""
+    """Get activity feed from followed users.
+
+    Returns:
+      List of feed items from followed users.
+    """
     user_email = current_user.identity.email
 
     # Get list of followed users
@@ -408,7 +238,11 @@ class Feed(Resource):
 
   @staticmethod
   def _get_all_feed():
-    """Get combined activity feed from both user and followed users."""
+    """Get combined activity feed from both user and followed users.
+
+    Returns:
+      List of feed items (user + followed users).
+    """
     user_email = current_user.identity.email
 
     # Get following list
@@ -441,6 +275,9 @@ class Feed(Resource):
       mode: "my" (default) - current user's activity
             "following" - activity from followed users
             "all" - combined activity from both
+
+    Returns:
+      List of feed items sorted by when descending.
     """
     mode = server.request.args.get("mode", "my")
 
@@ -453,6 +290,18 @@ class Feed(Resource):
 
   @authenticated
   def post(self):
+    """Create a feed item (new topic event).
+
+    Request body:
+      {
+        "kind": "new topic",
+        "topic": "topic-id",
+        "topics": ["topic-id-1", ...]
+      }
+
+    Returns:
+      Created feed item.
+    """
     # create feed item to insert
     allowed = [
       "kind", "topic", "topics",
@@ -460,18 +309,16 @@ class Feed(Resource):
       "elapsed"
     ]
     new_item = {
-      prop : server.request.json[prop]
+      prop: server.request.json[prop]
       for prop in allowed
       if prop in server.request.json
     }
     # add user and timestamp
-    new_item["user"] = [ current_user.identity.email ] # by ref in collection
+    new_item["user"] = [current_user.identity.email]  # by ref in collection
     new_item["when"] = datetime.now().isoformat()
 
     db.feed.insert_one(new_item)
-    new_item.pop("_id") # remove byref added _id
+    new_item.pop("_id")  # remove byref added _id
 
-    new_item["user" ] = [ current_user.identity.as_json() ] # return by value
+    new_item["user"] = [current_user.as_json()]  # return by value
     return new_item
-
-server.api.add_resource(Feed, "/api/feed", endpoint="api-feed")
