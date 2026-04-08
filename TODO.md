@@ -37,19 +37,7 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 *Tasks being actively worked on. Check the checkbox when starting work.*
 
-### Backend Testing (prio:1) — In Progress
-
-- [x] ~~Create API sub-module for better code organization~~
-- [x] ~~Simplify OAuth testing with TEST_MODE~~
-- [x] ~~Create test_auth.py with session management tests~~
-- [x] ~~Create test_folders.py with CRUD tests~~
-- [x] ~~Create test_topics.py with CRUD tests~~
-- [x] ~~Create test_feed.py with mode parameter tests~~
-- [x] ~~Create test_users.py with search tests~~
-- [x] ~~Create test_errors.py for RFC 7807 compliance~~
-- [x] ~~Extend test_stats.py with following streaks tests~~
-- [ ] Integrate schemathesis for OpenAPI contract testing
-- [ ] Add /api/stats/following/streaks tests to test_stats.py (extended)
+(None - ready for next task)
 
 ---
 
@@ -126,6 +114,14 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-08: OpenAPI Schema Validation Helper
+
+- [x] Created manual schema validation helper (tests/helpers/schema_validator.py)
+- [x] Added jsonschema dependency for proper schema validation
+- [x] Created tests/test_schemas.py with 16 schema validation tests
+- [x] All 138 tests pass
+- [x] Rejected schemathesis (parametrized tests unreliable, no real schema validation)
 
 ### 2026-04-08: Backend Testing Infrastructure
 
