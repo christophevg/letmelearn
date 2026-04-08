@@ -35,7 +35,7 @@ class Session(Resource):
       email = request.json.get("email", "test@example.com")
       user = User.find(email)
       if not user:
-        logger.warn(f"unknown user in test mode: {email}")
+        logger.warning(f"unknown user in test mode: {email}")
         return problem_response("forbidden", detail="Unknown user")
       login_user(user, remember=True)
       return current_user.as_json()
@@ -47,7 +47,7 @@ class Session(Resource):
     claims = oauth.decode(request.headers["Authorization"][7:])
     user = User.find(claims["email"])
     if not user:
-      logger.warn(f"unknown user: {claims}")
+      logger.warning(f"unknown user: {claims}")
       return problem_response("forbidden", detail="Unknown user")
     user.update(**claims)
     login_user(user, remember=True)

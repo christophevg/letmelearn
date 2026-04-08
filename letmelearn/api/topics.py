@@ -152,7 +152,7 @@ class TopicResource(Resource):
         parent.add(topic)
       except KeyError:
         # we didn't find this folder
-        logger.warn(f"couldn't find new folder '{folder}'")
+        logger.warning(f"couldn't find new folder '{folder}'")
         return problem_response("not_found", detail=f"Folder '{folder}' not found")
 
     return {

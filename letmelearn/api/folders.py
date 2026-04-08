@@ -77,7 +77,7 @@ class Folders(Resource):
       return Folders._set(tree.as_dicts())
     except KeyError:
       # we didn't find this folder
-      logger.warn(f"couldn't find folder '{path}'")
+      logger.warning(f"couldn't find folder '{path}'")
       return problem_response("not_found", detail=f"Folder '{path}' not found")
 
   @authenticated
@@ -99,5 +99,5 @@ class Folders(Resource):
       return Folders._set(tree.as_dicts())
     except KeyError:
       # we didn't find this item
-      logger.warn(f"couldn't find item '{path}'")
+      logger.warning(f"couldn't find item '{path}'")
       return problem_response("not_found", detail=f"Item '{path}' not found")

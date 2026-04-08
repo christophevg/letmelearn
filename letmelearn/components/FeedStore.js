@@ -10,7 +10,7 @@
 store.registerModule("feed", {
   state: {
     feed: [],
-    mode: "all"  // "my", "following", or "all"
+    mode: "my"  // "my", "following", or "all"
   },
   getters: {
     feed: function(state) {

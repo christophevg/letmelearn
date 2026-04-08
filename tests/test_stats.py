@@ -239,3 +239,151 @@ class TestStatsWeekly:
         data = response.get_json()
         # Accuracy = 10/15 * 100 = 66.67%
         assert abs(data['accuracy'] - 66.67) < 0.1
+
+
+class TestStatsFollowingStreaks:
+    """Tests for GET /api/stats/following/streaks."""
+
+    def test_empty_when_no_follows(self, auth_client):
+        """Should return empty list when not following anyone."""
+        response = auth_client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 200
+        assert response.get_json() == []
+
+    def test_returns_streaks_for_followed_users(self, auth_client, db, test_user):
+        """Should return streak data for all followed users."""
+        # Create followed user
+        db.users.insert_one({
+            "_id": "followed@example.com",
+            "name": "Followed User",
+            "picture": None
+        })
+        db.follows.insert_one({
+            "follower": test_user["_id"],
+            "following": "followed@example.com",
+            "created_at": datetime.utcnow()
+        })
+        # Create session for followed user
+        now_belgium = datetime.now(BELGIUM_TZ)
+        today = now_belgium.date()
+        session_time = datetime.combine(today, datetime.min.time())
+        session_time = session_time.replace(tzinfo=BELGIUM_TZ).astimezone(ZoneInfo("UTC"))
+
+        db.sessions.insert_one({
+            "_id": str(ObjectId()),
+            "user": "followed@example.com",
+            "kind": "quiz",
+            "status": "completed",
+            "started_at": session_time,
+            "stopped_at": session_time + timedelta(minutes=20),
+            "elapsed": 1200,  # 20 minutes
+            "topics": []
+        })
+
+        response = auth_client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) == 1
+        assert data[0]["user"]["email"] == "followed@example.com"
+        assert data[0]["streak"] >= 0
+        assert "today_minutes" in data[0]
+
+    def test_streaks_sorted_by_streak_descending(self, auth_client, db, test_user):
+        """Results should be sorted by streak descending."""
+        # Create two followed users with different streaks
+        for i, streak_user in enumerate(["high@example.com", "low@example.com"]):
+            db.users.insert_one({
+                "_id": streak_user,
+                "name": f"User {i}",
+                "picture": None
+            })
+            db.follows.insert_one({
+                "follower": test_user["_id"],
+                "following": streak_user,
+                "created_at": datetime.utcnow()
+            })
+            # Create sessions (different streak amounts would require multiple days)
+            # For simplicity, we just check ordering by name when streaks are equal
+            now_belgium = datetime.now(BELGIUM_TZ)
+            today = now_belgium.date()
+            session_time = datetime.combine(today, datetime.min.time())
+            session_time = session_time.replace(tzinfo=BELGIUM_TZ).astimezone(ZoneInfo("UTC"))
+
+            db.sessions.insert_one({
+                "_id": str(ObjectId()),
+                "user": streak_user,
+                "kind": "quiz",
+                "status": "completed",
+                "started_at": session_time,
+                "elapsed": 900,
+                "topics": []
+            })
+
+        response = auth_client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) == 2
+        # Should be sorted by streak desc, then name asc
+        # Since both have same streak, should be sorted by name
+        assert data[0]["user"]["name"] < data[1]["user"]["name"]
+
+    def test_excludes_current_user(self, auth_client, db, test_user):
+        """Should not include current user in results."""
+        # Current user has sessions
+        now_belgium = datetime.now(BELGIUM_TZ)
+        today = now_belgium.date()
+        session_time = datetime.combine(today, datetime.min.time())
+        session_time = session_time.replace(tzinfo=BELGIUM_TZ).astimezone(ZoneInfo("UTC"))
+
+        db.sessions.insert_one({
+            "_id": str(ObjectId()),
+            "user": test_user["_id"],
+            "kind": "quiz",
+            "status": "completed",
+            "started_at": session_time,
+            "elapsed": 1200,
+            "topics": []
+        })
+
+        response = auth_client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        # Should not include current user
+        emails = [u["user"]["email"] for u in data]
+        assert test_user["_id"] not in emails
+
+    def test_includes_user_info_in_response(self, auth_client, db, test_user):
+        """Each result should include user email, name, picture."""
+        db.users.insert_one({
+            "_id": "info@example.com",
+            "name": "Info User",
+            "picture": "https://example.com/pic.jpg"
+        })
+        db.follows.insert_one({
+            "follower": test_user["_id"],
+            "following": "info@example.com",
+            "created_at": datetime.utcnow()
+        })
+
+        response = auth_client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) == 1
+        user = data[0]["user"]
+        assert "email" in user
+        assert "name" in user
+        assert "picture" in user
+        assert user["email"] == "info@example.com"
+        assert user["name"] == "Info User"
+        assert user["picture"] == "https://example.com/pic.jpg"
+
+    def test_unauthenticated_returns_401(self, client):
+        """Unauthenticated request should return 401."""
+        response = client.get('/api/stats/following/streaks')
+
+        assert response.status_code == 401
