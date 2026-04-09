@@ -278,12 +278,125 @@ class TestItems:
     assert len(topic["items"]) == 1
     assert topic["items"][0]["q"] == "New Question"
 
-  def test_add_item_to_nonexistent_topic_returns_none(self, auth_client):
-    """Item operations on non-existent topic should return None."""
+  def test_add_item_to_nonexistent_topic_returns_404(self, auth_client):
+    """Adding item to non-existent topic should return 404."""
     response = auth_client.post('/api/topics/nonexistent/items', json={"q": "Q"})
 
+    assert response.status_code == 404
+    assert_rfc7807_error(response, 'not_found', 404)
+
+  def test_update_item_in_topic(self, auth_client, db, test_user):
+    """Update item in topic should work."""
+    db.topics.insert_one({
+      "_id": "update-item-topic",
+      "user": test_user["_id"],
+      "name": "Update Topic",
+      "question": {},
+      "items": [{"q": "Q1", "a": "A1"}]
+    })
+
+    response = auth_client.patch('/api/topics/update-item-topic/items', json={
+      "original": {"q": "Q1", "a": "A1"},
+      "update": {"q": "Q2", "a": "A2"}
+    })
+
     assert response.status_code == 200
-    assert response.get_json() is None
+    topic = db.topics.find_one({"_id": "update-item-topic"})
+    assert len(topic["items"]) == 1
+    assert topic["items"][0]["q"] == "Q2"
+    assert topic["items"][0]["a"] == "A2"
+
+  def test_update_item_in_nonexistent_topic_returns_404(self, auth_client):
+    """Updating item in non-existent topic should return 404."""
+    response = auth_client.patch('/api/topics/nonexistent/items', json={
+      "original": {"q": "Q1", "a": "A1"},
+      "update": {"q": "Q2", "a": "A2"}
+    })
+
+    assert response.status_code == 404
+    assert_rfc7807_error(response, 'not_found', 404)
+
+  def test_update_nonexistent_item_returns_404(self, auth_client, db, test_user):
+    """Updating non-existent item should return 404."""
+    db.topics.insert_one({
+      "_id": "no-item-topic",
+      "user": test_user["_id"],
+      "name": "No Item Topic",
+      "question": {},
+      "items": [{"q": "Q1", "a": "A1"}]
+    })
+
+    response = auth_client.patch('/api/topics/no-item-topic/items', json={
+      "original": {"q": "Nonexistent", "a": "Item"},
+      "update": {"q": "Q2", "a": "A2"}
+    })
+
+    assert response.status_code == 404
+    assert_rfc7807_error(response, 'not_found', 404)
+
+  def test_delete_item_from_topic(self, auth_client, db, test_user):
+    """Delete item from topic should work."""
+    db.topics.insert_one({
+      "_id": "delete-item-topic",
+      "user": test_user["_id"],
+      "name": "Delete Topic",
+      "question": {},
+      "items": [{"q": "Q1", "a": "A1"}, {"q": "Q2", "a": "A2"}]
+    })
+
+    response = auth_client.delete('/api/topics/delete-item-topic/items', json={"q": "Q1", "a": "A1"})
+
+    assert response.status_code == 200
+    topic = db.topics.find_one({"_id": "delete-item-topic"})
+    assert len(topic["items"]) == 1
+    assert topic["items"][0]["q"] == "Q2"
+
+  def test_delete_item_from_nonexistent_topic_returns_404(self, auth_client):
+    """Deleting item from non-existent topic should return 404."""
+    response = auth_client.delete('/api/topics/nonexistent/items', json={"q": "Q"})
+
+    assert response.status_code == 404
+    assert_rfc7807_error(response, 'not_found', 404)
+
+  def test_delete_nonexistent_item_from_topic_succeeds(self, auth_client, db, test_user):
+    """Deleting non-existent item from existing topic should succeed (idempotent)."""
+    db.topics.insert_one({
+      "_id": "delete-missing-item-topic",
+      "user": test_user["_id"],
+      "name": "Delete Missing Topic",
+      "question": {},
+      "items": [{"q": "Q1", "a": "A1"}]
+    })
+
+    # Deleting an item that doesn't exist should still return the topic
+    response = auth_client.delete('/api/topics/delete-missing-item-topic/items', json={"q": "Nonexistent", "a": "Item"})
+
+    assert response.status_code == 200
+    topic = db.topics.find_one({"_id": "delete-missing-item-topic"})
+    assert len(topic["items"]) == 1  # Original item still there
+
+  def test_update_item_field_order_independent(self, auth_client, db, test_user):
+    """Updating item should work regardless of field order in request."""
+    # Create topic with an item
+    db.topics.insert_one({
+      "_id": "order-test-topic",
+      "user": test_user["_id"],
+      "name": "Order Test",
+      "question": {},
+      "items": [{"q": "Q1", "a": "A1", "note": "original"}]
+    })
+
+    # Send original with different field order than stored
+    response = auth_client.patch('/api/topics/order-test-topic/items', json={
+      "original": {"a": "A1", "q": "Q1"},  # Different order
+      "update": {"q": "Q2", "a": "A2", "note": "updated"}
+    })
+
+    assert response.status_code == 200
+    topic = db.topics.find_one({"_id": "order-test-topic"})
+    assert topic["items"][0]["q"] == "Q2"
+    assert topic["items"][0]["a"] == "A2"
+    assert topic["items"][0]["note"] == "updated"
 
   def test_unauthenticated_returns_401(self, client):
     """Unauthenticated request should return 401."""

@@ -209,16 +209,23 @@ class Items(Resource):
 
     Returns:
       Updated topic.
+
+    Raises:
+      404: Topic not found.
     """
-    return db.topics.find_one_and_update(
+    result = db.topics.find_one_and_update(
       {
         "_id": id,
         "user": current_user.identity.email
       },
       {
         "$push": {"items": server.request.json}
-      }
+      },
+      return_document=ReturnDocument.AFTER
     )
+    if result is None:
+      return problem_response("not_found", detail=f"Topic '{id}' not found")
+    return result
 
   @authenticated
   def patch(self, id):
@@ -232,19 +239,31 @@ class Items(Resource):
 
     Returns:
       Updated topic.
+
+    Raises:
+      404: Topic or item not found.
     """
-    return db.topics.find_one_and_update(
-      {
-        "_id": id,
-        "user": current_user.identity.email,
-        "items": server.request.json["original"]
-      },
-      {
-        "$set": {
-          "items.$": server.request.json["update"]
-        }
-      }
+    original = server.request.json["original"]
+    update = server.request.json["update"]
+
+    # Use elemMatch for field-order-independent matching
+    query = {
+      "_id": id,
+      "user": current_user.identity.email,
+      "items": {"$elemMatch": original}
+    }
+
+    # Build update for all fields except _id
+    update_fields = {f"items.$.{k}": v for k, v in update.items() if k != "_id"}
+
+    result = db.topics.find_one_and_update(
+      query,
+      {"$set": update_fields},
+      return_document=ReturnDocument.AFTER
     )
+    if result is None:
+      return problem_response("not_found", detail=f"Topic '{id}' or item not found")
+    return result
 
   @authenticated
   def delete(self, id):
@@ -257,8 +276,15 @@ class Items(Resource):
 
     Returns:
       Updated topic.
+
+    Raises:
+      404: Topic not found.
     """
-    return db.topics.find_one_and_update(
+    result = db.topics.find_one_and_update(
       {"_id": id, "user": current_user.identity.email},
-      {"$pull": {"items": server.request.json}}
+      {"$pull": {"items": server.request.json}},
+      return_document=ReturnDocument.AFTER
     )
+    if result is None:
+      return problem_response("not_found", detail=f"Topic '{id}' not found")
+    return result
