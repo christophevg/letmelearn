@@ -83,7 +83,7 @@ sync-from-production: export-production import-local
 
 sync-to-production: export-local import-production
 
-COLLECTIONS=feed topics folders users versions
+COLLECTIONS=feed folders follows sessions topics users versions
 
 sync:
 	@for col in $(COLLECTIONS); do \
