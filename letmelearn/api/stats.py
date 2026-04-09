@@ -63,13 +63,23 @@ def compute_streak_for_user(user_email):
 
   qualifying_days = list(db.sessions.aggregate(pipeline))
 
-  # Count consecutive days from today
+  # Count consecutive qualifying days
   streak = 0
+
+  # Determine starting point: if today doesn't qualify yet, check from yesterday
+  today_str = today.isoformat()
+  today_qualifies = any(d["_id"] == today_str for d in qualifying_days)
+
+  if today_qualifies:
+    expected_day = today
+  else:
+    expected_day = today - timedelta(days=1)
+
   for day_doc in qualifying_days:
     day_date = datetime.strptime(day_doc["_id"], "%Y-%m-%d").date()
-    expected = today - timedelta(days=streak)
-    if day_date == expected:
+    if day_date == expected_day:
       streak += 1
+      expected_day -= timedelta(days=1)
     else:
       break
 

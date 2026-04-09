@@ -93,6 +93,37 @@ class TestStatsStreak:
         # Streak should be 1 (only today)
         assert data['streak'] == 1
 
+    def test_streak_preserved_when_today_not_qualified_yet(self, auth_client, db, test_user):
+        """Streak should show previous days' streak when today hasn't qualified yet.
+
+        This tests the scenario where a user logs in before starting their
+        daily session - they should see their existing streak to defend.
+        """
+        today = datetime.now(BELGIUM_TZ).date()
+
+        # Create sessions for past 5 days (streak of 5)
+        for days_ago in range(1, 6):  # yesterday through 5 days ago
+            day = today - timedelta(days=days_ago)
+            session_time = datetime.combine(day, datetime.min.time())
+            session_time = session_time.replace(tzinfo=BELGIUM_TZ).astimezone(ZoneInfo("UTC"))
+            db.sessions.insert_one({
+                "_id": str(ObjectId()),
+                "user": test_user["_id"],
+                "kind": "quiz",
+                "status": "completed",
+                "started_at": session_time,
+                "elapsed": 1200,  # 20 minutes each day
+                "topics": []
+            })
+
+        # No session today yet - should show streak of 5
+        response = auth_client.get('/api/stats/streak')
+
+        data = response.get_json()
+        assert data['streak'] == 5
+        assert data['today_minutes'] == 0
+        assert data['streak_risk'] == True
+
     def test_risk_level_none_when_15_min_reached(self, auth_client, db, test_user):
         """Risk level should be none when 15+ minutes today."""
         today = datetime.now(BELGIUM_TZ).date()
