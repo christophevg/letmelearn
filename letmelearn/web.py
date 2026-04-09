@@ -30,7 +30,7 @@ for module in ["gunicorn.error", "pymongo.serverSelection", "urllib3"]:
 
 logger = logging.getLogger(__name__)
 
-from letmelearn import config
+from letmelearn import config  # noqa: E402
 from letmelearn.data import DB_CONN # noqa
 
 # set up server
@@ -44,12 +44,37 @@ server.log_config()
 # Initialize rate limiter using MongoDB for storage
 # Disabled in testing mode to avoid rate limiting during tests
 from flask_limiter import Limiter, util  # noqa
+
+def is_static_request():
+  """Check if current request is for static files.
+
+  Static files (JS components, CSS, etc.) are loaded on every page load
+  and should not count against API rate limits.
+
+  Returns:
+    bool: True if request should be exempt from rate limiting
+  """
+  from flask import request
+  # Exempt static file routes
+  if request.path.startswith("/app/"):
+    return True
+  if request.path.startswith("/static/"):
+    return True
+  # Exempt component requests (loaded on page load)
+  if request.path.startswith("/components/"):
+    return True
+  # Exempt OAuth callback and assets
+  if request.path in ["/oatk.js", "/favicon.ico"]:
+    return True
+  return False
+
 limiter = Limiter(
   app=server,
   key_func=util.get_remote_address,
   default_limits=["200 per day", "50 per hour"],
   storage_uri=DB_CONN,
-  enabled=False #not config.is_testing()
+  enabled=not config.is_testing(),
+  default_limits_exempt_when=is_static_request
 )
 if limiter.enabled:
   logger.info("✅ rate limiter enabled")

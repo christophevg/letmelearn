@@ -19,10 +19,10 @@ def get_environment():
 
   Behavior:
     - Returns value from FLASK_ENV environment variable
-    - Defaults to 'development' for safety (fail-open for devs)
+    - Defaults to 'production' for security (fail-secure)
     - Raises ValueError for invalid values
   """
-  env = os.environ.get('FLASK_ENV', 'development').lower()
+  env = os.environ.get('FLASK_ENV', 'production').lower()
   valid_envs = ('production', 'development', 'testing')
   if env not in valid_envs:
     raise ValueError(
