@@ -1,6 +1,7 @@
 store.registerModule("auth", {
   state: {
-    session: null
+    session: null,
+    identitySwitching: false
   },
   getters: {
     identity: function(state) {
@@ -21,6 +22,9 @@ store.registerModule("auth", {
         s.current = getters.identity(state.session.current);
       }
       return s;
+    },
+    identitySwitching: function(state) {
+      return state.identitySwitching;
     }
   },
   actions: {
@@ -91,16 +95,36 @@ store.registerModule("auth", {
     },
     select_identity: function(context, identity) {
       console.debug("store.actions.select_identity", identity);
+
+      // Signal identity switch in progress for loading states
+      context.commit("identitySwitching", true);
+
       api("PUT", "session", function(session) {
         console.debug("store.actions.select_identity", "success");
         context.commit("session", session);
-        store.dispatch("load_user_data");
-      }, { identity: identity.email } );
+
+        // Load all user data for the new identity
+        Promise.all([
+          store.dispatch("load_topics"),
+          store.dispatch("load_folders"),
+          store.dispatch("load_feed"),
+          store.dispatch("loadStats"),
+          store.dispatch("loadAllFollows")
+        ]).then(function() {
+          context.commit("identitySwitching", false);
+        }).catch(function(error) {
+          context.commit("identitySwitching", false);
+          console.error("Failed to load user data:", error);
+          store.dispatch("raise_error", "Failed to load some data. Please refresh the page.");
+        });
+      }, { identity: identity.email });
     },
     load_user_data: function(context) {
       store.dispatch("load_topics");
       store.dispatch("load_folders");
-      store.dispatch("load_feed");      
+      store.dispatch("load_feed");
+      store.dispatch("loadStats");
+      store.dispatch("loadAllFollows");
     }
   },
   mutations: {
@@ -108,6 +132,9 @@ store.registerModule("auth", {
       console.debug("store.mutations.session", new_config);
       Vue.set(state, "session", new_config);
     },
+    identitySwitching: function(state, value) {
+      Vue.set(state, "identitySwitching", value);
+    }
   }
 });
 

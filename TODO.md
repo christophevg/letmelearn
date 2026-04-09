@@ -62,14 +62,34 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 #### Fix
 
-- [ ] When the "alternate identify" feature is used, all sections in the advalvas dashboard (stats, feed, socials) should be updated accordingly (prio:2)
+- [x] When the "alternate identity" feature is used, all sections in the advalvas dashboard (stats, feed, socials) should be updated accordingly (prio:1)
 
 #### UX Improvements
 
-- [ ] add empty feed state with friendly message (prio:0)
+- [ ] add empty feed state with friendly message (prio:2)
+  - **Acceptance Criteria**:
+    - GIVEN a new user with no activity
+    - WHEN they view the Ad Valvas page
+    - THEN they should see a friendly welcome message
+    - AND a prominent "Create your first topic" call-to-action
+  - **Critical for**: First-time user experience and onboarding
+
 - [ ] group feed items by date (Today, Yesterday, This week, Older) (prio:2)
+  - **Acceptance Criteria**:
+    - Items grouped into collapsible sections with item count in header
+    - "Today" = items from today
+    - "Yesterday" = items from yesterday
+    - "This Week" = items from past 7 days (excluding today/yesterday)
+    - "Older" = all other items
+
 - [ ] add filter chips: All / Quizzes / Training / New Topics (prio:2)
-- [ ] add pagination or infinite scroll (API currently limits to 10 items) (prio:0)
+  - **Note**: Combine with existing mode toggles into cohesive filter bar
+
+- [ ] add pagination or infinite scroll (API currently limits to 10 items) (prio:2)
+  - **Acceptance Criteria**:
+    - Users can view history beyond most recent 10 items
+  - **Options**: Load-more button, infinite scroll, or dedicated history page
+  - **Backend Dependency**: Requires cursor-based pagination implementation
 
 #### Maintainability
 
@@ -77,12 +97,36 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 - [ ] add ability to dismiss/acknowledge seen news items (prio:0)
 - [ ] add loading states / skeleton loaders (prio:0)
 
+#### Accessibility
+
+- [ ] add keyboard navigation for identity dropdown (prio:0)
+  - **Description**: Ensure identity selection is fully keyboard accessible
+  - **Acceptance Criteria**:
+    - Tab navigates through identity options
+    - Enter/Space selects identity
+    - Escape closes dropdown without selecting
+    - Focus preserved after selection
+
+- [ ] add screen reader announcements for identity switch (prio:0)
+  - **Description**: Announce context changes for screen readers
+  - **Acceptance Criteria**:
+    - Announce "Now viewing {name}'s progress" on switch
+    - Announce when data loading completes
+
 ### Feature Extensions
 
 - [ ] add streak freeze feature (prio:3)
-  - Protect streak for one day if user misses goal
-  - Max 2 consecutive freezes
-  - Requires `frozen_days` array in user document
+  - **Description**: Protect streak for one day if user misses goal
+  - **Requirements**:
+    - Max 2 consecutive freezes
+    - Requires `frozen_days` array in user document
+  - **Acceptance Criteria**:
+    - GIVEN a user with an active streak
+    - WHEN they miss their daily goal but have a streak freeze available
+    - THEN their streak should be preserved for that day
+    - AND the freeze count should decrement
+  - **Dependency**: Requires core streak feature to be stable
+
 - [ ] share topics with other users (prio:0)
 - [ ] search/filter topics by all aspects (name, tags,...) (prio:0)
 
@@ -114,6 +158,17 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-09: Alternate Identity Dashboard Fix
+
+- [x] Fix alternate identity dashboard to refresh all sections when switching identities
+- [x] Frontend: Added loadStats and loadAllFollows dispatches to load_user_data()
+- [x] Frontend: Added identitySwitching state management
+- [x] Frontend: Fixed null check for session.identities
+- [x] Backend: NOT NEEDED - all endpoints already use current_user.identity.email correctly
+- [x] All 138 tests pass
+- [x] Code review approved
+- Summary: reporting/alternate-identity-dashboard/summary.md
 
 ### 2026-04-08: OpenAPI Schema Validation Helper
 

@@ -178,10 +178,8 @@ Vue.component("ProtectedPage", {
       return store.getters.session;
     },
     identities: function() {
-      const identities = [...this.session["identities"]];
-      if(identities) {
-        identities.push(this.session);
-      }
+      const identities = this.session && this.session.identities ? [...this.session.identities] : [];
+      identities.push(this.session);
       return identities;
     },
     content_style: function() {
