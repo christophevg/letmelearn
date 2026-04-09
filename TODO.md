@@ -43,57 +43,6 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ## Backlog
 
-### Code Review Fixes (Critical - prio:1)
-
-*Security issues from baseline code review (2026-04-09)*
-
-- [x] Remove default secret key "local" from production code (prio:1)
-  - **Issue**: `web.py:72` has hardcoded default secret key
-  - **Fix**: Created `config.py` with `get_secret_key()` that fails in production without APP_SECRET_KEY
-  - **File**: `letmelearn/web.py`, `letmelearn/config.py`
-
-- [x] Fix regex injection vulnerability in user search (prio:1)
-  - **Issue**: `api/follows.py:318` uses MongoDB `$regex` with user input - potential ReDoS
-  - **Fix**: Added `escape_regex_pattern()` to escape special characters before regex query
-  - **File**: `letmelearn/api/follows.py`
-
-- [x] Add production safeguard for TEST_MODE (prio:1)
-  - **Issue**: `oauth.py:16` bypasses OAuth with simple string comparison
-  - **Fix**: Created `is_test_mode_allowed()` that raises RuntimeError if TEST_MODE in production
-  - **File**: `letmelearn/oauth.py`, `letmelearn/config.py`
-
-### Code Review Fixes (High - prio:2)
-
-- [ ] Fix MongoDB connection string parsing (prio:2)
-  - **Issue**: `data.py:8-9` uses fragile string splitting for DB name extraction
-  - **Fix**: Use `urllib.parse.urlparse` for proper parsing
-  - **File**: `letmelearn/data.py`
-
-- [ ] Restrict test mode login to test accounts only (prio:2)
-  - **Issue**: `api/session.py:34-41` allows login with any existing email in test mode
-  - **Fix**: Add test-user whitelist or restriction
-  - **File**: `letmelearn/api/session.py`
-
-- [ ] Fix schema migration to run only when needed (prio:2)
-  - **Issue**: `data.py:21-40` runs migration on every startup
-  - **Fix**: Add version check before running migration
-  - **File**: `letmelearn/data.py`
-
-- [ ] Fix Items endpoint to return proper 404 (prio:2)
-  - **Issue**: `api/topics.py:213-221` returns `None` instead of error for non-existent topics
-  - **Fix**: Return proper RFC 7807 error response
-  - **File**: `letmelearn/api/topics.py`
-
-- [ ] Fix JSON comparison in item update query (prio:2)
-  - **Issue**: `api/topics.py:236-247` uses JSON.stringify comparison - fragile
-  - **Fix**: Use proper MongoDB query for item matching
-  - **File**: `letmelearn/api/topics.py`
-
-- [ ] Add rate limiting to authentication endpoints (prio:2)
-  - **Issue**: No rate limiting on `/api/session` POST - vulnerable to brute force
-  - **Fix**: Add rate limiting middleware
-  - **Files**: Multiple API files
-
 ### Code Review Fixes (Medium - prio:3)
 
 - [ ] Extract streak calculation to service class (prio:3)
@@ -290,6 +239,39 @@ Tracking the number of answers per minute gives an indication of the speed of th
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-10: Feed-to-Sessions Migration Script
+
+- [x] Create migration script for feed to sessions
+  - Converts legacy feed documents to sessions collection
+  - Handles duplicate detection with time window matching
+  - Supports cleanup of migrated feed items
+  - File: `scripts/migrate_feed_to_sessions.py`
+
+### 2026-04-09: Prio:2 Code Review Fixes
+
+- [x] Fix MongoDB connection string parsing (prio:2)
+  - Use `urllib.parse.urlparse` for robust DB name extraction
+  - Handle credentials, replica sets, SRV records, query params
+  - File: `letmelearn/data.py`
+- [x] Restrict test mode login to test accounts only (prio:2)
+  - Add `get_test_users()` whitelist in config.py
+  - Block non-whitelisted emails from test mode login
+  - File: `letmelearn/api/session.py`, `letmelearn/config.py`
+- [x] Fix schema migration to run only when needed (prio:2)
+  - Add `get_migration_version()` helper function
+  - Use safe `.get()` dictionary access
+  - File: `letmelearn/data.py`
+- [x] Fix Items endpoint to return proper 404 (prio:2)
+  - Return RFC 7807 error response for non-existent topics
+  - File: `letmelearn/api/topics.py`
+- [x] Fix JSON comparison in item update query (prio:2)
+  - Use MongoDB `$elemMatch` for item matching
+  - File: `letmelearn/api/topics.py`
+- [x] Add rate limiting to authentication endpoints (prio:2)
+  - Add flask-limiter with MongoDB storage
+  - 5/minute rate limit on POST /api/session
+  - File: `letmelearn/web.py`, `letmelearn/errors.py`
 
 ### 2026-04-09: Prio:1 Bug Fixes
 
