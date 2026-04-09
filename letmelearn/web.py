@@ -69,7 +69,10 @@ for component in [
   server.register_component(f"{component}.js", COMPONENTS)
 
 server.config["TEMPLATES_AUTO_RELOAD"] = True
-server.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY", default="local")
+
+# Import config after basic setup to avoid circular imports
+from letmelearn.config import get_secret_key  # noqa
+server.config["SECRET_KEY"] = get_secret_key()
 
 # Enable test page in development
 TEST_PAGE = os.environ.get("TEST_PAGE", "false").lower() == "true"

@@ -12,6 +12,7 @@ from datetime import datetime
 # Set test environment BEFORE importing app
 # TEST_MODE bypasses OAuth validation for easier testing
 os.environ['TEST_MODE'] = 'true'
+os.environ['FLASK_ENV'] = 'testing'
 os.environ['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
 os.environ['APP_SECRET_KEY'] = 'test-secret-key'
 os.environ['OAUTH_PROVIDER'] = 'https://accounts.google.com'

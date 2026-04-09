@@ -10,6 +10,7 @@ Provides RESTful endpoints for:
 - GET /api/users?email= - Search users by email prefix
 """
 
+import re
 import logging
 from datetime import datetime
 
@@ -22,6 +23,24 @@ from letmelearn.auth import authenticated
 from letmelearn.errors import problem_response
 
 logger = logging.getLogger(__name__)
+
+
+def escape_regex_pattern(pattern):
+  """Escape special regex characters for MongoDB $regex queries.
+
+  Args:
+    pattern: User input string to escape
+
+  Returns:
+    str: Escaped pattern safe for MongoDB $regex
+
+  Security:
+    Prevents ReDoS attacks by ensuring user input cannot inject
+    special regex characters like ., *, +, ?, ^, $, etc.
+  """
+  if not pattern:
+    return pattern
+  return re.escape(pattern)
 
 
 class Following(Resource):
@@ -313,9 +332,12 @@ class UserSearch(Resource):
 
     user_email = current_user.identity.email
 
+    # SECURITY: Escape user input to prevent regex injection
+    escaped_prefix = escape_regex_pattern(email_prefix)
+
     # Search for users by email prefix (case-insensitive)
     users = list(db.users.find(
-      {"_id": {"$regex": f"^{email_prefix}", "$options": "i"}},
+      {"_id": {"$regex": f"^{escaped_prefix}", "$options": "i"}},
       {"_id": 1, "name": 1, "picture": 1}
     ).limit(10))
 

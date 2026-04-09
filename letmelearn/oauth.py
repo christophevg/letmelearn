@@ -10,10 +10,13 @@ import logging
 from functools import wraps
 from flask import Response
 
+from letmelearn.config import is_test_mode_allowed
+
 logger = logging.getLogger(__name__)
 
 # Test mode flag - bypasses OAuth validation for testing
-TEST_MODE = os.environ.get("TEST_MODE", "false").lower() == "true"
+# Uses is_test_mode_allowed() to prevent TEST_MODE in production
+TEST_MODE = is_test_mode_allowed()
 
 # OAuth instance (None in test mode)
 _oauth = None
