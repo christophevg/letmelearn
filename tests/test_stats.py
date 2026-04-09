@@ -2,7 +2,6 @@
 Tests for statistics endpoints.
 """
 
-import pytest
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bson.objectid import ObjectId
@@ -21,7 +20,7 @@ class TestStatsStreak:
         data = response.get_json()
         assert data['streak'] == 0
         assert data['today_minutes'] == 0
-        assert data['streak_risk'] == True
+        assert data['streak_risk'] is True
         assert data['risk_level'] == 'high'
 
     def test_streak_computes_correctly(self, auth_client, db, test_user):
@@ -122,7 +121,7 @@ class TestStatsStreak:
         data = response.get_json()
         assert data['streak'] == 5
         assert data['today_minutes'] == 0
-        assert data['streak_risk'] == True
+        assert data['streak_risk'] is True
 
     def test_risk_level_none_when_15_min_reached(self, auth_client, db, test_user):
         """Risk level should be none when 15+ minutes today."""
@@ -143,7 +142,7 @@ class TestStatsStreak:
         response = auth_client.get('/api/stats/streak')
 
         data = response.get_json()
-        assert data['streak_risk'] == False
+        assert data['streak_risk'] is False
         assert data['risk_level'] == 'none'
 
     def test_only_quiz_counts_toward_streak(self, auth_client, db, test_user):

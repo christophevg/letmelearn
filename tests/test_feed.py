@@ -4,7 +4,6 @@ Tests for feed endpoints.
 Tests activity feed with mode parameter (my, following, all).
 """
 
-import pytest
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bson.objectid import ObjectId

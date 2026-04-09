@@ -4,8 +4,6 @@ Tests for topics endpoints.
 Tests topic CRUD operations and item management.
 """
 
-import pytest
-from bson.objectid import ObjectId
 from conftest import assert_rfc7807_error
 
 

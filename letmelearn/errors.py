@@ -13,7 +13,7 @@ Example response:
 """
 
 import logging
-from flask import jsonify, request
+from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)

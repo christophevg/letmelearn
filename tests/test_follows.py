@@ -2,7 +2,6 @@
 Tests for follow relationship endpoints.
 """
 
-import pytest
 from datetime import datetime
 
 

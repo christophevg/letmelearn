@@ -2,7 +2,6 @@
 Tests for RFC 7807 Problem Details error format compliance.
 """
 
-import pytest
 from conftest import assert_rfc7807_error
 
 

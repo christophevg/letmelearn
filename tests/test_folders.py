@@ -4,7 +4,6 @@ Tests for folders endpoints.
 Tests folder tree management for organizing topics.
 """
 
-import pytest
 from conftest import assert_rfc7807_error
 
 

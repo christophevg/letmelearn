@@ -2,8 +2,6 @@
 Tests for session tracking endpoints.
 """
 
-import pytest
-from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from bson.objectid import ObjectId
 
@@ -58,8 +56,8 @@ class TestSessionsPost:
         )
         session1_id = response1.get_json()['session_id']
 
-        # Create second session
-        response2 = auth_client.post('/api/sessions',
+        # Create second session (automatically abandons first)
+        auth_client.post('/api/sessions',
             json={"kind": "quiz", "topics": ["topic-2"]}
         )
 

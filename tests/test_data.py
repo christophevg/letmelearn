@@ -2,7 +2,6 @@
 Tests for database connection and migration utilities.
 """
 
-import pytest
 from letmelearn.data import parse_database_name, get_migration_version
 
 

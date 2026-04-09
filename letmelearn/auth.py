@@ -8,8 +8,7 @@ OAuth handling is in oauth.py.
 import logging
 from functools import wraps
 
-from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user
-from flask_restful import Resource
+from flask_login import LoginManager, UserMixin, current_user
 
 from letmelearn.data import db
 from letmelearn.errors import problem_response

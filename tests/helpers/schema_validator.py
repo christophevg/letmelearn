@@ -14,7 +14,6 @@ Usage:
 """
 
 import yaml
-import jsonschema
 from pathlib import Path
 from functools import lru_cache
 from jsonschema.validators import validator_for

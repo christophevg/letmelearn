@@ -8,20 +8,18 @@ Tests for security fixes C1, C2, and C3:
 """
 
 import pytest
-import os
-from unittest.mock import patch
 
 
 class TestGetEnvironment:
   """Tests for get_environment function."""
 
-  def test_default_environment_is_development(self, monkeypatch):
-    """Without FLASK_ENV, should default to 'development'."""
+  def test_default_environment_is_production(self, monkeypatch):
+    """Without FLASK_ENV, should default to 'production' (fail-secure)."""
     monkeypatch.delenv('FLASK_ENV', raising=False)
 
     from letmelearn.config import get_environment
 
-    assert get_environment() == 'development'
+    assert get_environment() == 'production'
 
   def test_production_environment(self, monkeypatch):
     """Should return 'production' when FLASK_ENV=production."""

@@ -14,7 +14,6 @@ from zoneinfo import ZoneInfo
 from flask_restful import Resource
 from flask_login import current_user
 
-from letmelearn.web import server
 from letmelearn.data import db
 from letmelearn.auth import authenticated
 

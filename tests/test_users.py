@@ -4,7 +4,6 @@ Tests for user search endpoint.
 Tests user search functionality for social features.
 """
 
-import pytest
 from conftest import assert_rfc7807_error
 
 

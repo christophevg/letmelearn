@@ -82,7 +82,7 @@ class Feed(Resource):
         for tid in topic_ids:
           try:
             valid_object_ids.append(ObjectId(tid))
-          except:
+          except Exception:
             topic_objects.append({"_id": tid, "name": tid})
 
         if valid_object_ids:
@@ -172,7 +172,7 @@ class Feed(Resource):
             topic_info = {"_id": topic_id, "name": topic_doc.get("name", "Unknown")}
           else:
             topic_info = {"_id": topic_id, "name": topic_id}
-        except:
+        except Exception:
           topic_info = {"_id": topic_id, "name": topic_id}
 
       results.append({

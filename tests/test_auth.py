@@ -4,7 +4,6 @@ Tests for authentication endpoints.
 Tests OAuth login flow and session management.
 """
 
-import pytest
 from conftest import assert_rfc7807_error
 
 
