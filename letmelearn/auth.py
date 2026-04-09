@@ -11,7 +11,6 @@ from functools import wraps
 from flask_login import LoginManager, UserMixin, current_user, login_user, logout_user
 from flask_restful import Resource
 
-from letmelearn.web import server
 from letmelearn.data import db
 from letmelearn.errors import problem_response
 
@@ -19,9 +18,11 @@ logger = logging.getLogger(__name__)
 
 # Flask-Login setup
 login_manager = LoginManager()
-login_manager.session_protection = "strong"
-login_manager.init_app(server)
 
+def setup(server):
+  login_manager.session_protection = "strong"
+  login_manager.init_app(server)
+  logger.info("✅ auth set up")
 
 class User(UserMixin):
   """User model for Flask-Login."""

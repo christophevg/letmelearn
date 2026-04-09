@@ -259,3 +259,5 @@ def register_error_handlers(app):
         logger.exception(f"Unexpected error: {e}")
         problem_data, status = problem("internal_error", detail="An unexpected error occurred")
         return jsonify(problem_data), status
+
+    logger.info("✅ errors handlers registered")

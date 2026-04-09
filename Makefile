@@ -12,7 +12,7 @@ COLLECTION?=topics
 FILE?=${COLLECTION}
 
 # Run the application
-run:
+run: env
 	gunicorn -b 0.0.0.0:8000 -k eventlet -w 1 letmelearn.web:server
 
 # Install main environment
@@ -32,24 +32,33 @@ install-test: install
 	~/.pyenv/versions/$(TEST_ENV)/bin/pip install -r requirements-test.txt
 	~/.pyenv/versions/$(TEST_ENV)/bin/pip install -e .
 	@echo "✅ Test environment ready"
-	pyenv local $(MAIN_ENV)
+	@pyenv local $(MAIN_ENV)
 
 # Run tests using test environment
-test:
+test: env-test
 	@echo "🧪 Running tests in $(TEST_ENV)..."
-	~/.pyenv/versions/$(TEST_ENV)/bin/pytest tests/ $(ARGS)
+	pytest tests/ $(ARGS)
 	@echo "✅ Tests complete"
+	@pyenv local $(MAIN_ENV)
 
 # Run tests with coverage
-coverage:
+coverage: env-test
 	@echo "🧪 Running tests with coverage in $(TEST_ENV)..."
-	~/.pyenv/versions/$(TEST_ENV)/bin/pytest --cov=letmelearn --cov-report=term-missing tests/ $(ARGS)
+	pytest --cov=letmelearn --cov-report=term-missing tests/ $(ARGS)
 	@echo "✅ Coverage complete"
+	@pyenv local $(MAIN_ENV)
 
 # Lint code
-lint:
-	ruff check --select=E9,F63,F7,F82 --target-version=py311 .
-	ruff check --target-version=py311 .
+lint: env-test
+	-ruff check --select=E9,F63,F7,F82 --target-version=py311 .
+	-ruff check --target-version=py311 .
+	@pyenv local $(MAIN_ENV)
+
+env-test:
+	@pyenv local $(TEST_ENV)
+
+env:
+	@pyenv local $(MAIN_ENV)
 
 # Database operations
 export-production:

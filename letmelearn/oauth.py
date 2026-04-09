@@ -10,7 +10,10 @@ import logging
 from functools import wraps
 from flask import Response
 
+from oatk import OAuthToolkit
+
 from letmelearn.config import is_test_mode_allowed
+from letmelearn.errors import problem_response
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +24,14 @@ TEST_MODE = is_test_mode_allowed()
 # OAuth instance (None in test mode)
 _oauth = None
 
-def setup_oauth():
-  """Setup OAuth - returns None if TEST_MODE is true."""
+def setup(server):
+  """Setup OAuth - defaults to None if TEST_MODE is true."""
   global _oauth
 
   if TEST_MODE:
     logger.info("TEST_MODE enabled - OAuth bypassed")
-    return None
-
-  from oatk import OAuthToolkit
-  from letmelearn.web import server
+    _oauth = None
+    return
 
   # Setup OAuth settings
   server.settings["oauth"] = {
@@ -39,21 +40,18 @@ def setup_oauth():
   }
 
   # Create OAuth instance
-  oauth = OAuthToolkit()
-  oauth.using_provider(os.environ["OAUTH_PROVIDER"])
-  oauth.with_client_id(os.environ["OAUTH_CLIENT_ID"])
+  _oauth = OAuthToolkit()
+  _oauth.using_provider(os.environ["OAUTH_PROVIDER"])
+  _oauth.with_client_id(os.environ["OAUTH_CLIENT_ID"])
 
-  _oauth = oauth
-  return oauth
-
-def register_oauth_route(server):
-  """Register OAuth-related routes."""
+  # Register OAuth-related routes.
   @server.route("/oatk.js")
   def oatk_script():
     import oatk.js
     return Response(oatk.js.as_src(), mimetype="application/javascript")
 
   server.register_external_script("/oatk.js")
+  logger.info("✅ oauth set up")
 
 def oauth_authenticated(func):
   """Decorator for OAuth token validation - bypassed in test mode.
@@ -69,7 +67,6 @@ def oauth_authenticated(func):
       return func(*args, **kwargs)
     if _oauth is None:
       # OAuth not initialized - should not happen in production
-      from letmelearn.errors import problem_response
       return problem_response("unauthorized", detail="OAuth not configured")
     return _oauth.authenticated(func)(*args, **kwargs)
   return wrapper
@@ -77,6 +74,3 @@ def oauth_authenticated(func):
 def get_oauth():
   """Get the OAuth instance (None in test mode)."""
   return _oauth
-
-# Initialize OAuth on module import
-setup_oauth()

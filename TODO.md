@@ -43,6 +43,33 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ## Backlog
 
+### Flask Limiter app statics (prio:1)
+
+Flask Limiter currently also track app static files (component JS, pages JS,...). These should at least be exempt, because simply loading a page takes up roughly 25 calls. With 50 calls per hour limit, refreshing the page twice ends the session. A better selection of rate limited pages is required. I've disabled the feature for now.
+
+### Linting (prio:1)
+
+Run `make lint` to perform ruff linting. Please fix.
+
+### Running test suite produces ignored exception (prio:1)
+
+```console
+Exception ignored in thread started by: <bound method Thread._bootstrap of <Thread(pymongo_kill_cursors_thread, started daemon 6135508992)>>
+Traceback (most recent call last):
+  File "/Users/xtof/.pyenv/versions/3.11.12/lib/python3.11/threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "/Users/xtof/.pyenv/versions/3.11.12/lib/python3.11/threading.py", line 1049, in _bootstrap_inner
+    self._delete()
+  File "/Users/xtof/.pyenv/versions/3.11.12/lib/python3.11/threading.py", line 1081, in _delete
+    del _active[get_ident()]
+        ~~~~~~~^^^^^^^^^^^^^
+KeyError: 4496054080
+```
+
+### FLASK_ENV handling (prio:1)
+
+Isn't it a better idea to make production the default? This should be the most restrictive and if we want a less restrictive development or testing environment this should be set explicitly?! Now if FLASK_ENV is not explicitly set to "production", the default is development, not something you want in actual production. Or am I misreading the code?
+
 ### Bug: bugs/session-registration (prio:1)
 
 - [ ] review bug

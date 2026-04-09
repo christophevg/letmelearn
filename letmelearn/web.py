@@ -1,5 +1,3 @@
-__version__ = "0.0.6"
-
 # needed explicitly for recursion issue in eventlet+ssl on outgoing pymongo
 # and to be able to create single pymongo Database object
 # problem only appears on render.com setup
@@ -30,24 +28,35 @@ for module in ["gunicorn.error", "pymongo.serverSelection", "urllib3"]:
   if len(module_logger.handlers) > 0:
     module_logger.handlers[0].setFormatter(formatter)
 
-# register components
+logger = logging.getLogger(__name__)
+
+from letmelearn import config
+from letmelearn.data import DB_CONN # noqa
+
+# set up server
 
 from baseweb import Baseweb  # noqa
-from flask_limiter import Limiter  # noqa
-from flask_limiter.util import get_remote_address  # noqa
 server = Baseweb("LetMeLearn")
+server.config["TEMPLATES_AUTO_RELOAD"] = True # TODO: use is_development?
+server.config["SECRET_KEY"] = config.get_secret_key()
 server.log_config()
 
 # Initialize rate limiter using MongoDB for storage
 # Disabled in testing mode to avoid rate limiting during tests
-from letmelearn.config import is_testing  # noqa
+from flask_limiter import Limiter, util  # noqa
 limiter = Limiter(
   app=server,
-  key_func=get_remote_address,
+  key_func=util.get_remote_address,
   default_limits=["200 per day", "50 per hour"],
-  storage_uri=os.environ.get("MONGODB_URI", "mongodb://localhost:27017/letmelearn"),
-  enabled=not is_testing()
+  storage_uri=DB_CONN,
+  enabled=False #not config.is_testing()
 )
+if limiter.enabled:
+  logger.info("✅ rate limiter enabled")
+else:
+  logger.warning("⚠️  rate limiter NOT enabled")
+
+# set up content
 
 HERE = Path(__file__).resolve().parent
 
@@ -57,7 +66,6 @@ server.register_stylesheet("custom.css", HERE / "static" / "css")
 server.register_stylesheet("flashcards.css", HERE / "static" / "css")
 
 # TODO: glob folder recursively
-COMPONENTS = HERE / "components"
 for component in [
   "navigation",
   "Timer",
@@ -79,39 +87,28 @@ for component in [
   "questions/BasicQuestion",
   "questions/FillInQuestion"
 ]:
-  server.register_component(f"{component}.js", COMPONENTS)
-
-server.config["TEMPLATES_AUTO_RELOAD"] = True
-
-# Import config after basic setup to avoid circular imports
-from letmelearn.config import get_secret_key  # noqa
-server.config["SECRET_KEY"] = get_secret_key()
+  server.register_component(f"{component}.js", HERE / "components")
 
 # Enable test page in development
 TEST_PAGE = os.environ.get("TEST_PAGE", "false").lower() == "true"
-if TEST_PAGE:
-  logging.getLogger(__name__).info("Test page enabled")
 
-# Import modules in dependency order
-# 1. Data layer
-import letmelearn.data  # noqa
+# Auth setup
+import letmelearn.auth # noqa
+letmelearn.auth.setup(server)
 
-# 2. Authentication (User class, Flask-Login)
-import letmelearn.auth  # noqa
-
-# 3. OAuth setup (depends on auth)
+# OAuth setup
 import letmelearn.oauth  # noqa
-letmelearn.oauth.register_oauth_route(server)
+letmelearn.oauth.setup(server)
 
-# 4. API endpoints (depends on auth, oauth)
+# API endpoints
 import letmelearn.api  # noqa
 letmelearn.api.register_endpoints(server)
 
-# 5. Error handlers
+# Error handlers
 import letmelearn.errors  # noqa
 letmelearn.errors.register_error_handlers(server)
 
-# 6. Page routes
+# Page routes
 import letmelearn.pages  # noqa
 
 # External scripts
@@ -119,4 +116,4 @@ for script in ["logging", "auth", "diff", "nl", "ajax"]:
   server.register_external_script(f"/app/static/{script}.js")
 
 server.log_routes()
-logging.getLogger(__name__).info("everything loaded...")
+logger.info("✅ everything loaded...")

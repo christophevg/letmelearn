@@ -4,6 +4,8 @@ LetMeLearn API endpoints.
 All REST API endpoints are registered here when the module is imported.
 """
 
+import logging
+
 from letmelearn.api.session import Session
 from letmelearn.api.folders import Folders
 from letmelearn.api.topics import Topics, TopicResource, Items
@@ -12,6 +14,7 @@ from letmelearn.api.sessions import Sessions, SessionResource, SessionCurrent
 from letmelearn.api.stats import StatsStreak, StatsWeekly, StatsFollowingStreaks
 from letmelearn.api.follows import Following, FollowingUser, Followers, UserSearch
 
+logger = logging.getLogger(__name__)
 
 def register_endpoints(server):
   """Register all API endpoints with the Flask server."""
@@ -46,3 +49,5 @@ def register_endpoints(server):
   server.api.add_resource(FollowingUser, "/api/following/<string:email>", endpoint="api-following-user")
   server.api.add_resource(Followers, "/api/followers", endpoint="api-followers")
   server.api.add_resource(UserSearch, "/api/users", endpoint="api-users")
+
+  logger.info("✅ API resources registered")
