@@ -43,6 +43,11 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ## Backlog
 
+### Bug: bugs/session-registration (prio:1)
+
+- [ ] review bug
+- [ ] check ongoing migration from feed to session
+
 ### Code Review Fixes (Critical - prio:1)
 
 *Security issues from baseline code review (2026-04-09)*
@@ -168,6 +173,14 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 ### New stats: e.g. answers/minute (prio: 2)
 
 Tracking the number of answers per minute gives an indication of the speed of the user, which is a measure for his/her ability. Research other possible statistics we can capture/compute with respect to learning.
+
+### New Auth mechanism: magic email link (prio: 3)
+
+### User sign up and admin pages (prio:3 )
+
+- Record information from new users (include humand detection)
+- store in collection
+- provide admin page for review and approve
 
 ### General Improvements
 
