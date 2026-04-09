@@ -4,6 +4,7 @@ pymongo
 
 Flask-Login
 oatk
+flask-limiter
 
 gunicorn
 eventlet

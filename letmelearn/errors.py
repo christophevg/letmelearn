@@ -67,6 +67,12 @@ PROBLEM_TYPES = {
         "status": 422,
         "description": "The request was well-formed but could not be processed due to semantic errors."
     },
+    "rate_limited": {
+        "type": f"{ERROR_BASE_URL}#rate-limited",
+        "title": "Too Many Requests",
+        "status": 429,
+        "description": "You have exceeded the rate limit. Please try again later."
+    },
 
     # Business Rule Errors
     "self_follow": {
@@ -219,6 +225,11 @@ def register_error_handlers(app):
         problem_data, status = problem("unprocessable_entity", detail=str(e.description) if hasattr(e, 'description') else None)
         return jsonify(problem_data), status
 
+    @app.errorhandler(429)
+    def handle_rate_limited(e):
+        problem_data, status = problem("rate_limited", detail=str(e.description) if hasattr(e, 'description') else None)
+        return jsonify(problem_data), status
+
     @app.errorhandler(500)
     def handle_internal_error(e):
         logger.error(f"Internal server error: {e}")
@@ -238,6 +249,7 @@ def register_error_handlers(app):
                 405: handle_method_not_allowed,
                 409: handle_conflict,
                 422: handle_unprocessable_entity,
+                429: handle_rate_limited,
                 500: handle_internal_error
             }
             handler = handlers.get(e.code, handle_internal_error)

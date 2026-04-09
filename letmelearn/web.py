@@ -33,8 +33,21 @@ for module in ["gunicorn.error", "pymongo.serverSelection", "urllib3"]:
 # register components
 
 from baseweb import Baseweb  # noqa
+from flask_limiter import Limiter  # noqa
+from flask_limiter.util import get_remote_address  # noqa
 server = Baseweb("LetMeLearn")
 server.log_config()
+
+# Initialize rate limiter using MongoDB for storage
+# Disabled in testing mode to avoid rate limiting during tests
+from letmelearn.config import is_testing  # noqa
+limiter = Limiter(
+  app=server,
+  key_func=get_remote_address,
+  default_limits=["200 per day", "50 per hour"],
+  storage_uri=os.environ.get("MONGODB_URI", "mongodb://localhost:27017/letmelearn"),
+  enabled=not is_testing()
+)
 
 HERE = Path(__file__).resolve().parent
 
