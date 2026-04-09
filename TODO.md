@@ -43,7 +43,131 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ## Backlog
 
-*Unsorted and pending tasks. Ready for prioritization.*
+### Code Review Fixes (Critical - prio:1)
+
+*Security issues from baseline code review (2026-04-09)*
+
+- [x] Remove default secret key "local" from production code (prio:1)
+  - **Issue**: `web.py:72` has hardcoded default secret key
+  - **Fix**: Created `config.py` with `get_secret_key()` that fails in production without APP_SECRET_KEY
+  - **File**: `letmelearn/web.py`, `letmelearn/config.py`
+
+- [x] Fix regex injection vulnerability in user search (prio:1)
+  - **Issue**: `api/follows.py:318` uses MongoDB `$regex` with user input - potential ReDoS
+  - **Fix**: Added `escape_regex_pattern()` to escape special characters before regex query
+  - **File**: `letmelearn/api/follows.py`
+
+- [x] Add production safeguard for TEST_MODE (prio:1)
+  - **Issue**: `oauth.py:16` bypasses OAuth with simple string comparison
+  - **Fix**: Created `is_test_mode_allowed()` that raises RuntimeError if TEST_MODE in production
+  - **File**: `letmelearn/oauth.py`, `letmelearn/config.py`
+
+### Code Review Fixes (High - prio:2)
+
+- [ ] Fix MongoDB connection string parsing (prio:2)
+  - **Issue**: `data.py:8-9` uses fragile string splitting for DB name extraction
+  - **Fix**: Use `urllib.parse.urlparse` for proper parsing
+  - **File**: `letmelearn/data.py`
+
+- [ ] Restrict test mode login to test accounts only (prio:2)
+  - **Issue**: `api/session.py:34-41` allows login with any existing email in test mode
+  - **Fix**: Add test-user whitelist or restriction
+  - **File**: `letmelearn/api/session.py`
+
+- [ ] Fix schema migration to run only when needed (prio:2)
+  - **Issue**: `data.py:21-40` runs migration on every startup
+  - **Fix**: Add version check before running migration
+  - **File**: `letmelearn/data.py`
+
+- [ ] Fix Items endpoint to return proper 404 (prio:2)
+  - **Issue**: `api/topics.py:213-221` returns `None` instead of error for non-existent topics
+  - **Fix**: Return proper RFC 7807 error response
+  - **File**: `letmelearn/api/topics.py`
+
+- [ ] Fix JSON comparison in item update query (prio:2)
+  - **Issue**: `api/topics.py:236-247` uses JSON.stringify comparison - fragile
+  - **Fix**: Use proper MongoDB query for item matching
+  - **File**: `letmelearn/api/topics.py`
+
+- [ ] Add rate limiting to authentication endpoints (prio:2)
+  - **Issue**: No rate limiting on `/api/session` POST - vulnerable to brute force
+  - **Fix**: Add rate limiting middleware
+  - **Files**: Multiple API files
+
+### Code Review Fixes (Medium - prio:3)
+
+- [ ] Extract streak calculation to service class (prio:3)
+  - **Issue**: Complex logic in `api/stats.py:26-118` endpoint
+  - **Fix**: Move to separate service class for testability
+  - **File**: `letmelearn/api/stats.py`
+
+- [ ] Fix shuffle algorithm in TopicsStore (prio:3)
+  - **Issue**: `TopicsStore.js:167` uses biased `Math.random() - 0.5`
+  - **Fix**: Implement Fisher-Yates shuffle algorithm
+  - **File**: `letmelearn/components/TopicsStore.js`
+
+- [ ] Fix template literal syntax in topics.js (prio:3)
+  - **Issue**: `pages/topics.js:188` has template literal without backticks
+  - **Fix**: Use proper backtick syntax
+  - **File**: `letmelearn/pages/topics.js`
+
+- [ ] Extract duplicated topic lookup logic (prio:3)
+  - **Issue**: `api/feed.py:78-110` has duplicated topic name resolution
+  - **Fix**: Extract to helper function
+  - **File**: `letmelearn/api/feed.py`
+
+- [ ] Make timezone configurable (prio:3)
+  - **Issue**: "Europe/Brussels" hardcoded in `api/stats.py`
+  - **Fix**: Add `TIMEZONE` environment variable
+  - **File**: `letmelearn/api/stats.py`
+
+### Code Review Fixes (Low - prio:4)
+
+- [ ] Add Python type hints throughout codebase (prio:4)
+  - **Benefit**: Better IDE support and code documentation
+
+- [ ] Resolve TODO comments in codebase (prio:4)
+  - `pages/topics.js:321` - virtual root folder
+  - `components/TopicsStore.js:343` - window.hash cleanup
+
+- [ ] Add pytest markers for slow tests (prio:4)
+  - **Benefit**: Allow selective test running
+
+- [ ] Apply consistent import ordering with isort (prio:4)
+  - **Issue**: Mixed `import` and `from` ordering across files
+
+### Test Coverage Gaps (prio:3)
+
+- [ ] Add frontend Jest tests for Vuex store modules (prio:3)
+- [ ] Add test for invalid ObjectId edge cases (prio:3)
+- [ ] Add test for session auto-stop behavior (concurrency) (prio:3)
+- [ ] Add test for schema version migration (prio:3)
+- [ ] Add tests for database connection failures (prio:3)
+
+### Session Improvements (prio:2)
+
+*Feature enhancements for session tracking and feedback.*
+
+- [ ] Session feedback to user (prio:2)
+  - **Description**: After completing a session, show a feedback page with session statistics
+  - **Requirements**:
+    - Base feedback on actual recorded session data
+    - Show stats improvements explicitly
+    - Add encouragement for streak maintenance
+  - **API Dependency**: Enhanced GET endpoint for session feedback
+
+- [ ] Session detailed tracking (prio:3)
+  - **Description**: Track individual questions as they are answered during a session
+  - **Requirements**:
+    - Record question-level progress in real-time
+    - Provide partial information on abandonment
+    - Requires `questions` array in session document
+  - **API Dependency**: New PATCH endpoint for question tracking
+  - **Security Dependency**: Rate limiting (H6) must be implemented first
+
+### New stats: e.g. answers/minute (prio: 2)
+
+Tracking the number of answers per minute gives an indication of the speed of the user, which is a measure for his/her ability. Research other possible statistics we can capture/compute with respect to learning.
 
 ### General Improvements
 
@@ -158,6 +282,22 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-09: Critical Security Fixes (C1, C2, C3)
+
+- [x] Remove default secret key "local" from production code
+  - Created `letmelearn/config.py` with environment detection and validation
+  - Implemented `get_secret_key()` that fails in production without APP_SECRET_KEY
+  - Development/testing generates random key with warning
+- [x] Fix regex injection vulnerability in user search
+  - Added `escape_regex_pattern()` function using `re.escape()`
+  - Applied escaping to user input in UserSearch endpoint
+- [x] Add production safeguard for TEST_MODE
+  - Implemented `is_test_mode_allowed()` with production guard
+  - Raises RuntimeError if TEST_MODE=true in production
+- [x] Created comprehensive test suite (38 tests in `tests/test_security.py`)
+- [x] All 178 tests pass
+- Summary: reporting/security-fixes/development-summary.md
 
 ### 2026-04-09: Alternate Identity Dashboard Fix
 
