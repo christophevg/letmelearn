@@ -148,12 +148,22 @@ var Quiz = {
   mounted: function() {
     var self = this;
 
-    // Handle page unload - stop session if active
-    window.addEventListener("beforeunload", function(e) {
-      if (self.playing) {
-        self.stopSession("abandoned");
+    // Handle page unload - use sendBeacon for reliable session stop
+    // sendBeacon is designed for analytics/unload scenarios and guarantees delivery
+    this._beforeUnloadHandler = function(e) {
+      if (self.playing && store.getters.hasActiveSession) {
+        self._sendSessionBeacon("abandoned");
       }
-    });
+    };
+    window.addEventListener("beforeunload", this._beforeUnloadHandler);
+
+    // Handle tab visibility change - stop session when tab becomes hidden
+    this._visibilityHandler = function(e) {
+      if (document.visibilityState === "hidden" && self.playing) {
+        self._sendSessionBeacon("abandoned");
+      }
+    };
+    document.addEventListener("visibilitychange", this._visibilityHandler);
 
     // Check for existing session (page refresh/reload)
     if (store.getters.hasActiveSession) {
@@ -161,9 +171,14 @@ var Quiz = {
     }
   },
   beforeDestroy: function() {
-    // Clean up beforeunload listener
-    window.removeEventListener("beforeunload");
-    // Stop session if still active
+    // Clean up event listeners
+    if (this._beforeUnloadHandler) {
+      window.removeEventListener("beforeunload", this._beforeUnloadHandler);
+    }
+    if (this._visibilityHandler) {
+      document.removeEventListener("visibilitychange", this._visibilityHandler);
+    }
+    // Stop session if still active (for normal navigation)
     if (this.playing) {
       this.stopSession("abandoned");
     }
@@ -204,6 +219,27 @@ var Quiz = {
     }
   },
   methods: {
+    /**
+     * Send session stop using sendBeacon for reliable delivery during page unload.
+     * sendBeacon guarantees delivery even when the page is closing.
+     * @param {string} status - "completed" or "abandoned"
+     */
+    _sendSessionBeacon: function(status) {
+      var sessionId = store.getters.currentSessionId;
+      if (!sessionId) {
+        return;
+      }
+      var data = {
+        status: status,
+        questions: this.questions,
+        asked: this.asked,
+        attempts: this.attempts,
+        correct: this.correct
+      };
+      var blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+      navigator.sendBeacon("/api/sessions/" + sessionId, blob);
+      console.debug("Quiz: sent session beacon (" + status + ")");
+    },
     start: function() {
       var self = this;
       this.result = null;

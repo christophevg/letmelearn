@@ -8,7 +8,7 @@ Provides RESTful endpoints for:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from flask_restful import Resource
@@ -98,6 +98,18 @@ class Sessions(Resource):
 
 class SessionResource(Resource):
   """Update or retrieve a specific session."""
+
+  @authenticated
+  def post(self, session_id):
+    """Update a session via POST (for sendBeacon support).
+
+    This endpoint supports navigator.sendBeacon() which only sends POST requests.
+    It proxies to the PATCH handler for session updates.
+
+    Request body: Same as PATCH endpoint
+    Returns: Same as PATCH endpoint
+    """
+    return self.patch(session_id)
 
   @authenticated
   def patch(self, session_id):
