@@ -7,7 +7,6 @@ is handled via Flask-Login session only.
 
 import pytest
 import os
-from datetime import datetime
 
 # Set test environment BEFORE importing app
 # TEST_MODE bypasses OAuth validation for easier testing
@@ -18,6 +17,30 @@ os.environ['APP_SECRET_KEY'] = 'test-secret-key'
 os.environ['OAUTH_PROVIDER'] = 'https://accounts.google.com'
 os.environ['OAUTH_CLIENT_ID'] = 'test-client-id'
 os.environ['TEST_USERS'] = 'test@example.com,admin@example.com,newuser@example.com,logintest@example.com'
+
+
+def pytest_sessionfinish(session, exitstatus):
+  """Clean up MongoClient after all tests complete.
+
+  This hook runs after all tests and closes the MongoClient properly
+  to minimize pymongo daemon thread cleanup errors during Python shutdown.
+
+  Note: Some threading cleanup noise may still appear due to pymongo's
+  daemon threads. This is a known issue (PYTHON-4370) and doesn't affect
+  test results.
+  """
+  from pymongo import MongoClient
+  import gc
+
+  # Force garbage collection to clean up any lingering references
+  gc.collect()
+
+  # Close all pymongo clients to stop daemon threads
+  for client in list(MongoClient._clients.values()):
+    try:
+      client.close()
+    except Exception:
+      pass
 
 
 @pytest.fixture(scope='session')
@@ -38,10 +61,16 @@ def app():
 @pytest.fixture(scope='session')
 def db(app):
   """Create test database connection."""
+  import warnings
   from letmelearn.data import db
   yield db
   # Cleanup after all tests
   db.client.drop_database('letmelearn_test')
+  # Close MongoClient to stop daemon threads properly
+  # Suppress the threading cleanup warning that occurs during shutdown
+  with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    db.client.close()
 
 
 @pytest.fixture
