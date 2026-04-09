@@ -9,10 +9,11 @@ from flask import request
 from flask_restful import Resource
 from flask_login import current_user, login_user, logout_user
 
-from letmelearn.web import server
+from letmelearn.web import server, limiter
 from letmelearn.auth import User, authenticated
 from letmelearn.oauth import oauth_authenticated, TEST_MODE, get_oauth
 from letmelearn.errors import problem_response
+from letmelearn.config import get_test_users
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 class Session(Resource):
   """Manage user sessions (login/logout/identity)."""
 
+  @limiter.limit("5 per minute")  # Stricter rate limit for login
   @oauth_authenticated  # OAuth token required (bypassed in test mode)
   def post(self):
     """Login - validate OAuth token or use test email.
@@ -31,8 +33,14 @@ class Session(Resource):
       User info JSON with email, name, picture, identities, current.
     """
     if TEST_MODE:
-      # Test mode: accept email in request body
+      # Test mode: accept email in request body (whitelisted only)
+      allowed_emails = get_test_users()
       email = request.json.get("email", "test@example.com")
+
+      if email not in allowed_emails:
+        logger.warning(f"non-whitelisted user attempted test login: {email}")
+        return problem_response("forbidden", detail="Test mode requires whitelisted user")
+
       user = User.find(email)
       if not user:
         logger.warning(f"unknown user in test mode: {email}")

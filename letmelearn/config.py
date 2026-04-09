@@ -104,3 +104,18 @@ def is_test_mode_allowed():
     )
 
   return test_mode
+
+
+def get_test_users():
+  """Get allowed test user emails from environment.
+
+  Returns:
+    list: List of whitelisted email addresses for test mode login
+
+  Environment:
+    TEST_USERS: Comma-separated list of emails (default: 'test@example.com')
+  """
+  return [
+    email.strip()
+    for email in os.environ.get('TEST_USERS', 'test@example.com').split(',')
+  ]

@@ -17,6 +17,7 @@ os.environ['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
 os.environ['APP_SECRET_KEY'] = 'test-secret-key'
 os.environ['OAUTH_PROVIDER'] = 'https://accounts.google.com'
 os.environ['OAUTH_CLIENT_ID'] = 'test-client-id'
+os.environ['TEST_USERS'] = 'test@example.com,admin@example.com,newuser@example.com,logintest@example.com'
 
 
 @pytest.fixture(scope='session')
@@ -119,6 +120,17 @@ def cleanup_users(db):
   """Clean up users after each test (except test user)."""
   yield
   db.users.delete_many({"_id": {"$ne": "test@example.com"}})
+
+
+@pytest.fixture(autouse=True)
+def cleanup_rate_limits(db):
+  """Clean up rate limit storage after each test."""
+  yield
+  # Flask-Limiter stores rate limits in a collection named 'flask_limiter'
+  # or prefixed with the app name. We drop all rate limit collections.
+  for collection_name in db.list_collection_names():
+    if 'limiter' in collection_name.lower():
+      db.drop_collection(collection_name)
 
 
 # Helper functions

@@ -12,8 +12,8 @@ class TestSessionPost:
   """Tests for POST /api/session - OAuth login."""
 
   def test_login_with_email_in_test_mode(self, client, db):
-    """In test mode, login should accept email in request body."""
-    # Create a test user
+    """In test mode, login should accept whitelisted email in request body."""
+    # Create a test user (email is whitelisted in conftest.py)
     db.users.insert_one({
       "_id": "newuser@example.com",
       "name": "New User",
@@ -43,14 +43,30 @@ class TestSessionPost:
 
   def test_login_unknown_user_returns_403(self, client):
     """Login with unknown email should return 403."""
-    response = client.post('/api/session', json={"email": "unknown@example.com"})
+    # Use a whitelisted email but user doesn't exist in database
+    response = client.post('/api/session', json={"email": "admin@example.com"})
 
     assert response.status_code == 403
     assert_rfc7807_error(response, 'forbidden', 403)
 
+  def test_login_non_whitelisted_user_returns_403(self, client, db):
+    """Login with non-whitelisted email should return 403 even if user exists."""
+    # Create a user that is NOT in the whitelist
+    db.users.insert_one({
+      "_id": "hacker@example.com",
+      "name": "Hacker",
+      "picture": None
+    })
+
+    response = client.post('/api/session', json={"email": "hacker@example.com"})
+
+    assert response.status_code == 403
+    data = assert_rfc7807_error(response, 'forbidden', 403)
+    assert "whitelisted" in data.get("detail", "").lower()
+
   def test_login_without_email_uses_default(self, client, db):
     """Login without email should use default test email."""
-    # In test mode, default email is test@example.com
+    # In test mode, default email is test@example.com (whitelisted)
     db.users.replace_one(
       {"_id": "test@example.com"},
       {"_id": "test@example.com", "name": "Test User", "picture": None},
