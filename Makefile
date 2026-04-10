@@ -41,6 +41,13 @@ test: env-test
 	@echo "✅ Tests complete"
 	@pyenv local $(MAIN_ENV)
 
+# Run tests using test environment WITH Mongo
+test-real: env-test
+	@echo "🧪 Running tests in $(TEST_ENV)... WITH Mongo"
+	USE_MONGOMOCK=false pytest tests/ $(ARGS)
+	@echo "✅ Tests complete"
+	@pyenv local $(MAIN_ENV)
+
 # Run tests with coverage
 coverage: env-test
 	@echo "🧪 Running tests with coverage in $(TEST_ENV)..."

@@ -8,6 +8,7 @@ Provides RESTful endpoints for:
 """
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -22,6 +23,70 @@ logger = logging.getLogger(__name__)
 BELGIUM_TZ = ZoneInfo("Europe/Brussels")
 
 
+def _is_mongomock():
+  """Check if we're using mongomock (for test compatibility)."""
+  return os.environ.get("USE_MONGOMOCK", "false").lower() == "true"
+
+
+def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
+  """Aggregate sessions by day, handling mongomock compatibility.
+
+  MongoDB's $dateToString with timezone is not supported in mongomock,
+  so we compute the day string in Python when using mongomock.
+
+  Returns a list of {day: str, total_elapsed: int} documents.
+  """
+  if statuses is None:
+    statuses = ["completed", "abandoned"]
+
+  if _is_mongomock():
+    # mongomock-compatible: fetch raw data and group in Python
+    sessions = list(db.sessions.find({
+      "user": user_email,
+      "kind": kind,
+      "status": {"$in": statuses}
+    }, {"started_at": 1, "elapsed": 1}))
+
+    # Group by day in Python (convert UTC to Belgium timezone)
+    day_totals = {}
+    for session in sessions:
+      started_at = session.get("started_at")
+      elapsed = session.get("elapsed", 0)
+      if started_at:
+        # Convert to Belgium timezone
+        if started_at.tzinfo is None:
+          started_at = started_at.replace(tzinfo=timezone.utc)
+        started_belgium = started_at.astimezone(BELGIUM_TZ)
+        day_str = started_belgium.date().isoformat()
+        day_totals[day_str] = day_totals.get(day_str, 0) + elapsed
+
+    return [{"_id": day, "total_elapsed": total} for day, total in day_totals.items()]
+  else:
+    # MongoDB: use aggregation with timezone
+    pipeline = [
+      {"$match": {
+        "user": user_email,
+        "kind": kind,
+        "status": {"$in": statuses}
+      }},
+      {"$project": {
+        "day": {
+          "$dateToString": {
+            "date": "$started_at",
+            "format": "%Y-%m-%d",
+            "timezone": "Europe/Brussels"
+          }
+        },
+        "elapsed": 1
+      }},
+      {"$group": {
+        "_id": "$day",
+        "total_elapsed": {"$sum": "$elapsed"}
+      }}
+    ]
+    return list(db.sessions.aggregate(pipeline))
+
+
 def compute_streak_for_user(user_email):
   """Compute streak data for a specific user.
 
@@ -33,34 +98,18 @@ def compute_streak_for_user(user_email):
   """
   today = datetime.now(BELGIUM_TZ).date()
 
-  # Compute streak: consecutive days with 15+ min quiz time
-  pipeline = [
-    {"$match": {
-      "user": user_email,
-      "kind": "quiz",
-      "status": {"$in": ["completed", "abandoned"]}
-    }},
-    {"$project": {
-      "day": {
-        "$dateToString": {
-          "date": "$started_at",
-          "format": "%Y-%m-%d",
-          "timezone": "Europe/Brussels"
-        }
-      },
-      "elapsed": 1
-    }},
-    {"$group": {
-      "_id": "$day",
-      "total_elapsed": {"$sum": "$elapsed"}
-    }},
-    {"$match": {
-      "total_elapsed": {"$gte": 900}  # 15 min = 900 seconds
-    }},
-    {"$sort": {"_id": -1}}
+  # Get qualifying days using mongomock-compatible aggregation
+  day_totals = _aggregate_sessions_by_day(user_email)
+
+  # Filter to days with 15+ min quiz time
+  qualifying_days = [
+    {"_id": d["_id"], "total_elapsed": d["total_elapsed"]}
+    for d in day_totals
+    if d["total_elapsed"] >= 900  # 15 min = 900 seconds
   ]
 
-  qualifying_days = list(db.sessions.aggregate(pipeline))
+  # Sort by day descending
+  qualifying_days.sort(key=lambda x: x["_id"], reverse=True)
 
   # Count consecutive qualifying days
   streak = 0
@@ -82,34 +131,18 @@ def compute_streak_for_user(user_email):
     else:
       break
 
-  # Get today's time
+  # Get today's time using mongomock-compatible aggregation
   today_str = today.isoformat()
-  today_pipeline = [
-    {"$match": {
-      "user": user_email,
-      "kind": "quiz",
-      "status": {"$in": ["completed", "abandoned", "active"]}
-    }},
-    {"$project": {
-      "day": {
-        "$dateToString": {
-          "date": "$started_at",
-          "format": "%Y-%m-%d",
-          "timezone": "Europe/Brussels"
-        }
-      },
-      "elapsed": 1
-    }},
-    {"$match": {"day": today_str}},
-    {"$group": {
-      "_id": None,
-      "total": {"$sum": "$elapsed"}
-    }}
-  ]
+  today_totals = _aggregate_sessions_by_day(user_email, statuses=["completed", "abandoned", "active"])
 
-  today_result = list(db.sessions.aggregate(today_pipeline))
-  today_seconds = today_result[0]["total"] if today_result else 0
-  today_minutes = today_seconds // 60
+  # Find today's total
+  today_total = 0
+  for d in today_totals:
+    if d["_id"] == today_str:
+      today_total = d["total_elapsed"]
+      break
+
+  today_minutes = today_total // 60
 
   return {
     "streak": streak,

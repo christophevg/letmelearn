@@ -3,6 +3,9 @@ Pytest configuration and fixtures for letmelearn tests.
 
 With TEST_MODE enabled, OAuth is bypassed and authentication
 is handled via Flask-Login session only.
+
+With USE_MONGOMOCK enabled, tests use mongomock for in-memory
+MongoDB simulation, allowing tests to run without a real MongoDB server.
 """
 
 import pytest
@@ -12,35 +15,47 @@ import os
 # TEST_MODE bypasses OAuth validation for easier testing
 os.environ['TEST_MODE'] = 'true'
 os.environ['FLASK_ENV'] = 'testing'
-os.environ['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
 os.environ['APP_SECRET_KEY'] = 'test-secret-key'
 os.environ['OAUTH_PROVIDER'] = 'https://accounts.google.com'
 os.environ['OAUTH_CLIENT_ID'] = 'test-client-id'
 os.environ['TEST_USERS'] = 'test@example.com,admin@example.com,newuser@example.com,logintest@example.com'
 
+# Default to mongomock for tests (CI-friendly)
+# Set USE_MONGOMOCK=false to use real MongoDB for local development
+os.environ['USE_MONGOMOCK'] = os.environ.get('USE_MONGOMOCK', 'true')
+
+# Only set MONGODB_URI if not using mongomock
+if os.environ.get('USE_MONGOMOCK', 'true').lower() != 'true':
+  os.environ.setdefault('MONGODB_URI', 'mongodb://localhost:27017/letmelearn_test')
 
 def pytest_sessionfinish(session, exitstatus):
-  """Clean up MongoClient after all tests complete.
+  """Clean up after all tests complete.
 
-  This hook runs after all tests and closes the MongoClient properly
-  to minimize pymongo daemon thread cleanup errors during Python shutdown.
-
-  Note: Some threading cleanup noise may still appear due to pymongo's
-  daemon threads. This is a known issue (PYTHON-4370) and doesn't affect
-  test results.
+  When using mongomock, resets the database state.
+  When using real MongoDB, closes MongoClient properly.
   """
-  from pymongo import MongoClient
-  import gc
+  # Reset the database state for mongomock
+  try:
+    from letmelearn.data import reset_db
+    reset_db()
+  except ImportError:
+    # Module not available during collection-only runs
+    pass
 
-  # Force garbage collection to clean up any lingering references
-  gc.collect()
+  # For real MongoDB, clean up clients
+  if os.environ.get('USE_MONGOMOCK', 'true').lower() != 'true':
+    import gc
+    from pymongo import MongoClient
 
-  # Close all pymongo clients to stop daemon threads
-  for client in list(MongoClient._clients.values()):
-    try:
-      client.close()
-    except Exception:
-      pass
+    # Force garbage collection to clean up any lingering references
+    gc.collect()
+
+    # Close all pymongo clients to stop daemon threads
+    for client in list(MongoClient._clients.values()):
+      try:
+        client.close()
+      except Exception:
+        pass
 
 
 @pytest.fixture(scope='session')
@@ -49,7 +64,6 @@ def app():
   from letmelearn.web import server
 
   server.config['TESTING'] = True
-  server.config['MONGODB_URI'] = 'mongodb://localhost:27017/letmelearn_test'
 
   # Disable session protection for testing (makes session auth more reliable)
   from letmelearn.auth import login_manager
@@ -60,17 +74,23 @@ def app():
 
 @pytest.fixture(scope='session')
 def db(app):
-  """Create test database connection."""
-  import warnings
-  from letmelearn.data import db
-  yield db
+  """Create test database connection.
+
+  Uses mongomock when USE_MONGOMOCK=true, otherwise uses real MongoDB.
+  """
+  from letmelearn.data import get_db
+  database = get_db()
+  yield database
+
   # Cleanup after all tests
-  db.client.drop_database('letmelearn_test')
-  # Close MongoClient to stop daemon threads properly
-  # Suppress the threading cleanup warning that occurs during shutdown
-  with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    db.client.close()
+  if os.environ.get('USE_MONGOMOCK', 'true').lower() == 'true':
+    # For mongomock, just drop all collections
+    for collection_name in database.list_collection_names():
+      database.drop_collection(collection_name)
+  else:
+    # For real MongoDB, drop the test database
+    database.client.drop_database('letmelearn_test')
+    database.client.close()
 
 
 @pytest.fixture

@@ -1,8 +1,11 @@
 # needed explicitly for recursion issue in eventlet+ssl on outgoing pymongo
 # and to be able to create single pymongo Database object
 # problem only appears on render.com setup
-import eventlet
-eventlet.monkey_patch()
+# Note: Only apply monkey_patch in non-test environments to avoid breaking pymongo
+import os
+if os.environ.get('FLASK_ENV') != 'testing':
+  import eventlet
+  eventlet.monkey_patch()
 
 # load the environment variables for this setup from .env file
 from dotenv import load_dotenv, find_dotenv  # noqa
@@ -43,6 +46,7 @@ server.log_config()
 
 # Initialize rate limiter using MongoDB for storage
 # Disabled in testing mode to avoid rate limiting during tests
+# When using mongomock, use in-memory storage instead of MongoDB
 from flask_limiter import Limiter, util  # noqa
 
 def is_static_request():
@@ -68,11 +72,15 @@ def is_static_request():
     return True
   return False
 
+# Use in-memory storage when using mongomock (for testing without MongoDB)
+use_mongomock = os.environ.get("USE_MONGOMOCK", "false").lower() == "true"
+storage_uri = "memory://" if use_mongomock else DB_CONN
+
 limiter = Limiter(
   app=server,
   key_func=util.get_remote_address,
   default_limits=["200 per day", "50 per hour"],
-  storage_uri=DB_CONN,
+  storage_uri=storage_uri,
   enabled=not config.is_testing(),
   default_limits_exempt_when=is_static_request
 )

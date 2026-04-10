@@ -240,6 +240,38 @@ Tracking the number of answers per minute gives an indication of the speed of th
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
 
+### 2026-04-10: MongoDB-less Tests for CI
+
+- [x] Add mongomock to test dependencies
+  - Added to `requirements-test.txt`
+- [x] Modify conftest.py for mock MongoDB support
+  - Default to mongomock for tests (CI-friendly)
+  - Support `USE_MONGOMOCK=false` for real MongoDB
+  - File: `tests/conftest.py`
+- [x] Make MongoClient initialization testable
+  - Refactored `data.py` with lazy initialization via `get_db()`
+  - Created `_DBProxy` class for backward compatibility
+  - Created `reset_db()` for test cleanup
+  - File: `letmelearn/data.py`
+- [x] Fix aggregation pipeline for mongomock compatibility
+  - Created `_aggregate_sessions_by_day()` helper in `stats.py`
+  - Falls back to Python-based timezone conversion when using mongomock
+  - File: `letmelearn/api/stats.py`
+- [x] Fix eventlet monkey-patching issue
+  - Made `eventlet.monkey_patch()` conditional on `FLASK_ENV != 'testing'`
+  - Prevents breaking pymongo during tests with real MongoDB
+  - File: `letmelearn/web.py`
+- [x] Update GitHub Actions workflow
+  - Added environment variables for CI
+  - Uses mongomock by default
+  - File: `.github/workflows/test.yaml`
+- [x] Update documentation
+  - Added testing section to README.md
+  - Documented test modes and environment variables
+  - File: `README.md`
+
+**Result**: All 207 tests pass with mongomock. Tests can now run on GitHub Actions without a MongoDB server.
+
 ### 2026-04-10: Feed-to-Sessions Migration Script
 
 - [x] Create migration script for feed to sessions
