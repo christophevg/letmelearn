@@ -2,5 +2,7 @@
 
 pytest
 pytest-cov
+
+pyyaml
 jsonschema
 mongomock>=4.1.0
