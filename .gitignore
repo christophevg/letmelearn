@@ -8,3 +8,5 @@ local
 letmelearn.egg-info/
 __pycache__/
 .hypothesis/
+analysis/.session
+analysis/.session
