@@ -145,13 +145,13 @@ class TestStatsStreak:
         assert data['streak_risk'] is False
         assert data['risk_level'] == 'none'
 
-    def test_only_quiz_counts_toward_streak(self, auth_client, db, test_user):
-        """Only quiz sessions should count toward streak."""
+    def test_both_quiz_and_training_count_toward_streak(self, auth_client, db, test_user):
+        """Both quiz and training sessions should count toward streak."""
         today = datetime.now(BELGIUM_TZ).date()
         session_time = datetime.combine(today, datetime.min.time())
         session_time = session_time.replace(tzinfo=BELGIUM_TZ).astimezone(ZoneInfo("UTC"))
 
-        # Create training session (should not count)
+        # Create training session (should also count)
         db.sessions.insert_one({
             "_id": str(ObjectId()),
             "user": test_user["_id"],
@@ -165,8 +165,8 @@ class TestStatsStreak:
         response = auth_client.get('/api/stats/streak')
 
         data = response.get_json()
-        # Training time should not appear in today_minutes
-        assert data['today_minutes'] == 0
+        # Training time should appear in today_minutes (20 minutes = 1200 seconds / 60)
+        assert data['today_minutes'] == 20
 
 
 class TestStatsWeekly:

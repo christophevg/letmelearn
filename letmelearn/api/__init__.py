@@ -6,7 +6,7 @@ All REST API endpoints are registered here when the module is imported.
 
 import logging
 
-from letmelearn.api.session import Session
+from letmelearn.api.session import Session, SessionFeedback
 from letmelearn.api.folders import Folders
 from letmelearn.api.topics import Topics, TopicResource, Items
 from letmelearn.api.feed import Feed
@@ -37,6 +37,7 @@ def register_endpoints(server):
   # Session tracking endpoints
   server.api.add_resource(Sessions, "/api/sessions", endpoint="api-sessions")
   server.api.add_resource(SessionResource, "/api/sessions/<session_id>", endpoint="api-session")
+  server.api.add_resource(SessionFeedback, "/api/sessions/<string:id>/feedback", endpoint="api-session-feedback")
   server.api.add_resource(SessionCurrent, "/api/sessions/current", endpoint="api-sessions-current")
 
   # Statistics endpoints

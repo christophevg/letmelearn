@@ -105,34 +105,13 @@ var Quiz = {
 
   <!-- done -->
 
-  <v-layout v-if="result">
+  <v-layout v-if="showFeedback">
     <v-flex xs12 sm6 offset-sm3>
-      <v-card>
-        <v-img src="/app/static/images/happy.png" aspect-ratio="2.75"></v-img>
-
-        <v-card-title primary-title>
-          <div>
-            <h3 class="headline mb-0">🎉 All done!</h3>
-          </div>
-        </v-card-title>
-
-        <v-card-actions>
-          <v-spacer></v-spacer>
-
-            Er waren {{ result.questions }} vragen.<br>
-            Daarvan zijn er {{ result.asked }} gesteld.<br>
-            In {{ result.attempts }} pogingen, had je er {{ result.correct }} juist.<br>
-
-            <template v-if="this.timer_active">
-              Je deed dit in {{ result.elapsed }} seconden.<br>
-            </template>
-
-            <br>
-
-          <v-spacer></v-spacer>
-          <br><br>
-        </v-card-actions>
-      </v-card>
+      <SessionFeedback
+        :session-id="feedbackSessionId"
+        :kind="kind"
+        @start-new="startNew"
+      />
     </v-flex>
   </v-layout>
 
@@ -182,6 +161,8 @@ var Quiz = {
     if (this.playing) {
       this.stopSession("abandoned");
     }
+    // Hide session feedback when navigating away
+    store.dispatch("hideSessionFeedback");
   },
   computed: {
     show_in_menu: function() {
@@ -216,6 +197,15 @@ var Quiz = {
     },
     asked: function() {
       return this.asked_questions.length;
+    },
+    showFeedback: function() {
+      return store.getters.sessionFeedbackVisible;
+    },
+    feedbackSessionId: function() {
+      return store.getters.sessionFeedbackId || store.getters.currentSessionId;
+    },
+    kind: function() {
+      return "quiz";
     }
   },
   methods: {
@@ -247,6 +237,9 @@ var Quiz = {
       this.attempts = 0;
       this.asked_questions = [];
 
+      // Hide any previous feedback
+      store.dispatch("hideSessionFeedback");
+
       // Start session tracking
       var topicIds = store.getters.selected_topics.map(function(topic) {
         return topic._id;
@@ -264,8 +257,11 @@ var Quiz = {
       this.$refs.timer.start();
     },
     stop: function() {
+      var self = this;
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
+
+      // Store result data locally for fallback
       this.result = {
         kind: "quiz result",
         topics: store.getters.selected_topics.map(function(topic) { return topic._id; }),
@@ -276,29 +272,36 @@ var Quiz = {
         elapsed: this.$refs.timer.elapsed
       };
 
-      // Stop session tracking (this is now the source of truth for feed)
-      this.stopSession("completed");
+      // Save sessionId before stopping
+      var sessionId = store.getters.currentSessionId;
+
+      // Stop session tracking and wait for completion before showing feedback
+      this.stopSession("completed")
+        .then(function() {
+          console.debug("Quiz: session stopped, showing feedback");
+          // Show feedback dialog if we have a session
+          if (sessionId) {
+            store.dispatch("showSessionFeedback", sessionId);
+          }
+        })
+        .catch(function(err) {
+          console.error("Quiz: failed to stop session", err);
+        });
 
       // Refresh stats after quiz
       store.dispatch("refreshAfterQuiz");
     },
     stopSession: function(status) {
       if (!store.getters.hasActiveSession) {
-        return;
+        return Promise.resolve(null);
       }
-      store.dispatch("stopSession", {
+      return store.dispatch("stopSession", {
         status: status,
         questions: this.questions,
         asked: this.asked,
         attempts: this.attempts,
         correct: this.correct
-      })
-        .then(function() {
-          console.debug("Quiz: session stopped (" + status + ")");
-        })
-        .catch(function(err) {
-          console.error("Quiz: failed to stop session", err);
-        });
+      });
     },
     toggle_timing: function() {
       this.$refs.timer.toggle_timing();
@@ -324,6 +327,10 @@ var Quiz = {
     toggle_style: function() {
       this.multiplechoice = !this.multiplechoice;
       this.reset();
+    },
+    startNew: function() {
+      this.result = null;
+      this.start();
     },
     next: function(success) {
       if (this.asked_questions.indexOf(this.problem) === -1) {

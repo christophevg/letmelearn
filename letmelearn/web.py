@@ -79,7 +79,7 @@ storage_uri = "memory://" if use_mongomock else DB_CONN
 limiter = Limiter(
   app=server,
   key_func=util.get_remote_address,
-  default_limits=["200 per day", "50 per hour"],
+  default_limits=["500 per day", "100 per hour"],
   storage_uri=storage_uri,
   enabled=not config.is_testing(),
   default_limits_exempt_when=is_static_request
@@ -106,9 +106,11 @@ for component in [
   "FeedStore",
   "TopicsStore",
   "SessionsStore",
+  "SessionFeedbackStore",
   "StatsStore",
   "FollowsStore",
   "StatsCards",
+  "SessionFeedback",
   "TopicSelector",
   "FolderSelector",
   "TextDiff",

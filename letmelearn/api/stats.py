@@ -34,18 +34,27 @@ def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
   MongoDB's $dateToString with timezone is not supported in mongomock,
   so we compute the day string in Python when using mongomock.
 
+  Args:
+    user_email: User email to filter sessions
+    kind: Session kind to filter ("quiz", "training", or None for all kinds)
+    statuses: List of statuses to include (default: ["completed", "abandoned"])
+
   Returns a list of {day: str, total_elapsed: int} documents.
   """
   if statuses is None:
     statuses = ["completed", "abandoned"]
 
+  # Build query - if kind is None, don't filter by kind
+  query = {
+    "user": user_email,
+    "status": {"$in": statuses}
+  }
+  if kind is not None:
+    query["kind"] = kind
+
   if _is_mongomock():
     # mongomock-compatible: fetch raw data and group in Python
-    sessions = list(db.sessions.find({
-      "user": user_email,
-      "kind": kind,
-      "status": {"$in": statuses}
-    }, {"started_at": 1, "elapsed": 1}))
+    sessions = list(db.sessions.find(query, {"started_at": 1, "elapsed": 1}))
 
     # Group by day in Python (convert UTC to Belgium timezone)
     day_totals = {}
@@ -63,12 +72,15 @@ def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
     return [{"_id": day, "total_elapsed": total} for day, total in day_totals.items()]
   else:
     # MongoDB: use aggregation with timezone
+    match_stage = {
+      "user": user_email,
+      "status": {"$in": statuses}
+    }
+    if kind is not None:
+      match_stage["kind"] = kind
+
     pipeline = [
-      {"$match": {
-        "user": user_email,
-        "kind": kind,
-        "status": {"$in": statuses}
-      }},
+      {"$match": match_stage},
       {"$project": {
         "day": {
           "$dateToString": {
@@ -87,8 +99,64 @@ def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
     return list(db.sessions.aggregate(pipeline))
 
 
+def get_personal_best_accuracy(user_email, min_asked=5, exclude_session_id=None, days=30):
+  """Find the highest historical accuracy for a user in sessions with at least min_asked questions.
+
+  Args:
+    user_email: User's email address
+    min_asked: Minimum number of questions asked for a session to qualify
+    exclude_session_id: Optional session ID to exclude from the calculation
+    days: Number of days to look back (default 30)
+
+  Returns:
+    float: Max accuracy (0-100), or 0.0 if no qualifying sessions exist.
+  """
+  from bson.objectid import ObjectId
+  from datetime import datetime, timedelta
+
+  # Limit to last N days
+  cutoff = datetime.utcnow() - timedelta(days=days)
+
+  match_query = {
+    "user": user_email,
+    "kind": "quiz",
+    "status": "completed",
+    "asked": {"$gte": min_asked},
+    "started_at": {"$gte": cutoff}
+  }
+  if exclude_session_id:
+    try:
+      match_query["_id"] = {"$ne": ObjectId(exclude_session_id)}
+    except Exception:
+      pass  # Invalid ObjectId, skip exclusion
+
+  pipeline = [
+    {"$match": match_query},
+    {"$project": {
+      "accuracy": {"$cond": [
+        {"$gt": ["$attempts", 0]},
+        {"$multiply": [{"$divide": ["$correct", "$attempts"]}, 100]},
+        0
+      ]}
+    }},
+    {"$group": {
+      "_id": None,
+      "max_accuracy": {"$max": "$accuracy"}
+    }}
+  ]
+
+  result = list(db.sessions.aggregate(pipeline))
+  if not result:
+    return 0.0
+  max_acc = result[0].get("max_accuracy")
+  return max_acc if max_acc is not None else 0.0
+
+
 def compute_streak_for_user(user_email):
+
   """Compute streak data for a specific user.
+
+  Counts both quiz and training sessions toward the daily goal.
 
   Returns:
     {
@@ -99,9 +167,10 @@ def compute_streak_for_user(user_email):
   today = datetime.now(BELGIUM_TZ).date()
 
   # Get qualifying days using mongomock-compatible aggregation
-  day_totals = _aggregate_sessions_by_day(user_email)
+  # kind=None means all session types (quiz + training)
+  day_totals = _aggregate_sessions_by_day(user_email, kind=None)
 
-  # Filter to days with 15+ min quiz time
+  # Filter to days with 15+ min practice time
   qualifying_days = [
     {"_id": d["_id"], "total_elapsed": d["total_elapsed"]}
     for d in day_totals
@@ -132,8 +201,9 @@ def compute_streak_for_user(user_email):
       break
 
   # Get today's time using mongomock-compatible aggregation
+  # kind=None means all session types (quiz + training)
   today_str = today.isoformat()
-  today_totals = _aggregate_sessions_by_day(user_email, statuses=["completed", "abandoned", "active"])
+  today_totals = _aggregate_sessions_by_day(user_email, kind=None, statuses=["completed", "abandoned", "active"])
 
   # Find today's total
   today_total = 0
