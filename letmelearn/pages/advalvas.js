@@ -319,7 +319,29 @@ Vue.component("AdvalvasFeed", {
 
   <br>
 
-  <v-list two-line>
+  <!-- Loading state -->
+  <div v-if="loading" class="text-center pa-4">
+    <v-progress-circular indeterminate color="primary" size="32"/>
+    <div class="mt-2 grey--text">Loading your feed...</div>
+  </div>
+
+  <!-- Empty state -->
+  <v-card v-else-if="feed.length === 0" flat class="mt-2">
+    <v-card-text class="text-center">
+      <v-icon size="64" color="grey lighten-1">wb_sunny</v-icon>
+      <h3 class="headline mt-3 mb-2">Welcome to LetMeLearn!</h3>
+      <p class="grey--text text--darken-1 mb-4">
+        Your feed is empty. Start your learning journey by creating your first topic!
+      </p>
+      <v-btn color="primary" to="/topics">
+        <v-icon left>add</v-icon>
+        Create your first topic
+      </v-btn>
+    </v-card-text>
+  </v-card>
+
+  <!-- Feed list -->
+  <v-list v-else two-line>
     <template v-for="(item, index) in feed">
       <v-list-tile
         :key="index"
@@ -366,6 +388,9 @@ Vue.component("AdvalvasFeed", {
     },
     feed: function() {
       return store.getters.feed;
+    },
+    loading: function() {
+      return store.getters.feedLoading;
     },
     feedMode: function() {
       return store.getters.feedMode;

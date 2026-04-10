@@ -10,7 +10,8 @@
 store.registerModule("feed", {
   state: {
     feed: [],
-    mode: "my"  // "my", "following", or "all"
+    mode: "my",  // "my", "following", or "all"
+    loading: false
   },
   getters: {
     feed: function(state) {
@@ -18,15 +19,20 @@ store.registerModule("feed", {
     },
     feedMode: function(state) {
       return state.mode;
+    },
+    feedLoading: function(state) {
+      return state.loading;
     }
   },
   actions: {
     load_feed: function(context) {
       var mode = context.state.mode;
       console.debug("store.actions.load_feed", { mode: mode });
+      context.commit("feedLoading", true);
       api("GET", "feed?mode=" + mode, function(feed) {
         console.debug("store.actions.load_feed success", feed);
         context.commit("new_feed", feed);
+        context.commit("feedLoading", false);
       });
     },
     setFeedMode: function(context, mode) {
@@ -56,6 +62,9 @@ store.registerModule("feed", {
     },
     feedMode: function(state, mode) {
       state.mode = mode;
+    },
+    feedLoading: function(state, loading) {
+      state.loading = loading;
     }
   }
 });
