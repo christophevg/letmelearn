@@ -97,14 +97,6 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 *Feature enhancements for session tracking and feedback.*
 
-- [ ] Session feedback to user (prio:2)
-  - **Description**: After completing a session, show a feedback page with session statistics
-  - **Requirements**:
-    - Base feedback on actual recorded session data
-    - Show stats improvements explicitly
-    - Add encouragement for streak maintenance
-  - **API Dependency**: Enhanced GET endpoint for session feedback
-
 - [ ] Session detailed tracking (prio:3)
   - **Description**: Track individual questions as they are answered during a session
   - **Requirements**:
@@ -147,7 +139,7 @@ Tracking the number of answers per minute gives an indication of the speed of th
 
 #### UX Improvements
 
-- [ ] add empty feed state with friendly message (prio:2)
+- [x] add empty feed state with friendly message (prio:2)
   - **Acceptance Criteria**:
     - GIVEN a new user with no activity
     - WHEN they view the Ad Valvas page
@@ -239,6 +231,30 @@ Tracking the number of answers per minute gives an indication of the speed of th
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-04-10: Empty Feed State
+
+- [x] Add empty feed state with friendly message (prio:2)
+  - Added loading state to FeedStore with `feedLoading` getter
+  - Added empty state to AdvalvasFeed component with welcome message and "Create your first topic" CTA
+  - Files: `letmelearn/components/FeedStore.js`, `letmelearn/pages/advalvas.js`
+
+**Result**: New users see a friendly welcome message with a clear call-to-action to create their first topic when the feed is empty.
+
+### 2026-04-10: Session Feedback System
+
+- [x] Implement Session Feedback System - Backend (prio:2)
+  - Created `GET /api/sessions/{id}/feedback` endpoint in `letmelearn/api/session.py`
+  - Features: Session stats (accuracy, speed), historical comparisons (vs weekly avg), personal best detection, streak status
+  - Files: `letmelearn/api/session.py`, `letmelearn/api/stats.py`, `letmelearn/api/__init__.py`
+  - Tests: `tests/test_session_feedback.py` (12 tests)
+
+- [x] Design & Implement SessionFeedback Vue component (prio:2)
+  - Created `SessionFeedback.js` and `SessionFeedbackStore.js`
+  - Features: Big Win header, animated stat circles (Accuracy, Speed, Effort), Improvement Zone with trends, Streak Anchor with progress bar, Session Details (Questions, Asked, Attempts, Time)
+  - Files: `letmelearn/components/SessionFeedback.js`, `letmelearn/components/SessionFeedbackStore.js`, `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, `letmelearn/static/css/custom.css`, `letmelearn/web.py`
+
+**Result**: Complete session wrap-up experience showing accuracy/speed/effort stats, historical comparisons, personal bests, and streak progress after quiz/training sessions.
 
 ### 2026-04-10: MongoDB-less Tests for CI
 
