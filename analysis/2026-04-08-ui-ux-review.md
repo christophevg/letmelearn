@@ -264,11 +264,11 @@ AND each section header should show item count
 
 ## Files Reviewed
 
-- `/Users/xtof/Workspace/letmelearn/TODO.md`
-- `/Users/xtof/Workspace/letmelearn/analysis/2026-04-08-functional-analysis.md`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/pages/advalvas.js`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/components/FeedStore.js`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/components/StatsCards.js`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/components/StatsStore.js`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/components/ProtectedPage.js`
-- `/Users/xtof/Workspace/letmelearn/letmelearn/auth.py`
+- `/Users/xtof/Workspace/agentic/letmelearn/TODO.md`
+- `/Users/xtof/Workspace/agentic/letmelearn/analysis/2026-04-08-functional-analysis.md`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/pages/advalvas.js`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/components/FeedStore.js`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/components/StatsCards.js`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/components/StatsStore.js`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/components/ProtectedPage.js`
+- `/Users/xtof/Workspace/agentic/letmelearn/letmelearn/auth.py`

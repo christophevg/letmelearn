@@ -169,4 +169,4 @@ From the API review, the following technical debt items remain at prio:0:
 
 ## Files to Modify
 
-- `/Users/xtof/Workspace/letmelearn/TODO.md` - Apply priority changes and add acceptance criteria
+- `/Users/xtof/Workspace/agentic/letmelearn/TODO.md` - Apply priority changes and add acceptance criteria

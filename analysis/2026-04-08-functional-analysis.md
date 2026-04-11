@@ -82,7 +82,7 @@ This document captures the backlog review decisions and clarifications from the 
 
 ## Files Modified
 
-- `/Users/xtof/Workspace/letmelearn/TODO.md` - Updated priorities and task descriptions
+- `/Users/xtof/Workspace/agentic/letmelearn/TODO.md` - Updated priorities and task descriptions
 
 ## Next Steps
 
