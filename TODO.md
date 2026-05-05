@@ -2,6 +2,12 @@
 
 This document tracks all tasks for Let Me Learn: current work, backlog, and completed items.
 
+## Inbox Input (2026-04-20)
+
+*Unstructured input from inbox processing session. To be refined and integrated.*
+
+- letmelearn: auth regression - logging in again is required every time
+
 ## Workflow
 
 ### TODO Management (this document)
@@ -42,6 +48,19 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 ---
 
 ## Backlog
+
+### Standard Project Setup (prio:2)
+
+- [ ] **migrate-to-hatchling** (2026-04-29)
+  - Migrate from setup.py to pyproject.toml with hatchling
+  - Create proper pyproject.toml with project metadata
+  - Move to src-layout (src/letmelearn/) OR keep flat layout
+  - Move all tool config to pyproject.toml (tox, coverage, ruff)
+  - Remove setup.py
+  - Update Makefile for new build commands
+  - Acceptance: `pip install -e ".[dev]"` works, `make test` passes
+  - See: c3 skill `python-project` for standard template
+  - Note: letmelearn is an application, not a library - minimal packaging is fine
 
 ### Code Review Fixes (Medium - prio:3)
 
