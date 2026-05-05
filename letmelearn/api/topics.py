@@ -26,8 +26,9 @@ from letmelearn.auth import authenticated
 from letmelearn.treeitems import TreeItems, Topic, idfy
 from letmelearn.errors import problem_response
 
-logger = logging.getLogger(__name__)
+from letmelearn.api.folders import Folders
 
+logger = logging.getLogger(__name__)
 
 class Topics(Resource):
   """Manage topics."""
@@ -135,7 +136,6 @@ class TopicResource(Resource):
     )
 
     # optionally move to new folder
-    from letmelearn.api.folders import Folders
     tree = TreeItems.from_dicts(Folders._get())
     if folder:
       # (re)move
@@ -172,7 +172,6 @@ class TopicResource(Resource):
 
     Note: Also removes topic from folder tree.
     """
-    from letmelearn.api.folders import Folders
 
     # delete the topic
     db.topics.delete_one({
