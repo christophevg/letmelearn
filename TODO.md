@@ -49,30 +49,7 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ### Session & Quiz Bugs (prio:2)
 
-### Session & Quiz Bugs (prio:2)
-
 (None - all session bugs resolved)
-
-### Feature Enhancements (prio:3)
-  - **Issue**: When switching from multiple choice to text input (or changing orientation), the results view is shown below the quiz, as if the quiz ended.
-  - **Root Cause**: Style toggle may be resetting `playing` state or triggering `stop()` logic
-  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
-  - **Acceptance**:
-    - GIVEN a user is in the middle of a quiz
-    - WHEN they switch style/orientation
-    - THEN the quiz should continue without showing results
-    - AND the current question should update its display style
-  - **Satisfies**: Seamless quiz experience requirement
-
-- [ ] **Stats incorrect after style switch mid-quiz** (prio:2)
-  - **Issue**: When switching quiz style mid-session, the stats are reset instead of accumulated. Final stats only reflect the first part of the quiz.
-  - **Root Cause**: Session stats reset on style change instead of continuing accumulation
-  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
-  - **Acceptance**:
-    - GIVEN a user answered 5 questions (3 correct) then switches style
-    - WHEN they answer 5 more questions (2 correct)
-    - THEN the session stats should show 8 questions, 5 correct total
-  - **Satisfies**: Accurate session statistics requirement
 
 ### Feature Enhancements (prio:3)
 
@@ -309,6 +286,21 @@ Tracking the number of answers per minute gives an indication of the speed of th
   - **Files**: `letmelearn/pages/advalvas.js`
   - **Summary**: `docs/bug-analysis/feed-not-refreshing.md`
   - **Result**: Feed now refreshes automatically when navigating to Ad Valvas page
+
+### 2026-05-18: Style Switch Quiz Fix
+
+- [x] **Style switching during quiz shows results incorrectly** (prio:2)
+  - **Root Cause**: `toggle_style()` and `swap()` called `reset()` which stopped the session
+  - **Fix**: Removed `reset()` calls - style/orientation changes are cosmetic
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
+  - **Summary**: `docs/bug-analysis/style-switch-quiz.md`
+  - **Result**: Quiz continues without interruption when switching styles
+
+- [x] **Stats incorrect after style switch mid-quiz** (prio:2)
+  - **Root Cause**: Same as above - session stopped on style change
+  - **Fix**: Same as above - removed `reset()` calls
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
+  - **Result**: Stats accumulate correctly across style changes
 
 ### 2026-04-10: Empty Feed State
 

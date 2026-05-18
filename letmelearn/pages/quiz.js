@@ -328,7 +328,7 @@ var Quiz = {
     },
     toggle_style: function() {
       this.multiplechoice = !this.multiplechoice;
-      this.reset();
+      // Style change is cosmetic - quiz continues without reset
     },
     startNew: function() {
       this.result = null;

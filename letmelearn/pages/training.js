@@ -343,7 +343,7 @@ var Train = {
     },
     swap: function() {
       this.right2left = !this.right2left;
-      this.reset();
+      // Orientation change is cosmetic - training continues without reset
     },
     startNew: function() {
       this.result = null;
