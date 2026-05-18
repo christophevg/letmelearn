@@ -53,14 +53,7 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ### Feature Enhancements (prio:3)
 
-- [ ] **Show elapsed time during test** (prio:3)
-  - **Description**: Display real-time elapsed time during quiz/training sessions
-  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, Timer component
-  - **Acceptance**:
-    - GIVEN a user starts a quiz with timing enabled
-    - WHEN they are answering questions
-    - THEN the elapsed time is displayed prominently in real-time
-  - **Satisfies**: User feedback/awareness during quiz
+(None - all feature enhancements completed)
 
 ### Infrastructure (prio:4)
 
@@ -301,6 +294,15 @@ Tracking the number of answers per minute gives an indication of the speed of th
   - **Fix**: Same as above - removed `reset()` calls
   - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
   - **Result**: Stats accumulate correctly across style changes
+
+### 2026-05-18: Elapsed Time Display
+
+- [x] **Show elapsed time during test** (prio:3)
+  - **Description**: Display real-time elapsed time during quiz/training sessions
+  - **Implementation**: Added elapsed time tracking with setInterval, formatted as mm:ss
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, `letmelearn/static/css/custom.css`
+  - **Summary**: `docs/bug-analysis/elapsed-time-display.md`
+  - **Result**: Users see elapsed time in toolbar during quiz/training
 
 ### 2026-04-10: Empty Feed State
 

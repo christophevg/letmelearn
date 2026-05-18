@@ -76,6 +76,7 @@ var Train = {
 
   <v-toolbar height="40" v-if="playing">
     <v-toolbar-side-icon><v-icon>play_arrow</v-icon></v-toolbar-side-icon>
+    <span class="elapsed-time">{{ formattedElapsed }}</span>
     <v-progress-linear
         size="items_count"
         v-model="pct_correct"
@@ -225,6 +226,12 @@ var Train = {
     },
     kind: function() {
       return "training";
+    },
+    formattedElapsed: function() {
+      var minutes = Math.floor(this.elapsedSeconds / 60);
+      var seconds = this.elapsedSeconds % 60;
+      return minutes.toString().padStart(2, '0') + ':' +
+             seconds.toString().padStart(2, '0');
     }
   },
   methods: {
@@ -256,6 +263,11 @@ var Train = {
       this.attempts = 0;
       this.asked_questions = [];
 
+      // Start elapsed time tracking
+      this.startTime = Date.now();
+      this.elapsedSeconds = 0;
+      this.elapsedInterval = setInterval(this.updateElapsed, 1000);
+
       // Hide any previous feedback
       store.dispatch("hideSessionFeedback");
 
@@ -277,6 +289,10 @@ var Train = {
     },
     stop: function() {
       var self = this;
+
+      // Stop elapsed time tracking
+      clearInterval(this.elapsedInterval);
+
       store.dispatch("clear_quiz");
       this.$refs.timer.stop();
 
@@ -311,6 +327,11 @@ var Train = {
 
       // Refresh stats after training
       store.dispatch("refreshAfterQuiz");
+    },
+    updateElapsed: function() {
+      if (this.startTime) {
+        this.elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+      }
     },
     stopSession: function(status) {
       if (!store.getters.hasActiveSession) {
@@ -378,7 +399,10 @@ var Train = {
       done: false,
       asked_questions: [],
       timer_active: false,
-      result: null
+      result: null,
+      startTime: null,
+      elapsedSeconds: 0,
+      elapsedInterval: null
     }
   }
 };
