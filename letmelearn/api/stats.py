@@ -17,10 +17,12 @@ from flask_login import current_user
 
 from letmelearn.data import db
 from letmelearn.auth import authenticated
+from letmelearn.config import get_timezone
 
 logger = logging.getLogger(__name__)
 
-BELGIUM_TZ = ZoneInfo("Europe/Brussels")
+# Timezone for date calculations (configurable via TIMEZONE env var)
+TZ = ZoneInfo(get_timezone())
 
 
 def _is_mongomock():
@@ -65,7 +67,7 @@ def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
         # Convert to Belgium timezone
         if started_at.tzinfo is None:
           started_at = started_at.replace(tzinfo=timezone.utc)
-        started_belgium = started_at.astimezone(BELGIUM_TZ)
+        started_belgium = started_at.astimezone(TZ)
         day_str = started_belgium.date().isoformat()
         day_totals[day_str] = day_totals.get(day_str, 0) + elapsed
 
@@ -86,7 +88,7 @@ def _aggregate_sessions_by_day(user_email, kind="quiz", statuses=None):
           "$dateToString": {
             "date": "$started_at",
             "format": "%Y-%m-%d",
-            "timezone": "Europe/Brussels"
+            "timezone": get_timezone()
           }
         },
         "elapsed": 1
@@ -164,7 +166,7 @@ def compute_streak_for_user(user_email):
       "today_minutes": int
     }
   """
-  today = datetime.now(BELGIUM_TZ).date()
+  today = datetime.now(TZ).date()
 
   # Get qualifying days using mongomock-compatible aggregation
   # kind=None means all session types (quiz + training)
@@ -280,7 +282,7 @@ class StatsWeekly(Resource):
     user_email = current_user.identity.email
 
     # Get Monday of current week in Belgium timezone
-    now_belgium = datetime.now(BELGIUM_TZ)
+    now_belgium = datetime.now(TZ)
     monday = now_belgium - timedelta(days=now_belgium.weekday())
     monday_start = monday.replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert to UTC for MongoDB query

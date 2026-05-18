@@ -79,20 +79,19 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
   - **Fix**: Implement Fisher-Yates shuffle algorithm
   - **File**: `letmelearn/components/TopicsStore.js`
 
-- [ ] Fix template literal syntax in topics.js (prio:3)
+- [x] Fix template literal syntax in topics.js (prio:3)
   - **Issue**: `pages/topics.js:188` has template literal without backticks
-  - **Fix**: Use proper backtick syntax
-  - **File**: `letmelearn/pages/topics.js`
+  - **Status**: Issue not found in current codebase - likely already fixed or outdated
 
 - [ ] Extract duplicated topic lookup logic (prio:3)
   - **Issue**: `api/feed.py:78-110` has duplicated topic name resolution
   - **Fix**: Extract to helper function
   - **File**: `letmelearn/api/feed.py`
 
-- [ ] Make timezone configurable (prio:3)
+- [x] Make timezone configurable (prio:3)
   - **Issue**: "Europe/Brussels" hardcoded in `api/stats.py`
-  - **Fix**: Add `TIMEZONE` environment variable
-  - **File**: `letmelearn/api/stats.py`
+  - **Fix**: Added `TIMEZONE` environment variable in config.py
+  - **File**: `letmelearn/config.py`, `letmelearn/api/stats.py`
 
 ### Code Review Fixes (Low - prio:4)
 
@@ -306,6 +305,14 @@ Tracking the number of answers per minute gives an indication of the speed of th
   - **Fix**: Implemented proper Fisher-Yates shuffle
   - **File**: `letmelearn/components/TopicsStore.js`
   - **Result**: Quiz items are now uniformly randomly shuffled
+
+### 2026-05-18: Timezone Configuration
+
+- [x] **Make timezone configurable** (prio:3)
+  - **Issue**: "Europe/Brussels" hardcoded in `api/stats.py`
+  - **Fix**: Added `get_timezone()` function in config.py, `TIMEZONE` env var
+  - **Files**: `letmelearn/config.py`, `letmelearn/api/stats.py`
+  - **Result**: Timezone can now be configured via environment variable
 
 ### 2026-04-10: Empty Feed State
 

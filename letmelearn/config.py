@@ -119,3 +119,15 @@ def get_test_users():
     email.strip()
     for email in os.environ.get('TEST_USERS', 'test@example.com').split(',')
   ]
+
+
+def get_timezone():
+  """Get timezone from environment.
+
+  Returns:
+    str: IANA timezone name (e.g., 'Europe/Brussels', 'America/New_York')
+
+  Environment:
+    TIMEZONE: IANA timezone name (default: 'Europe/Brussels')
+  """
+  return os.environ.get('TIMEZONE', 'Europe/Brussels')
