@@ -743,6 +743,7 @@ var Home = {
     store.dispatch("loadStats");
     store.dispatch("loadFollowing");
     store.dispatch("loadFollowers");
+    store.dispatch("load_feed");
   }
 };
 

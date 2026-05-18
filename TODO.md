@@ -51,17 +51,9 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ### Session & Quiz Bugs (prio:2)
 
-- [ ] **Feed not showing recent quiz after navigation** (prio:2)
-  - **Issue**: After completing a quiz and navigating to Ad Valvas dashboard, the most recent quiz result is not shown. Manual page refresh is required.
-  - **Root Cause**: FeedStore only loads on explicit action call, not on route navigation
-  - **Files**: `letmelearn/components/FeedStore.js`, `letmelearn/pages/advalvas.js`
-  - **Acceptance**:
-    - GIVEN a user completes a quiz or training session
-    - WHEN they navigate to the Ad Valvas page
-    - THEN the most recent session result appears in the feed immediately
-  - **Satisfies**: Real-time feed update requirement
+(None - all session bugs resolved)
 
-- [ ] **Style switching during quiz shows results incorrectly** (prio:2)
+### Feature Enhancements (prio:3)
   - **Issue**: When switching from multiple choice to text input (or changing orientation), the results view is shown below the quiz, as if the quiz ended.
   - **Root Cause**: Style toggle may be resetting `playing` state or triggering `stop()` logic
   - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
@@ -308,6 +300,15 @@ Tracking the number of answers per minute gives an indication of the speed of th
   - **Tests**: `tests/test_session_persistence.py` (13 tests)
   - **Summary**: `docs/bug-analysis/auth-session-persistence.md`
   - **Result**: Sessions now persist across network changes while maintaining security through SameSite cookies and HTTPS-only in production
+
+### 2026-05-18: Feed Not Refreshing Fix
+
+- [x] **Feed not showing recent quiz after navigation** (prio:2)
+  - **Root Cause**: `load_feed` action not called when navigating to Ad Valvas page
+  - **Fix**: Added `store.dispatch("load_feed")` to Home component's mounted hook
+  - **Files**: `letmelearn/pages/advalvas.js`
+  - **Summary**: `docs/bug-analysis/feed-not-refreshing.md`
+  - **Result**: Feed now refreshes automatically when navigating to Ad Valvas page
 
 ### 2026-04-10: Empty Feed State
 
