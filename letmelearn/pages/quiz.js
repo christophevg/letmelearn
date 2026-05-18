@@ -279,6 +279,8 @@ var Quiz = {
       this.stopSession("completed")
         .then(function() {
           console.debug("Quiz: session stopped, showing feedback");
+          // Mark feed as dirty so it refreshes on next Ad Valvas visit
+          store.dispatch("markFeedDirty");
           // Show feedback dialog if we have a session
           if (sessionId) {
             store.dispatch("showSessionFeedback", sessionId);

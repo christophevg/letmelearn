@@ -5,13 +5,15 @@
  * - "my" mode: current user's activity
  * - "following" mode: activity from followed users
  * - "all" mode: combined activity from both
+ * - "dirty" flag: tracks when feed needs refresh
  */
 
 store.registerModule("feed", {
   state: {
     feed: [],
     mode: "my",  // "my", "following", or "all"
-    loading: false
+    loading: false,
+    dirty: false  // True when feed needs refresh
   },
   getters: {
     feed: function(state) {
@@ -22,6 +24,9 @@ store.registerModule("feed", {
     },
     feedLoading: function(state) {
       return state.loading;
+    },
+    feedDirty: function(state) {
+      return state.dirty;
     }
   },
   actions: {
@@ -33,12 +38,21 @@ store.registerModule("feed", {
         console.debug("store.actions.load_feed success", feed);
         context.commit("new_feed", feed);
         context.commit("feedLoading", false);
+        context.commit("feedDirty", false);  // Clear dirty flag after successful load
       });
     },
     setFeedMode: function(context, mode) {
       console.debug("store.actions.setFeedMode", mode);
       context.commit("feedMode", mode);
       return context.dispatch("load_feed");
+    },
+    /**
+     * Mark feed as dirty - call when quiz/training completes or topic is created.
+     * Feed will be reloaded on next visit to Ad Valvas page.
+     */
+    markFeedDirty: function(context) {
+      console.debug("store.actions.markFeedDirty");
+      context.commit("feedDirty", true);
     },
     /**
      * DEPRECATED: Only for "new topic" events.
@@ -65,6 +79,9 @@ store.registerModule("feed", {
     },
     feedLoading: function(state, loading) {
       state.loading = loading;
+    },
+    feedDirty: function(state, dirty) {
+      state.dirty = dirty;
     }
   }
 });

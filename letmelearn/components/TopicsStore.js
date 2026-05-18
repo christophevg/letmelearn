@@ -225,6 +225,8 @@ store.registerModule("topics", {
           "kind" : "new topic",
           "topic" : new_topic["_id"]
         });
+        // Mark feed as dirty so it refreshes on next Ad Valvas visit
+        store.dispatch("markFeedDirty");
         if(topic.handler) { topic.handler(new_topic); }
       },
       {

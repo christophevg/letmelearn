@@ -134,42 +134,76 @@ mounted: function() {
 
 ### Changes Made
 
-**File:** `letmelearn/pages/advalvas.js`
+**Files Modified:**
+1. `letmelearn/components/FeedStore.js` - Added `feedDirty` state and `markFeedDirty` action
+2. `letmelearn/pages/quiz.js` - Mark feed dirty after session stops
+3. `letmelearn/pages/training.js` - Mark feed dirty after session stops
+4. `letmelearn/components/TopicsStore.js` - Mark feed dirty after topic created
+5. `letmelearn/pages/advalvas.js` - Check dirty flag before loading
 
-**Change:** Added `store.dispatch("load_feed")` to the `Home` component's `mounted` hook.
+### Implementation: Dirty Flag Pattern
 
+**FeedStore.js additions:**
 ```javascript
-// Before
-mounted: function() {
-  store.dispatch("loadStats");
-  store.dispatch("loadFollowing");
-  store.dispatch("loadFollowers");
+state: {
+  // ...
+  dirty: false  // True when feed needs refresh
 }
 
-// After
+getters: {
+  feedDirty: function(state) {
+    return state.dirty;
+  }
+}
+
+actions: {
+  markFeedDirty: function(context) {
+    context.commit("feedDirty", true);
+  },
+  load_feed: function(context) {
+    // ... existing load logic ...
+    context.commit("feedDirty", false);  // Clear dirty flag after load
+  }
+}
+```
+
+**Where dirty flag is set:**
+1. `quiz.js` - After `stopSession("completed")` promise resolves
+2. `training.js` - After `stopSession("completed")` promise resolves
+3. `TopicsStore.js` - After `create_topic` completes
+
+**Where dirty flag is checked:**
+1. `advalvas.js` - In `mounted` hook, before loading feed
+
+```javascript
 mounted: function() {
-  store.dispatch("loadStats");
-  store.dispatch("loadFollowing");
-  store.dispatch("loadFollowers");
-  store.dispatch("load_feed");  // ← Added this line
+  // ...
+  if (store.getters.feedDirty || store.getters.feed.length === 0) {
+    store.dispatch("load_feed");
+  }
 }
 ```
 
 ### Why This Works
 
-1. **Before:** Feed was only loaded on initial login (via `load_user_data` in auth.js)
-2. **After:** Feed is now loaded every time the Ad Valvas page is mounted
+1. **Initial load:** Feed loaded via `load_user_data` in auth.js during login
+2. **Navigation without new data:** Feed not dirty → skip reload (saves API call)
+3. **After quiz/training:** Dirty flag set → feed reloads on next Ad Valvas visit
+4. **First visit (edge case):** Feed empty → force load (covers auth failure scenario)
 
-### Alternative Approaches Considered
+### Benefits Over Simple Reload
 
-1. **Vue Router Navigation Guard:** Could use `beforeRouteEnter` but `mounted` is simpler for this use case.
-2. **Global Route Change Watcher:** Would cause unnecessary API calls on every route change. Better to load only when visiting the page.
+| Approach | API Calls | User Experience |
+|----------|-----------|-----------------|
+| Always reload | Every navigation | Loading flicker, wasteful |
+| Dirty flag | Only when needed | Instant for cached, fresh when needed |
 
 ### Testing
 
 - **Manual Testing Required:** This is a frontend JavaScript change
 - **Test Flow:**
   1. Login to the app
-  2. Complete a quiz session
-  3. Navigate to Ad Valvas page
-  4. Verify feed shows the recent session result without manual refresh
+  2. Navigate to Ad Valvas → Feed loads (initial)
+  3. Navigate away, then back to Ad Valvas → Feed NOT reloaded (not dirty)
+  4. Complete a quiz
+  5. Navigate to Ad Valvas → Feed IS reloaded (dirty flag set)

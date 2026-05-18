@@ -743,7 +743,10 @@ var Home = {
     store.dispatch("loadStats");
     store.dispatch("loadFollowing");
     store.dispatch("loadFollowers");
-    store.dispatch("load_feed");
+    // Reload feed if it's dirty (new data available) or if it's empty (first load)
+    if (store.getters.feedDirty || store.getters.feed.length === 0) {
+      store.dispatch("load_feed");
+    }
   }
 };
 
