@@ -345,7 +345,7 @@ var Quiz = {
     },
     swap: function() {
       this.right2left = !this.right2left;
-      this.reset();
+      // Style change is cosmetic - quiz continues without reset
     },
     toggle_style: function() {
       this.multiplechoice = !this.multiplechoice;

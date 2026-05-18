@@ -10,7 +10,7 @@ dependencies = [
   "Flask-Login",
   "oatk",
   "flask-limiter",
-  "gunicorn",
+  "gunicorn==25.3.0",
   "eventlet",
   "python-dotenv",
   "anyio",

@@ -52,7 +52,6 @@ _client = None
 DB_CONN = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/letmelearn")
 DB_NAME = parse_database_name(DB_CONN)
 
-
 def _run_migrations(db):
   """Run schema migrations for all collections.
 
