@@ -1,0 +1,47 @@
+[project]
+name = "letmelearn"
+version = "0.0.6"
+description = "Learning app for definitions and words"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "baseweb<0.5.0",
+  "pymongo",
+  "Flask-Login",
+  "oatk",
+  "flask-limiter",
+  "gunicorn",
+  "eventlet",
+  "python-dotenv",
+  "anyio",
+  "httpx",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pyyaml",
+  "jsonschema",
+  "mongomock>=4.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+  "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+target-version = "py311"
+select = ["E9", "F63", "F7", "F82"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["letmelearn"]

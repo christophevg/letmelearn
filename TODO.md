@@ -2,12 +2,6 @@
 
 This document tracks all tasks for Let Me Learn: current work, backlog, and completed items.
 
-## Inbox Input (2026-04-20)
-
-*Unstructured input from inbox processing session. To be refined and integrated.*
-
-- letmelearn: auth regression - logging in again is required every time
-
 ## Workflow
 
 ### TODO Management (this document)
@@ -49,18 +43,72 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ## Backlog
 
-### Standard Project Setup (prio:2)
+### Critical Bugs (prio:1)
 
-- [ ] **migrate-to-hatchling** (2026-04-29)
-  - Migrate from setup.py to pyproject.toml with hatchling
-  - Create proper pyproject.toml with project metadata
-  - Move to src-layout (src/letmelearn/) OR keep flat layout
-  - Move all tool config to pyproject.toml (tox, coverage, ruff)
-  - Remove setup.py
-  - Update Makefile for new build commands
-  - Acceptance: `pip install -e ".[dev]"` works, `make test` passes
-  - See: c3 skill `python-project` for standard template
-  - Note: letmelearn is an application, not a library - minimal packaging is fine
+(None - all critical bugs resolved)
+
+### Session & Quiz Bugs (prio:2)
+
+### Session & Quiz Bugs (prio:2)
+
+- [ ] **Feed not showing recent quiz after navigation** (prio:2)
+  - **Issue**: After completing a quiz and navigating to Ad Valvas dashboard, the most recent quiz result is not shown. Manual page refresh is required.
+  - **Root Cause**: FeedStore only loads on explicit action call, not on route navigation
+  - **Files**: `letmelearn/components/FeedStore.js`, `letmelearn/pages/advalvas.js`
+  - **Acceptance**:
+    - GIVEN a user completes a quiz or training session
+    - WHEN they navigate to the Ad Valvas page
+    - THEN the most recent session result appears in the feed immediately
+  - **Satisfies**: Real-time feed update requirement
+
+- [ ] **Style switching during quiz shows results incorrectly** (prio:2)
+  - **Issue**: When switching from multiple choice to text input (or changing orientation), the results view is shown below the quiz, as if the quiz ended.
+  - **Root Cause**: Style toggle may be resetting `playing` state or triggering `stop()` logic
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
+  - **Acceptance**:
+    - GIVEN a user is in the middle of a quiz
+    - WHEN they switch style/orientation
+    - THEN the quiz should continue without showing results
+    - AND the current question should update its display style
+  - **Satisfies**: Seamless quiz experience requirement
+
+- [ ] **Stats incorrect after style switch mid-quiz** (prio:2)
+  - **Issue**: When switching quiz style mid-session, the stats are reset instead of accumulated. Final stats only reflect the first part of the quiz.
+  - **Root Cause**: Session stats reset on style change instead of continuing accumulation
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`
+  - **Acceptance**:
+    - GIVEN a user answered 5 questions (3 correct) then switches style
+    - WHEN they answer 5 more questions (2 correct)
+    - THEN the session stats should show 8 questions, 5 correct total
+  - **Satisfies**: Accurate session statistics requirement
+
+### Feature Enhancements (prio:3)
+
+- [ ] **Show elapsed time during test** (prio:3)
+  - **Description**: Display real-time elapsed time during quiz/training sessions
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, Timer component
+  - **Acceptance**:
+    - GIVEN a user starts a quiz with timing enabled
+    - WHEN they are answering questions
+    - THEN the elapsed time is displayed prominently in real-time
+  - **Satisfies**: User feedback/awareness during quiz
+
+### Infrastructure (prio:4)
+
+- [ ] **Migrate to Quart-based baseweb (>=0.5.1)** (prio:4)
+  - **Description**: Modernize backend to use async Quart framework
+  - **Includes**: Full clean, modern Python application setup
+  - **References**: python-project skill, quart-webapp skill, baseweb-migrate skill
+  - **Impact**:
+    - All endpoints need async/await conversion
+    - Flask-Login may need replacement or async-compatible alternative
+    - Eventlet may no longer be needed
+  - **Files**: `letmelearn/web.py`, all API files, `requirements.txt`
+  - **Acceptance**:
+    - All existing tests pass
+    - All endpoints work identically to Flask version
+    - No breaking changes to frontend
+  - **Satisfies**: Technical debt reduction, async performance
 
 ### Code Review Fixes (Medium - prio:3)
 
@@ -250,6 +298,16 @@ Tracking the number of answers per minute gives an indication of the speed of th
 ## Done
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
+
+### 2026-05-18: Auth Session Persistence Fix
+
+- [x] **Auth regression: session not persisting between visits** (prio:1)
+  - **Root Cause**: Flask-Login's `session_protection = "strong"` invalidates sessions when IP or User-Agent changes
+  - **Fix**: Changed to `"basic"` protection and added session cookie security configuration
+  - **Files**: `letmelearn/auth.py`, `letmelearn/web.py`
+  - **Tests**: `tests/test_session_persistence.py` (13 tests)
+  - **Summary**: `docs/bug-analysis/auth-session-persistence.md`
+  - **Result**: Sessions now persist across network changes while maintaining security through SameSite cookies and HTTPS-only in production
 
 ### 2026-04-10: Empty Feed State
 

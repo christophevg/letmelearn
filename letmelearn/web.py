@@ -33,6 +33,8 @@ for module in ["gunicorn.error", "pymongo.serverSelection", "urllib3"]:
 
 logger = logging.getLogger(__name__)
 
+from datetime import timedelta  # noqa
+
 from letmelearn import config  # noqa: E402
 from letmelearn.data import DB_CONN # noqa
 
@@ -42,6 +44,16 @@ from baseweb import Baseweb  # noqa
 server = Baseweb("LetMeLearn")
 server.config["TEMPLATES_AUTO_RELOAD"] = True # TODO: use is_development?
 server.config["SECRET_KEY"] = config.get_secret_key()
+
+# Session cookie security configuration
+# SameSite=Lax prevents CSRF attacks while allowing top-level navigation
+server.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Permanent session lifetime for remember_me functionality
+server.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+# Secure cookies only in production (HTTPS required)
+if config.is_production():
+  server.config["SESSION_COOKIE_SECURE"] = True
+
 server.log_config()
 
 # Initialize rate limiter using MongoDB for storage

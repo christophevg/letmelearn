@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 login_manager = LoginManager()
 
 def setup(server):
-  login_manager.session_protection = "strong"
+  login_manager.session_protection = "basic"
   login_manager.init_app(server)
   logger.info("✅ auth set up")
 
