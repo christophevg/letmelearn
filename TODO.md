@@ -74,12 +74,7 @@ This document tracks all tasks for Let Me Learn: current work, backlog, and comp
 
 ### Code Review Fixes (Medium - prio:3)
 
-- [ ] Extract streak calculation to service class (prio:3)
-  - **Issue**: Complex logic in `api/stats.py:26-118` endpoint
-  - **Fix**: Move to separate service class for testability
-  - **File**: `letmelearn/api/stats.py`
-
-- [ ] Fix shuffle algorithm in TopicsStore (prio:3)
+- [x] Fix shuffle algorithm in TopicsStore (prio:3)
   - **Issue**: `TopicsStore.js:167` uses biased `Math.random() - 0.5`
   - **Fix**: Implement Fisher-Yates shuffle algorithm
   - **File**: `letmelearn/components/TopicsStore.js`
@@ -303,6 +298,14 @@ Tracking the number of answers per minute gives an indication of the speed of th
   - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, `letmelearn/static/css/custom.css`
   - **Summary**: `docs/bug-analysis/elapsed-time-display.md`
   - **Result**: Users see elapsed time in toolbar during quiz/training
+
+### 2026-05-18: Shuffle Algorithm Fix
+
+- [x] **Fix shuffle algorithm in TopicsStore** (prio:3)
+  - **Issue**: Biased `Math.random() - 0.5` shuffle algorithm
+  - **Fix**: Implemented proper Fisher-Yates shuffle
+  - **File**: `letmelearn/components/TopicsStore.js`
+  - **Result**: Quiz items are now uniformly randomly shuffled
 
 ### 2026-04-10: Empty Feed State
 

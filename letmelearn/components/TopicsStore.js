@@ -164,8 +164,15 @@ store.registerModule("topics", {
     },
     shuffled : function(state, getters) {
       state._count; // forces recompute
-      // spread it to avoid selected_items to be sorted
-      return [...getters.all_selected_items].sort(() => Math.random() - 0.5);
+      // Fisher-Yates shuffle for unbiased random permutation
+      var items = [...getters.all_selected_items];
+      for (var i = items.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+      }
+      return items;
     },
     current_question(state) {
       if(state._quiz[0]) { return state._quiz[0]}
