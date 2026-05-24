@@ -148,6 +148,99 @@ class TestSessionPatch:
         assert stop_response2.status_code == 200
 
 
+class TestSessionIdempotentStop:
+    """Tests for idempotent session stopping behavior.
+
+    This documents the expected behavior when a session is stopped multiple times,
+    which can happen if the frontend visibilitychange handler sends a beacon
+    and then the user later clicks Stop.
+
+    See: GitHub Issue #12 - Session time display incorrect
+    """
+
+    def test_stop_session_is_idempotent(self, auth_client, db):
+        """Stopping an already-stopped session should return original elapsed time.
+
+        This tests the scenario from Issue #12:
+        1. Session is started
+        2. Session is stopped (e.g., via visibilitychange beacon)
+        3. Session is stopped again (e.g., user clicks Stop)
+
+        The second stop should return the original elapsed time,
+        not re-compute from the original started_at.
+        """
+        import time
+        from datetime import datetime, timezone
+
+        # Create session
+        create_response = auth_client.post('/api/sessions',
+            json={"kind": "quiz", "topics": ["topic-1"]}
+        )
+        session_id = create_response.get_json()['session_id']
+
+        # Wait a moment
+        time.sleep(0.1)
+
+        # First stop (simulates visibilitychange beacon)
+        stop_response1 = auth_client.patch(f'/api/sessions/{session_id}',
+            json={"status": "abandoned", "questions": 10}
+        )
+        assert stop_response1.status_code == 200
+        first_elapsed = stop_response1.get_json()['elapsed']
+
+        # Wait more time (user continues playing, unaware session is stopped)
+        time.sleep(0.2)
+
+        # Second stop (simulates user clicking Stop)
+        # This should return the ORIGINAL elapsed time, not re-compute
+        stop_response2 = auth_client.patch(f'/api/sessions/{session_id}',
+            json={"status": "completed", "questions": 10}
+        )
+        assert stop_response2.status_code == 200
+        second_elapsed = stop_response2.get_json()['elapsed']
+
+        # Elapsed should be the same (idempotent)
+        assert second_elapsed == first_elapsed, \
+            f"Second stop should return original elapsed ({first_elapsed}), got {second_elapsed}"
+
+        # Verify in database
+        session = db.sessions.find_one({"_id": ObjectId(session_id)})
+        assert session['elapsed'] == first_elapsed
+        # Status should remain from first stop (abandoned)
+        assert session['status'] == 'abandoned'
+
+    def test_stop_then_update_does_not_change_elapsed(self, auth_client, db):
+        """Updating metrics on stopped session should not change elapsed time."""
+        import time
+
+        # Create and stop session
+        create_response = auth_client.post('/api/sessions',
+            json={"kind": "quiz", "topics": ["topic-1"]}
+        )
+        session_id = create_response.get_json()['session_id']
+
+        time.sleep(0.1)
+
+        stop_response = auth_client.patch(f'/api/sessions/{session_id}',
+            json={"status": "completed", "questions": 10, "correct": 8}
+        )
+        original_elapsed = stop_response.get_json()['elapsed']
+
+        time.sleep(0.1)
+
+        # Try to update again with different metrics
+        auth_client.patch(f'/api/sessions/{session_id}',
+            json={"status": "completed", "questions": 20, "correct": 15}
+        )
+
+        # Elapsed should not have changed
+        session = db.sessions.find_one({"_id": ObjectId(session_id)})
+        assert session['elapsed'] == original_elapsed
+        # But metrics should also stay the same (idempotent returns existing)
+        assert session['questions'] == 10
+        assert session['correct'] == 8
+
+
 class TestSessionCurrent:
     """Tests for GET /api/sessions/current endpoint."""
 

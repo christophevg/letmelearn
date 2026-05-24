@@ -146,20 +146,16 @@ var Train = {
 
     // Handle page unload - use sendBeacon for reliable session stop
     // sendBeacon is designed for analytics/unload scenarios and guarantees delivery
+    // Note: We intentionally do NOT stop sessions on visibilitychange (tab switch).
+    // Users frequently switch tabs during training (e.g., to look up information).
+    // The beforeunload handler covers actual page close scenarios.
+    // See: GitHub Issue #12 - stopping on visibility change caused incorrect elapsed time
     this._beforeUnloadHandler = function(e) {
       if (self.playing && store.getters.hasActiveSession) {
         self._sendSessionBeacon("abandoned");
       }
     };
     window.addEventListener("beforeunload", this._beforeUnloadHandler);
-
-    // Handle tab visibility change - stop session when tab becomes hidden
-    this._visibilityHandler = function(e) {
-      if (document.visibilityState === "hidden" && self.playing) {
-        self._sendSessionBeacon("abandoned");
-      }
-    };
-    document.addEventListener("visibilitychange", this._visibilityHandler);
 
     // Check for existing session (page refresh/reload)
     if (store.getters.hasActiveSession) {
@@ -176,9 +172,6 @@ var Train = {
     // Clean up event listeners
     if (this._beforeUnloadHandler) {
       window.removeEventListener("beforeunload", this._beforeUnloadHandler);
-    }
-    if (this._visibilityHandler) {
-      document.removeEventListener("visibilitychange", this._visibilityHandler);
     }
     // Stop session if still active (for normal navigation)
     if (this.playing) {

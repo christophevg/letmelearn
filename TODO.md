@@ -255,6 +255,19 @@ Tracking the number of answers per minute gives an indication of the speed of th
 
 *All completed tasks. Items are marked [x] and archived here with completion date.*
 
+### 2026-05-24: Session Time Display Fix
+
+- [x] **Session time display incorrect** (prio:2)
+  - **Issue**: Sometimes at the end of a Quiz session, the displayed time was incorrect (20-minute session showing as <1 minute)
+  - **Root Cause**: visibilitychange handler stopped session when user switched tabs, but frontend continued tracking time locally
+  - **Fix**: Removed beacon send from visibilitychange handler - beforeunload handler already covers page close
+  - **Files**: `letmelearn/pages/quiz.js`, `letmelearn/pages/training.js`, `tests/test_sessions.py`
+  - **Tests**: Added test_stop_session_is_idempotent, test_stop_then_update_does_not_change_elapsed
+  - **Summary**: `docs/bug-analysis/session-time-incorrect.md`
+  - **Reference**: GitHub Issue #12
+  - **PR**: https://github.com/christophevg/letmelearn/pull/13
+  - **Result**: Users can now switch tabs during quiz/training without session being stopped
+
 ### 2026-05-18: Auth Session Persistence Fix
 
 - [x] **Auth regression: session not persisting between visits** (prio:1)
