@@ -8,3 +8,6 @@ flask-limiter
 
 gunicorn
 eventlet
+
+anyio
+httpx
