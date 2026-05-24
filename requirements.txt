@@ -1,4 +1,4 @@
-baseweb
+baseweb<0.5.0
 
 pymongo
 
