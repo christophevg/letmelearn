@@ -1,5 +1,10 @@
 # Let me Learn
 
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)][python]
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)][uv]
+[![CI](https://img.shields.io/github/actions/workflow/status/christophevg/letmelearn/ci.yml.svg)][ci]
+[![Agentic](https://img.shields.io/badge/workflow-agentic-blueviolet?style=flat-square)](https://christophe.vg/about/Agentic-Workflow)
+
 > a simple app to support learning definitions, words,...
 
 ## Rationale
@@ -45,3 +50,8 @@ So, the setup/architecture of this application will be my (currently) prefered o
     <p align="center">
       <img src="https://raw.githubusercontent.com/christophevg/letmelearn/master/media/letmelearn.png">
     </p>
+
+[python]: https://python.org/
+[uv]: https://docs.astral.sh/uv/
+[ci]: https://github.com/christophevg/letmelearn/actions
+[license]: https://github.com/christophevg/letmelearn/blob/master/LICENSE
